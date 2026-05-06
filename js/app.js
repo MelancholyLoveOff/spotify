@@ -1,0 +1,355 @@
+// js/app.js
+
+function initializeDOMElements() {
+    try {
+        allViews = document.querySelectorAll('.page-view'); 
+        searchInput = document.getElementById('searchInput'); 
+        studioView = document.getElementById('studioView'); 
+        loginPrompt = document.getElementById('loginPrompt'); 
+        loggedInInfo = document.getElementById('loggedInInfo'); 
+        loginButton = document.getElementById('loginButton'); 
+        logoutButton = document.getElementById('logoutButton'); 
+        studioLaunchWrapper = document.getElementById('studioLaunchWrapper'); 
+        studioTabs = document.querySelectorAll('.studio-tab-btn'); 
+        studioForms = document.querySelectorAll('.studio-form-content');
+        
+        wysiwygReleaseForm = document.getElementById('wysiwygReleaseForm'); 
+        wysiwygArtistSelect = document.getElementById('wysiwygArtistSelect'); 
+        wysiwygTitle = document.getElementById('wysiwygTitle'); 
+        wysiwygCoverFile = document.getElementById('wysiwygCoverFile'); 
+        wysiwygCoverUrl = document.getElementById('wysiwygCoverUrl'); 
+        wysiwygReleaseDate = document.getElementById('wysiwygReleaseDate'); 
+        wysiwygToggleDeluxe = document.getElementById('wysiwygReleaseNature'); // O select de nature atua como toggle
+        wysiwygTracklistEditor = document.getElementById('wysiwygTracklistEditor'); 
+        wysiwygBg = document.getElementById('wysiwygBg'); 
+        wysiwygCoverImg = document.getElementById('wysiwygCoverImg'); 
+        wysiwygArtistImg = document.getElementById('wysiwygArtistImg'); 
+        openWysiwygAddTrackBtn = document.getElementById('openWysiwygAddTrackBtn'); 
+        openWysiwygExistingTrackBtn = document.getElementById('openWysiwygExistingTrackBtn'); 
+        submitWysiwygRelease = document.getElementById('submitWysiwygRelease');
+        
+        featModal = document.getElementById('featModal'); 
+        featArtistSelect = document.getElementById('featArtistSelect'); 
+        featTypeSelect = document.getElementById('featTypeSelect'); 
+        confirmFeatBtn = document.getElementById('confirmFeatBtn'); 
+        cancelFeatBtn = document.getElementById('cancelFeatBtn'); 
+        albumTrackModal = document.getElementById('albumTrackModal'); 
+        albumTrackModalTitle = document.getElementById('albumTrackModalTitle'); 
+        albumTrackNameInput = document.getElementById('albumTrackNameInput'); 
+        albumTrackDurationInput = document.getElementById('albumTrackDurationInput'); 
+        albumTrackTypeSelect = document.getElementById('albumTrackTypeSelect'); 
+        albumTrackFeatList = document.getElementById('albumTrackFeatList'); 
+        saveAlbumTrackBtn = document.getElementById('saveAlbumTrackBtn'); 
+        cancelAlbumTrackBtn = document.getElementById('cancelAlbumTrackBtn'); 
+        editingTrackItemId = document.getElementById('editingTrackItemId'); 
+        editingTrackExistingId = document.getElementById('editingTrackExistingId'); 
+        inlineFeatAdder = document.getElementById('inlineFeatAdder'); 
+        inlineFeatArtistSelect = document.getElementById('inlineFeatArtistSelect'); 
+        inlineFeatTypeSelect = document.getElementById('inlineFeatTypeSelect'); 
+        confirmInlineFeatBtn = document.getElementById('confirmInlineFeatBtn'); 
+        cancelInlineFeatBtn = document.getElementById('cancelInlineFeatBtn'); 
+        addInlineFeatBtn = albumTrackModal?.querySelector('.add-inline-feat-btn'); 
+        
+        audioElement = document.getElementById('audioElement'); 
+        musicPlayerView = document.getElementById('musicPlayer'); 
+        playerCloseBtn = document.querySelector('.player-close-btn'); 
+        playerAlbumTitle = document.getElementById('playerAlbumTitle'); 
+        playerCoverArt = document.getElementById('playerCoverArt'); 
+        playerSongTitle = document.getElementById('playerSongTitle'); 
+        playerArtistName = document.getElementById('playerArtistName'); 
+        playerSeekBar = document.getElementById('playerSeekBar'); 
+        playerCurrentTime = document.getElementById('playerCurrentTime'); 
+        playerTotalTime = document.getElementById('playerTotalTime'); 
+        playerShuffleBtn = document.getElementById('playerShuffleBtn'); 
+        playerPrevBtn = document.getElementById('playerPrevBtn'); 
+        playerPlayPauseBtn = document.getElementById('playerPlayPauseBtn'); 
+        playerNextBtn = document.getElementById('playerNextBtn'); 
+        playerRepeatBtn = document.getElementById('playerRepeatBtn');
+        
+        editReleaseSection = document.getElementById('editReleaseSection'); 
+        editReleaseListContainer = document.getElementById('editReleaseListContainer'); 
+        editReleaseList = document.getElementById('editReleaseList'); 
+        editReleaseForm = document.getElementById('editReleaseForm'); 
+        editReleaseId = document.getElementById('editReleaseId'); 
+        editReleaseType = document.getElementById('editReleaseType'); 
+        editReleaseTableName = document.getElementById('editReleaseTableName'); 
+        editArtistNameDisplay = document.getElementById('editArtistNameDisplay'); 
+        editReleaseTitle = document.getElementById('editReleaseTitle'); 
+        editReleaseCoverUrl = document.getElementById('editReleaseCoverUrl'); 
+        editReleaseDate = document.getElementById('editReleaseDate'); 
+        cancelEditBtn = document.getElementById('cancelEditBtn'); 
+        saveEditBtn = document.getElementById('saveEditBtn'); 
+        
+        deleteConfirmModal = document.getElementById('deleteConfirmModal'); 
+        deleteReleaseName = document.getElementById('deleteReleaseName'); 
+        deleteRecordId = document.getElementById('deleteRecordId'); 
+        deleteTableName = document.getElementById('deleteTableName'); 
+        deleteTrackIds = document.getElementById('deleteTrackIds'); 
+        cancelDeleteBtn = document.getElementById('cancelDeleteBtn'); 
+        confirmDeleteBtn = document.getElementById('confirmDeleteBtn'); 
+        
+        existingTrackModal = document.getElementById('existingTrackModal'); 
+        existingTrackSearch = document.getElementById('existingTrackSearch'); 
+        existingTrackResults = document.getElementById('existingTrackResults'); 
+        cancelExistingTrackBtn = document.getElementById('cancelExistingTrackBtn'); 
+        editArtistFilterSelect = document.getElementById('editArtistFilterSelect'); 
+        editAlbumTracklistEditor = document.getElementById('editAlbumTracklistEditor'); 
+        editTracklistActions = document.getElementById('editTracklistActions'); 
+        openEditAddTrackModalBtn = document.getElementById('openEditAddTrackModalBtn'); 
+        openEditExistingTrackModalBtn = document.getElementById('openEditExistingTrackModalBtn');
+        
+        registerPrompt = document.getElementById('registerPrompt'); 
+        regUsernameInput = document.getElementById('regUsernameInput'); 
+        regPasswordInput = document.getElementById('regPasswordInput'); 
+        registerButton = document.getElementById('registerButton'); 
+        showRegisterBtn = document.getElementById('showRegisterBtn'); 
+        showLoginBtn = document.getElementById('showLoginBtn'); 
+        
+        newArtistForm = document.getElementById('newArtistForm'); 
+        newArtistName = document.getElementById('newArtistName'); 
+        newArtistImageUrl = document.getElementById('newArtistImageUrl'); 
+        submitNewArtist = document.getElementById('submitNewArtist'); 
+        
+        editArtistForm = document.getElementById('editArtistForm'); 
+        editArtistSelect = document.getElementById('editArtistSelect'); 
+        editArtistFields = document.getElementById('editArtistFields'); 
+        editArtistNameInput = document.getElementById('editArtistNameInput'); 
+        editArtistImageUrl = document.getElementById('editArtistImageUrl'); 
+        editArtistBgPosition = document.getElementById('editArtistBgPosition'); 
+        editArtistPreviewCircle = document.getElementById('editArtistPreviewCircle'); 
+        editArtistPreviewHeader = document.getElementById('editArtistPreviewHeader'); 
+        submitEditArtist = document.getElementById('submitEditArtist');
+        
+        actionModal = document.getElementById('actionModal'); 
+        modalArtistName = document.getElementById('modalArtistName'); 
+        modalArtistId = document.getElementById('modalArtistId'); 
+        actionTypeSelect = document.getElementById('actionTypeSelect'); 
+        releaseSelectWrapper = document.getElementById('releaseSelectWrapper'); 
+        releaseSelect = document.getElementById('releaseSelect'); 
+        trackSelectWrapper = document.getElementById('trackSelectWrapper'); 
+        trackSelect = document.getElementById('trackSelect'); 
+        actionLimitInfo = document.getElementById('actionLimitInfo'); 
+        currentActionCount = document.getElementById('currentActionCount'); 
+        maxActionCount = document.getElementById('maxActionCount'); 
+        confirmActionButton = document.getElementById('confirmActionButton'); 
+        cancelActionButton = document.getElementById('cancelActionButton'); 
+        artistActionsList = document.getElementById('artistActionsList');
+        
+        miniPlayer = document.getElementById('miniPlayer'); 
+        miniPlayerCover = document.getElementById('miniPlayerCover'); 
+        miniPlayerTitle = document.getElementById('miniPlayerTitle'); 
+        miniPlayerArtist = document.getElementById('miniPlayerArtist'); 
+        miniPlayerPlayPauseBtn = document.getElementById('miniPlayerPlayPauseBtn'); 
+        miniPlayerProgress = document.getElementById('miniPlayerProgress');
+
+        const now = new Date(); 
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); 
+        now.setSeconds(0); 
+        now.setMilliseconds(0); 
+        if(wysiwygReleaseDate) wysiwygReleaseDate.value = now.toISOString().slice(0, 16);
+        
+        window.populateTracklistEditor = populateTracklistEditor; 
+        return true; 
+    } catch(error) { 
+        console.error("Erro DOM:", error); 
+        return false; 
+    }
+}
+
+function initializeBodyClickListener() {
+    document.body.addEventListener('click', (event) => {
+        const backButton = event.target.closest('[data-action="back"]'); 
+        if (backButton) { event.preventDefault(); handleBack(); return; }
+        
+        const artistCard = event.target.closest('.artist-card[data-artist-name]'); 
+        const artistLink = event.target.closest('.artist-link[data-artist-name]');
+        if (artistCard) { openArtistDetail(artistCard.dataset.artistName); return; }
+        if (artistLink) { event.preventDefault(); openArtistDetail(artistLink.dataset.artistName); return; }
+        
+        const albumCard = event.target.closest('[data-album-id]');
+        if (albumCard) { 
+            if (event.target.closest('.action-buttons') || albumCard.closest('#editReleaseList')) return; 
+            openAlbumDetail(albumCard.dataset.albumId); return; 
+        }
+        
+        const mainPlayBtn = event.target.closest('.main-play-btn');
+        if (mainPlayBtn) {
+            event.preventDefault(); 
+            const popularList = mainPlayBtn.closest('.page-view').querySelector('.popular-songs-list'); 
+            const albumTracklist = mainPlayBtn.closest('.page-view').querySelector('.tracklist-container');
+            let firstSong = null; 
+            if (popularList) { firstSong = popularList.querySelector('.song-row.available'); } 
+            else if (albumTracklist) { firstSong = albumTracklist.querySelector('.track-row.available'); }
+            if (firstSong) { openPlayer(firstSong.dataset.songId, firstSong); } return;
+        }
+        
+        const songRow = event.target.closest('.song-row[data-song-id], .track-row[data-song-id].available, .chart-item[data-song-id]');
+        if (songRow) { 
+            if (event.target.closest('.track-actions button') || songRow.closest('.studio-form-content')) return; 
+            openPlayer(songRow.dataset.songId, songRow); return; 
+        }
+        
+        const discogLink = event.target.closest('.discography-link[data-discog-type]'); 
+        if (discogLink) { event.preventDefault(); openDiscographyDetail(discogLink.dataset.discogType); return; }
+        
+        const refreshButton = event.target.closest('[data-action="refresh"]');
+        if(refreshButton){ 
+            event.preventDefault(); 
+            const icon = refreshButton.querySelector('i'); 
+            if(icon) icon.classList.add('fa-spin'); 
+            refreshButton.disabled = true; 
+            refreshAllData().finally(() => { 
+                if(icon) icon.classList.remove('fa-spin'); 
+                refreshButton.disabled = false; 
+                showToast('Dados atualizados com sucesso!', 'success'); 
+            }); 
+            return; 
+        }
+    });
+}
+
+function attachNavigationListeners() {
+    const navButtons = document.querySelectorAll('.nav-tab, .bottom-nav-item');
+    navButtons.forEach(button => { 
+        button.removeEventListener('click', switchTab); 
+        button.addEventListener('click', switchTab); 
+    });
+    if(searchInput) { 
+        searchInput.removeEventListener('input', handleSearch); 
+        searchInput.addEventListener('input', handleSearch); 
+    }
+}
+
+// Configuração extra do Modal de Versão Deluxe
+function setupDeluxeModalListeners() {
+    const selectOriginalAlbumModal = document.getElementById('selectOriginalAlbumModal');
+    const originalAlbumSelect = document.getElementById('originalAlbumSelect');
+    const confirmImportBtn = document.getElementById('confirmImportBtn');
+    const cancelImportBtn = document.getElementById('cancelImportBtn');
+    
+    function openImportDeluxeModal() {
+        const albumArtistSelect = document.getElementById('wysiwygArtistSelect'); 
+        const artistId = albumArtistSelect?.value;
+        if (!artistId) { 
+            showToast("Selecione o Artista Principal na capa do lançamento.", "error"); 
+            if (wysiwygToggleDeluxe) wysiwygToggleDeluxe.value = 'original'; 
+            return; 
+        }
+
+        const artistAlbums = db.albums.filter(a => a.artistId === artistId);
+        if (artistAlbums.length === 0) { 
+            showToast("Nenhum álbum anterior encontrado.", "info"); 
+            if (wysiwygToggleDeluxe) wysiwygToggleDeluxe.value = 'original'; 
+            return; 
+        }
+
+        originalAlbumSelect.innerHTML = artistAlbums.sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate)).map(album => `<option value="${album.id}">${album.title}</option>`).join('');
+        selectOriginalAlbumModal.classList.remove('hidden');
+    }
+
+    function handleImportDeluxeTracks() {
+        const albumIdToImport = originalAlbumSelect.value;
+        const albumTracklistEditor = document.getElementById('wysiwygTracklistEditor'); 
+        const albumTitle = document.getElementById('wysiwygTitle'); 
+
+        if (!albumIdToImport) return;
+        const album = db.albums.find(a => a.id === albumIdToImport);
+        if (!album) return;
+
+        populateTracklistEditor(albumTracklistEditor, album.tracks);
+        if (albumTitle && !albumTitle.value.includes('Deluxe')) albumTitle.value = `${album.title} (Deluxe)`;
+        selectOriginalAlbumModal.classList.add('hidden');
+    }
+
+    // Escuta a mudança no select (que substituiu o antigo checkbox na nova versão do layout)
+    wysiwygToggleDeluxe?.addEventListener('change', () => { 
+        if (wysiwygToggleDeluxe.value === 'deluxe') openImportDeluxeModal(); 
+    }); 
+    
+    confirmImportBtn?.addEventListener('click', handleImportDeluxeTracks);
+    cancelImportBtn?.addEventListener('click', () => { 
+        selectOriginalAlbumModal.classList.add('hidden'); 
+        if (wysiwygToggleDeluxe) wysiwygToggleDeluxe.value = 'original'; 
+    }); 
+
+    const albumArtistSelectEv = document.getElementById('wysiwygArtistSelect'); 
+    if (albumArtistSelectEv) {
+        albumArtistSelectEv.addEventListener('change', () => {
+            if (wysiwygToggleDeluxe && wysiwygToggleDeluxe.value === 'deluxe') { 
+                wysiwygToggleDeluxe.value = 'original'; 
+                const albumTracklistEditor = document.getElementById('wysiwygTracklistEditor'); 
+                if(albumTracklistEditor) populateTracklistEditor(albumTracklistEditor, []);
+            }
+        });
+    }
+}
+
+// Inicialização Principal
+async function main() {
+    if (!initializeDOMElements()) return;
+    
+    // Carrega dados iniciais do DB
+    const data = await loadAllData(); 
+    if (!data) return;
+    
+    // Processa as listas
+    if (!initializeData(data)) return;
+    
+    // Verifica Auth Local
+    const savedPlayerId = localStorage.getItem('spotifyRpg_loggedInPlayerId');
+    if (savedPlayerId) {
+        const foundPlayer = db.players.find(p => p.id === savedPlayerId);
+        if (foundPlayer) {
+            currentPlayer = foundPlayer; 
+            const playerNameElement = document.getElementById('playerName'); 
+            if (playerNameElement) playerNameElement.textContent = currentPlayer.name;
+            document.getElementById('loginPrompt')?.classList.add('hidden'); 
+            document.getElementById('registerPrompt')?.classList.add('hidden'); 
+            document.getElementById('loggedInInfo')?.classList.remove('hidden'); 
+            document.getElementById('studioLaunchWrapper')?.classList.remove('hidden'); 
+            document.getElementById('actionsLoginPrompt')?.classList.add('hidden'); 
+            document.getElementById('actionsWrapper')?.classList.remove('hidden');
+            populateArtistSelector(currentPlayer.id); 
+            displayArtistActions();
+        }
+    }
+    
+    // Inicia e Renderiza UI
+    try { 
+        renderRPGChart(); 
+        renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); 
+        renderChart('music'); 
+        renderChart('album'); 
+    } catch (renderError) {
+        console.error("Erro na renderização inicial", renderError);
+    }
+    
+    // Anexa os Listeners
+    try { 
+        attachNavigationListeners(); 
+        initializeBodyClickListener(); 
+        initializeStudio(); 
+        initializePlayerListeners(); 
+        setupDeluxeModalListeners();
+    } catch (listenerError) {
+        console.error("Erro nos Listeners", listenerError);
+    }
+    
+    // Inicia os Timers dos Charts
+    try { 
+        setupCountdown('rpgChartTimer', 'rpg'); 
+        setupCountdown('musicChartTimer', 'music'); 
+        setupCountdown('albumChartTimer', 'album'); 
+    } catch(countdownError) {
+        console.error("Erro nos Countdowns", countdownError);
+    }
+    
+    // Mostra a Tela Principal
+    switchView('mainView'); 
+    activateMainViewSection('homeSection');
+}
+
+// Inicia o app quando o arquivo carregar
+document.addEventListener('DOMContentLoaded', () => {
+    main().catch(err => console.error("Falha fatal na inicialização:", err));
+});
