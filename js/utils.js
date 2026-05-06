@@ -42,3 +42,52 @@ function formatTime(totalSeconds) {
     const minutes = Math.floor(totalSeconds / 60), seconds = Math.floor(totalSeconds % 60); 
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`; 
 }
+
+function startAlbumCountdown(releaseDate, timerElementId) {
+    const timerElement = document.getElementById(timerElementId);
+    if (!timerElement) return;
+
+    const targetDate = new Date(releaseDate).getTime();
+    
+    if (albumCountdownInterval) clearInterval(albumCountdownInterval);
+
+    albumCountdownInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+
+        if (distance < 0) {
+            clearInterval(albumCountdownInterval);
+            timerElement.innerHTML = '<span style="font-size:24px; font-weight:bold; color: var(--spotify-green);">Lançado!</span>';
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        const format = (num) => (num < 10 ? '0' + num : num);
+
+        timerElement.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:24px; font-weight:bold;">${format(days)}</span>
+                <span style="font-size:10px; color:var(--text-secondary);">DIAS</span>
+            </div>
+            <span style="font-size:24px; font-weight:bold; padding-top: 4px;">:</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:24px; font-weight:bold;">${format(hours)}</span>
+                <span style="font-size:10px; color:var(--text-secondary);">HRS</span>
+            </div>
+            <span style="font-size:24px; font-weight:bold; padding-top: 4px;">:</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:24px; font-weight:bold;">${format(minutes)}</span>
+                <span style="font-size:10px; color:var(--text-secondary);">MIN</span>
+            </div>
+            <span style="font-size:24px; font-weight:bold; padding-top: 4px;">:</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:24px; font-weight:bold;">${format(seconds)}</span>
+                <span style="font-size:10px; color:var(--text-secondary);">SEG</span>
+            </div>
+        `;
+    }, 1000);
+}
