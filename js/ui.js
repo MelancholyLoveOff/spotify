@@ -96,6 +96,11 @@ const renderChart = (type) => {
         if (type === 'music') {
             const artistName = formatArtistString(item.artistIds, item.collabType);
             const cover = item.cover !== 'https://i.imgur.com/AD3MbBi.png' ? item.cover : getCoverUrl(item.albumId);
+            
+            // Novos contadores (Diário vs Total)
+            const dailyStreams = (item.streams || 0).toLocaleString('pt-BR');
+            const totalStreams = (item.totalStreams || 0).toLocaleString('pt-BR');
+            
             return `
                 <div class="chart-item" data-song-id="${item.id}">
                     ${indicatorHtml}
@@ -105,9 +110,16 @@ const renderChart = (type) => {
                         <span class="chart-item-title">${item.title}</span>
                         <span class="chart-item-artist">${item.artist }</span>
                     </div>
-                    <span class="chart-item-duration">${(item.streams || 0).toLocaleString('pt-BR')}</span>
+                    <div style="text-align: right; font-variant-numeric: tabular-nums;">
+                        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${dailyStreams}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${totalStreams} totais</div>
+                    </div>
                 </div>`;
         } else { 
+            // Novos contadores (Diário vs Total para Álbuns)
+            const dailyStreams = (item.weeklyStreams || 0).toLocaleString('pt-BR');
+            const totalStreams = (item.totalStreams || 0).toLocaleString('pt-BR');
+            
             return `
                 <div class="chart-item" data-album-id="${item.id}">
                       ${indicatorHtml}
@@ -117,7 +129,10 @@ const renderChart = (type) => {
                         <span class="chart-item-title">${item.title}</span>
                         <span class="chart-item-artist">${item.artist}</span>
                     </div>
-                    <span class="chart-item-score">${(item.weeklyStreams || 0).toLocaleString('pt-BR')}</span>
+                    <div style="text-align: right; font-variant-numeric: tabular-nums;">
+                        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${dailyStreams}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${totalStreams} totais</div>
+                    </div>
                 </div>`;
         }
     }).join('');
