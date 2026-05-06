@@ -281,7 +281,54 @@ function setupDeluxeModalListeners() {
         });
     }
 }
+async function refreshAllData() {
+    const data = await loadAllData();
+    if (data && data.allArtists) { 
+        if (initializeData(data)) { 
+            try { renderRPGChart(); } catch(e){}
+            try { renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); } catch(e){}
+            try { renderChart('music'); } catch(e){}
+            try { renderChart('album'); } catch(e){}
+            
+            if (currentPlayer) {
+                currentPlayer = db.players.find(p => p.id === currentPlayer.id) || currentPlayer;
+                try { populateArtistSelector(currentPlayer.id); } catch(e){}
+                try { displayArtistActions(); } catch(e){}
+                
+                if (document.querySelector('.studio-tab-btn[data-form="edit"]')?.classList.contains('active')) {
+                    try { populateEditableReleases(); } catch(e){}
+                }
+                if (document.querySelector('.studio-tab-btn[data-form="editArtist"]')?.classList.contains('active')) {
+                    if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change'));
+                }
+            }
+            
+            const artistDetailView = document.getElementById('artistDetail');
+            if (activeArtist && artistDetailView && !artistDetailView.classList.contains('hidden')) { 
+                const refreshedArtistData = db.artists.find(a => a.id === activeArtist.id); 
+                if (refreshedArtistData) openArtistDetail(refreshedArtistData.name); 
+                else handleBack(); 
+            }
+            
+            const albumDetailView = document.getElementById('albumDetail'); 
+            const currentAlbumId = albumDetailView?.dataset.albumId;
+            if (currentAlbumId && !albumDetailView.classList.contains('hidden')) { 
+                const refreshedAlbumData = [...db.albums, ...db.singles].find(a => a.id === currentAlbumId); 
+                if (refreshedAlbumData) openAlbumDetail(refreshedAlbumData.id); 
+                else handleBack(); 
+            }
+            
+            try { attachNavigationListeners(); } catch (e) {} 
+            
+            // Atualiza globalmente para garantir que todos os botões de refresh e modais encontrem a função
+            window.refreshAllData = refreshAllData; 
+            return true; 
+        } else { return false; }
+    } else { return false; }
+}
 
+// Apenas para garantir que ficará global desde o início:
+window.refreshAllData = refreshAllData;
 async function main() {
     if (!initializeDOMElements()) return;
     
