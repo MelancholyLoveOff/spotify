@@ -19,7 +19,7 @@ function initializeDOMElements() {
         wysiwygCoverFile = document.getElementById('wysiwygCoverFile'); 
         wysiwygCoverUrl = document.getElementById('wysiwygCoverUrl'); 
         wysiwygReleaseDate = document.getElementById('wysiwygReleaseDate'); 
-        wysiwygToggleDeluxe = document.getElementById('wysiwygReleaseNature'); // O select de nature atua como toggle
+        wysiwygToggleDeluxe = document.getElementById('wysiwygReleaseNature');
         wysiwygTracklistEditor = document.getElementById('wysiwygTracklistEditor'); 
         wysiwygBg = document.getElementById('wysiwygBg'); 
         wysiwygCoverImg = document.getElementById('wysiwygCoverImg'); 
@@ -220,7 +220,6 @@ function attachNavigationListeners() {
     }
 }
 
-// Configuração extra do Modal de Versão Deluxe
 function setupDeluxeModalListeners() {
     const selectOriginalAlbumModal = document.getElementById('selectOriginalAlbumModal');
     const originalAlbumSelect = document.getElementById('originalAlbumSelect');
@@ -261,7 +260,6 @@ function setupDeluxeModalListeners() {
         selectOriginalAlbumModal.classList.add('hidden');
     }
 
-    // Escuta a mudança no select (que substituiu o antigo checkbox na nova versão do layout)
     wysiwygToggleDeluxe?.addEventListener('change', () => { 
         if (wysiwygToggleDeluxe.value === 'deluxe') openImportDeluxeModal(); 
     }); 
@@ -284,18 +282,13 @@ function setupDeluxeModalListeners() {
     }
 }
 
-// Inicialização Principal
 async function main() {
     if (!initializeDOMElements()) return;
     
-    // Carrega dados iniciais do DB
     const data = await loadAllData(); 
     if (!data) return;
-    
-    // Processa as listas
     if (!initializeData(data)) return;
     
-    // Verifica Auth Local
     const savedPlayerId = localStorage.getItem('spotifyRpg_loggedInPlayerId');
     if (savedPlayerId) {
         const foundPlayer = db.players.find(p => p.id === savedPlayerId);
@@ -314,42 +307,31 @@ async function main() {
         }
     }
     
-    // Inicia e Renderiza UI
     try { 
         renderRPGChart(); 
         renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); 
         renderChart('music'); 
         renderChart('album'); 
-    } catch (renderError) {
-        console.error("Erro na renderização inicial", renderError);
-    }
+    } catch (renderError) { console.error("Erro na renderização inicial", renderError); }
     
-    // Anexa os Listeners
     try { 
         attachNavigationListeners(); 
         initializeBodyClickListener(); 
         initializeStudio(); 
         initializePlayerListeners(); 
         setupDeluxeModalListeners();
-    } catch (listenerError) {
-        console.error("Erro nos Listeners", listenerError);
-    }
+    } catch (listenerError) { console.error("Erro nos Listeners", listenerError); }
     
-    // Inicia os Timers dos Charts
     try { 
         setupCountdown('rpgChartTimer', 'rpg'); 
         setupCountdown('musicChartTimer', 'music'); 
         setupCountdown('albumChartTimer', 'album'); 
-    } catch(countdownError) {
-        console.error("Erro nos Countdowns", countdownError);
-    }
+    } catch(countdownError) { console.error("Erro nos Countdowns", countdownError); }
     
-    // Mostra a Tela Principal
     switchView('mainView'); 
     activateMainViewSection('homeSection');
 }
 
-// Inicia o app quando o arquivo carregar
 document.addEventListener('DOMContentLoaded', () => {
     main().catch(err => console.error("Falha fatal na inicialização:", err));
 });
