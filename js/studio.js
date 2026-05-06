@@ -305,16 +305,20 @@ function closeAlbumTrackModal() { albumTrackModal?.classList.add('hidden'); edit
 
 function saveAlbumTrack() {
     if (!activeTracklistEditor) return;
-    let existingSongId = editingTrackExistingId.value; const name = albumTrackNameInput.value.trim(); const durationStr = albumTrackDurationInput.value.trim(); const type = albumTrackTypeSelect.value; const durationSec = parseDurationToSeconds(durationStr); const itemId = editingTrackItemId.value;
-    const featTags = albumTrackFeatList.querySelectorAll('.feat-tag'); const featsData = Array.from(featTags).map(tag => ({ id: tag.dataset.artistId, type: tag.dataset.featType, name: tag.dataset.artistName })); const featsJSON = JSON.stringify(featsData);
+    let existingSongId = editingTrackExistingId.value; 
+    const name = albumTrackNameInput.value.trim(); 
+    const durationStr = albumTrackDurationInput.value.trim(); 
+    const type = albumTrackTypeSelect.value; 
+    const durationSec = parseDurationToSeconds(durationStr); 
+    const itemId = editingTrackItemId.value;
+    
+    const featTags = albumTrackFeatList.querySelectorAll('.feat-tag'); 
+    const featsData = Array.from(featTags).map(tag => ({ id: tag.dataset.artistId, type: tag.dataset.featType, name: tag.dataset.artistName })); 
+    const featsJSON = JSON.stringify(featsData);
+    
     if (!name || !durationStr || durationSec === 0) { showToast("Nome da faixa e duração são obrigatórios.", 'error'); return; }
 
     let targetElement = editingTrackItem || activeTracklistEditor.querySelector(`[data-item-id="${itemId}"]`);
-    let linkBroken = false;
-    if (existingSongId && editingTrackItem) { 
-        const originalName = editingTrackItem.dataset.trackName; const originalDuration = editingTrackItem.dataset.durationStr; const originalFeats = editingTrackItem.dataset.feats || '[]';
-        if (name !== originalName || durationStr !== originalDuration || featsJSON !== originalFeats) { showToast(`Faixa modificada, será salva como nova.`, 'info'); existingSongId = null; linkBroken = true; }
-    }
     
     let mainArtistName = "Desconhecido";
     if (activeTracklistEditor === wysiwygTracklistEditor) { const sel = document.getElementById('wysiwygArtistSelect'); if(sel && sel.selectedIndex >= 0 && sel.value !== "") mainArtistName = sel.options[sel.selectedIndex].text; } 
@@ -324,14 +328,17 @@ function saveAlbumTrack() {
     if (featsData.length > 0) { if (featsData[0].type === "Dueto/Grupo") artistText = `${mainArtistName} & ${featsData.map(f=>f.name).join(', ')}`; else artistText = `${mainArtistName} (feat. ${featsData.map(f=>f.name).join(', ')})`; }
     
     if (targetElement) {
-        targetElement.dataset.trackName = name; targetElement.dataset.durationStr = durationStr; targetElement.dataset.feats = featsJSON; targetElement.dataset.trackType = type;
-        if (linkBroken) { delete targetElement.dataset.existingSongId; }
+        targetElement.dataset.trackName = name;
+        targetElement.dataset.durationStr = durationStr;
+        targetElement.dataset.feats = featsJSON;
+        targetElement.dataset.trackType = type;
+        
         targetElement.innerHTML = `
             <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
             <span class="track-number track-number-display"></span>
             <div class="track-info" style="flex-grow:1;">
-                <span class="track-title" style="color:${(existingSongId && !linkBroken) ? 'var(--spotify-green)' : 'var(--text-primary)'};">
-                    ${(existingSongId && !linkBroken) ? '<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>' : ''}${name}
+                <span class="track-title" style="color:${existingSongId ? 'var(--spotify-green)' : 'var(--text-primary)'};">
+                    ${existingSongId ? '<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>' : ''}${name}
                 </span>
                 <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span>
             </div>
@@ -462,10 +469,27 @@ async function handleWysiwygSubmit(event) {
              if (!name || !durationStr || durationSec === 0) throw new Error(`Dados inválidos na Faixa ${i + 1}.`);
              totalDurationSeconds += durationSec;
 
-             if (existingSongId) { musicRecordsToUpdate.push({ id: existingSongId, fields: { "Nº da Faixa": i + 1, "Tipo de Faixa": type } }); } 
+             let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
+             if (feats.length > 0) { 
+                 collaborationType = feats[0].type; 
+                 finalArtistIds = [artistId, ...feats.map(f => f.id)]; 
+                 if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; 
+             }
+
+             if (existingSongId) { 
+                 musicRecordsToUpdate.push({ 
+                     id: existingSongId, 
+                     fields: { 
+                         "Nome da Faixa": finalTrackName,
+                         "Artista": finalArtistIds,
+                         "Duração": durationSec,
+                         "Nº da Faixa": i + 1, 
+                         "Tipo de Faixa": type,
+                         ...(collaborationType && { "Tipo de Colaboração": collaborationType })
+                     } 
+                 }); 
+             } 
              else {
-                 let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
-                 if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
                  musicRecordsToCreate.push({ "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, ...(collaborationType && { "Tipo de Colaboração": collaborationType }) });
              }
          }
@@ -562,12 +586,28 @@ async function handleUpdateRelease(event) {
 
                     const linkField = tableName === 'Álbuns' ? 'Álbuns' : 'Singles e EPs';
 
+                    let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
+                    if (feats.length > 0) { 
+                        collaborationType = feats[0].type; 
+                        finalArtistIds = [artistId, ...feats.map(f => f.id)]; 
+                        if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; 
+                    }
+
                     if (existingSongId) {
                         finalTrackIdsInEditor.add(existingSongId); const originalSong = db.songs.find(s => s.id === existingSongId); const existingLinks = (tableName === 'Álbuns' ? originalSong?.albumIds : originalSong?.singleIds) || []; const updatedLinks = [...new Set([...existingLinks, recordId])];
-                        musicRecordsToUpdate.push({ id: existingSongId, fields: { "Nº da Faixa": i + 1, "Tipo de Faixa": type, [linkField]: updatedLinks } });
+                        musicRecordsToUpdate.push({ 
+                            id: existingSongId, 
+                            fields: { 
+                                "Nome da Faixa": finalTrackName,
+                                "Artista": finalArtistIds,
+                                "Duração": durationSec,
+                                "Nº da Faixa": i + 1, 
+                                "Tipo de Faixa": type, 
+                                [linkField]: updatedLinks,
+                                ...(collaborationType && { "Tipo de Colaboração": collaborationType })
+                            } 
+                        });
                     } else {
-                        let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
-                        if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
                         musicRecordsToCreate.push({ "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, [linkField]: [recordId], ...(collaborationType && { "Tipo de Colaboração": collaborationType }) });
                     }
                 } 
