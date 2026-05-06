@@ -79,6 +79,7 @@ async function loadAllData() {
 }
 
 const mapTable = (t) => { if(t === 'Músicas') return 'songs'; if(t === 'Álbuns') return 'albums'; if(t === 'Singles e EPs') return 'singles'; return t; };
+
 const mapFieldsToSupabase = (tableName, fields) => {
     const payload = {};
     if(fields['Nome do Álbum'] || fields['Nome do Single/EP']) payload.title = fields['Nome do Álbum'] || fields['Nome do Single/EP'];
