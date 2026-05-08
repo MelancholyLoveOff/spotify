@@ -542,3 +542,59 @@ body.player-open { overflow: hidden; }
   #musicPlayer { background: linear-gradient(180deg, #282828 0%, var(--background-primary) 60%); }
   #miniPlayer { left: 270px; right: 16px; bottom: 16px; }
 }
+
+/* --- MELHORIAS MOBILE UX --- */
+
+/* 1. Aumentar área de toque para editar as faixas (B-side -> Title) e evitar corte na tela */
+.track-list-item-display {
+    flex-wrap: wrap; /* Se a tela for muito fina, as ações caem para a linha de baixo */
+}
+.track-list-item-display .track-info-display {
+    flex-basis: 50%; /* Garante que o texto quebre antes de empurrar os botões para fora */
+}
+.track-list-item-display .track-actions {
+    margin-left: auto;
+    padding: 8px 0;
+}
+.track-list-item-display .edit-track-btn, 
+.track-list-item-display .remove-track-btn {
+    padding: 12px !important; /* Área de toque muito maior (Regra de ouro UX Mobile) */
+    font-size: 18px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 6px;
+    margin-left: 8px;
+}
+
+/* 2. Deixar inputs e selects maiores para os dedos no mobile */
+.studio-form-group select, 
+.studio-form-group input {
+    padding: 16px !important; 
+    font-size: 15px !important;
+}
+
+/* 3. Transformar o Modal de Ações em um Bottom Sheet no Mobile */
+.action-modal-content {
+    padding: 24px 16px 40px !important;
+    max-height: 90vh !important;
+    border-radius: 20px 20px 0 0 !important; /* Arredonda só em cima */
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    max-width: 100% !important;
+    animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* Restaura o modal para telas maiores (PC) */
+@media (min-width: 768px) {
+    .action-modal-content {
+        position: relative;
+        border-radius: 8px !important;
+        max-width: 480px !important;
+        animation: none;
+    }
+}
