@@ -235,12 +235,13 @@
                 </div>
 
                 <div id="studioLaunchWrapper" class="hidden">
-                    <nav class="studio-tabs">
-                        <button class="studio-tab-btn active" data-form="release">Novo Lançamento</button>
-                        <button class="studio-tab-btn" data-form="edit">Editar</button>
-                        <button class="studio-tab-btn" data-form="artist">Novo Artista</button>
-                        <button class="studio-tab-btn" data-form="editArtist">Editar Artista</button>
-                    </nav>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--background-tertiary);">
+                        <h3 id="currentStudioMenuLabel" style="margin: 0; font-size: 18px; color: var(--text-primary);">Novo Lançamento</h3>
+                        <button id="openStudioMenuBtn" class="small-btn" style="border: none; background: rgba(255,255,255,0.1); width: 44px; height: 44px; border-radius: 8px; display: flex; justify-content: center; align-items: center; padding: 0;">
+                            <i class="fas fa-bars" style="font-size: 20px; color: var(--text-primary);"></i>
+                        </button>
+                    </div>
 
                     <form id="wysiwygReleaseForm" class="studio-form-content active" style="padding: 0; background: transparent;">
                         <div class="album-header" style="padding: 40px 24px 24px; border-radius: 8px 8px 0 0;">
@@ -286,7 +287,6 @@
                     </form>
 
                     <div id="editReleaseSection" class="studio-form-content">
-                        <h3>Gerenciar Lançamentos</h3>
                         <div class="studio-form-group"><label>Filtrar por Artista</label><select id="editArtistFilterSelect" class="wysiwyg-select" style="background: rgba(255,255,255,0.1); padding: 14px; width: 100%; border-radius: 4px;"></select></div>
                         <div id="editReleaseListContainer"><div id="editReleaseList" class="release-edit-list" style="display: flex; flex-direction: column; gap: 12px;"></div></div>
 
@@ -326,7 +326,6 @@
                     </div>
 
                     <form id="newArtistForm" class="studio-form studio-form-content">
-                        <h3>Cadastrar Novo Artista</h3>
                         <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">Este artista ficará vinculado à sua conta permanentemente e todos os streams que ele receber no Studio contarão para seus Charts.</p>
                         <div class="studio-form-group"><label>Nome do Artista</label><input type="text" id="newArtistName" placeholder="Ex: Olivia Rodrigo" required=""></div>
                         <div class="studio-form-group">
@@ -338,7 +337,6 @@
                     </form>
 
                     <form id="editArtistForm" class="studio-form studio-form-content">
-                        <h3>Editar Perfil do Artista</h3>
                         <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">Ajuste o nome, troque a foto e defina a posição do corte da imagem para os banners e perfis.</p>
                         <div class="studio-form-group"><label>Selecione o Artista</label><select id="editArtistSelect" class="wysiwyg-select" style="width: 100%; border: 1px dashed rgba(255,255,255,0.3); padding: 14px; border-radius: 4px;"></select></div>
                         <div id="editArtistFields" class="hidden">
@@ -387,7 +385,8 @@
             </div>
         </div>
     </div>
-<div id="releaseOptionsModal" class="modal-overlay hidden">
+
+    <div id="releaseOptionsModal" class="modal-overlay hidden">
         <div class="modal-content action-modal-content">
             <h3 id="optionsModalReleaseTitle" style="text-align: center; font-size: 18px; margin-bottom: 24px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nome do Lançamento</h3>
             
@@ -404,6 +403,33 @@
             </div>
         </div>
     </div>
+
+    <div id="studioMenuModal" class="modal-overlay hidden">
+        <div class="modal-content action-modal-content">
+            <h3 style="text-align: center; font-size: 18px; margin-bottom: 24px; color: var(--text-primary);">Navegação do Estúdio</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="submit-btn studio-menu-opt" data-form="release" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-compact-disc" style="margin-right: 12px; font-size: 18px;"></i> Novo Lançamento
+                </button>
+                
+                <button class="submit-btn studio-menu-opt" data-form="edit" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-pencil-alt" style="margin-right: 12px; font-size: 18px;"></i> Editar Lançamentos
+                </button>
+                
+                <button class="submit-btn studio-menu-opt" data-form="artist" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-user-plus" style="margin-right: 12px; font-size: 18px;"></i> Novo Artista
+                </button>
+                
+                <button class="submit-btn studio-menu-opt" data-form="editArtist" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-user-edit" style="margin-right: 12px; font-size: 18px;"></i> Editar Artista
+                </button>
+                
+                <button id="closeStudioMenuBtn" class="cancel-btn" style="margin-top: 16px; width: 100%;">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="featModal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Adicionar Feat</h3>
