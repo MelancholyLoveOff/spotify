@@ -72,14 +72,11 @@ async function processDatabaseChartUpdate(chartType) {
 
 const setupCountdown = (timerId, chartType) => {
     const timerElement = document.getElementById(timerId); if (!timerElement) return;
+    
+    // NOVO CÁLCULO: Sempre 30 segundos a partir de "agora"
     const calculateTargetDate = () => {
-        const now = new Date(); const target = new Date(now);
-        if (chartType === 'rpg') { target.setUTCDate(now.getUTCDate() + 1); target.setUTCHours(0, 0, 0, 0); } 
-        else {
-            let daysUntilMonday = (1 - now.getDay() + 7) % 7;
-            if (daysUntilMonday === 0 && (now.getUTCHours() > 0 || now.getUTCMinutes() > 0 || now.getUTCSeconds() > 0)) daysUntilMonday = 7;
-            target.setUTCDate(now.getUTCDate() + daysUntilMonday); target.setUTCHours(0, 0, 0, 0);
-        }
+        const target = new Date();
+        target.setSeconds(target.getSeconds() + 30); 
         return target;
     };
 
@@ -87,7 +84,13 @@ const setupCountdown = (timerId, chartType) => {
 
     const updateTimerDisplay = (distance) => {
         if (distance < 0) { timerElement.textContent = `Atualizando...`; return; }
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24)), hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)), minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)), seconds = Math.floor((distance % (1000 * 60)) / 1000), format = (num) => (num < 10 ? '0' + num : num);
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        const format = (num) => (num < 10 ? '0' + num : num);
+        
+        // Como agora são só 30s, os dias e horas vão ficar zerados, mas o formato continua o mesmo
         if (chartType === 'rpg') timerElement.textContent = `${format(hours)}h ${format(minutes)}m ${format(seconds)}s`;
         else timerElement.textContent = `${format(days)}d ${format(hours)}h ${format(minutes)}m ${format(seconds)}s`;
     };
@@ -97,11 +100,16 @@ const setupCountdown = (timerId, chartType) => {
         if (distance < 0) {
             processDatabaseChartUpdate(chartType);
             targetDate = calculateTargetDate();
-            if (chartType === 'music') renderChart('music'); else if (chartType === 'album') renderChart('album'); else if (chartType === 'rpg') renderRPGChart();
-            updateTimerDisplay(targetDate.getTime() - new Date().getTime()); return;
+            if (chartType === 'music') renderChart('music'); 
+            else if (chartType === 'album') renderChart('album'); 
+            else if (chartType === 'rpg') renderRPGChart();
+            
+            updateTimerDisplay(targetDate.getTime() - new Date().getTime()); 
+            return;
         }
         updateTimerDisplay(distance);
     }, 1000);
+    
     updateTimerDisplay(targetDate.getTime() - new Date().getTime());
 };
 
