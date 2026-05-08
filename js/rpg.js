@@ -18,23 +18,40 @@ const computeChartData = (artistsArray) => {
 };
 
 function renderRPGChart() {
-    const chartData = computeChartData(db.artists); const container = document.getElementById('artistsGrid'); const previousData = previousRpgChartData;
-    if (!container) return; if (chartData.length === 0) { container.innerHTML = '<p class="empty-state">Nenhum artista no chart RPG no momento.</p>'; return; }
+    const chartData = computeChartData(db.artists); 
+    const container = document.getElementById('artistsGrid'); 
+    let previousData = previousRpgChartData;
+    
+    // Se o chart anterior estiver vazio (primeira vez jogando), cria o Marco Zero
+    if (Object.keys(previousData).length === 0 && chartData.length > 0) { 
+        saveChartDataToLocalStorage('rpg'); 
+        previousData = previousRpgChartData; 
+    }
 
-   container.innerHTML = chartData.map((artist, index) => {
+    if (!container) return; 
+    if (chartData.length === 0) { container.innerHTML = '<p class="empty-state">Nenhum artista no chart RPG no momento.</p>'; return; }
+
+    container.innerHTML = chartData.map((artist, index) => {
             const currentRank = index + 1; const previousRank = previousData[artist.id];
-            let iconClass = 'fa-minus'; let trendClass = 'trend-stable';
+            let indicatorHtml = '';
 
-            if (previousRank === undefined) { trendClass = 'trend-new'; } 
-            else if (currentRank < previousRank) { iconClass = 'fa-caret-up'; trendClass = 'trend-up'; } 
-            else if (currentRank > previousRank) { iconClass = 'fa-caret-down'; trendClass = 'trend-down'; }
+            // Formata os ícones (NEW escrito, Seta Cima, Seta Baixo, Traço)
+            if (previousRank === undefined) { 
+                indicatorHtml = `<span class="chart-rank-indicator rpg-indicator trend-new" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); width: 26px; height: 26px; border-radius:50%; font-size: 9px; display:flex; align-items:center; justify-content:center; font-weight: bold; letter-spacing: -0.5px; color: var(--text-secondary);">NEW</span>`; 
+            } 
+            else if (currentRank < previousRank) { 
+                indicatorHtml = `<span class="chart-rank-indicator rpg-indicator trend-up" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); width: 26px; height: 26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color: var(--spotify-green);"><i class="fas fa-caret-up"></i></span>`; 
+            } 
+            else if (currentRank > previousRank) { 
+                indicatorHtml = `<span class="chart-rank-indicator rpg-indicator trend-down" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); width: 26px; height: 26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color: var(--trend-down-red);"><i class="fas fa-caret-down"></i></span>`; 
+            } else {
+                indicatorHtml = `<span class="chart-rank-indicator rpg-indicator trend-stable" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); width: 26px; height: 26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color: var(--text-secondary);"><i class="fas fa-minus"></i></span>`;
+            }
 
             const displayPoints = artist.popularity;
             return `
             <div class="artist-card" data-artist-name="${artist.name}" style="position:relative;">
-                <span class="chart-rank-indicator rpg-indicator ${trendClass}" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); padding:4px; border-radius:50%;">
-                    <i class="fas ${iconClass}"></i>
-                </span>
+                ${indicatorHtml}
                 <span style="position:absolute; top:16px; left:16px; font-weight:900; text-shadow:0 2px 4px rgba(0,0,0,0.8); font-size:18px;">#${currentRank}</span>
                 <img src="${artist.img}" alt="${artist.name}" class="artist-card-img" style="object-position: center ${artist.bgPos || '20%'};">
                 <p class="artist-card-name">${artist.name}</p>
@@ -51,7 +68,6 @@ const saveChartDataToLocalStorage = (chartType) => {
         currentChartData = dataList.reduce((acc, item, index) => { acc[item.id] = index + 1; return acc; }, {}); previousMusicChartData = currentChartData; 
     } else if (chartType === 'album') {
         storageKey = PREVIOUS_ALBUM_CHART_KEY;
-        // SOMA DINÂMICA para o Chart de Álbuns
         dataList = [...db.albums, ...db.singles].map(item => {
             const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
             const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
@@ -66,52 +82,27 @@ const saveChartDataToLocalStorage = (chartType) => {
     try { localStorage.setItem(storageKey, JSON.stringify(currentChartData)); } catch (e) {}
 };
 
-async function processDatabaseChartUpdate(chartType) {
-    saveChartDataToLocalStorage(chartType);
-}
-
+// === REMOVIDO O CRONÔMETRO AUTOMÁTICO ===
 const setupCountdown = (timerId, chartType) => {
-    const timerElement = document.getElementById(timerId); if (!timerElement) return;
+    const timerElement = document.getElementById(timerId); 
+    if (!timerElement) return;
     
-    // NOVO CÁLCULO: Sempre 30 segundos a partir de "agora"
-    const calculateTargetDate = () => {
-        const target = new Date();
-        target.setSeconds(target.getSeconds() + 30); 
-        return target;
-    };
-
-    let targetDate = calculateTargetDate();
-
-    const updateTimerDisplay = (distance) => {
-        if (distance < 0) { timerElement.textContent = `Atualizando...`; return; }
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        const format = (num) => (num < 10 ? '0' + num : num);
-        
-        // Como agora são só 30s, os dias e horas vão ficar zerados, mas o formato continua o mesmo
-        if (chartType === 'rpg') timerElement.textContent = `${format(hours)}h ${format(minutes)}m ${format(seconds)}s`;
-        else timerElement.textContent = `${format(days)}d ${format(hours)}h ${format(minutes)}m ${format(seconds)}s`;
-    };
-
-    setInterval(() => {
-        const distance = targetDate.getTime() - new Date().getTime();
-        if (distance < 0) {
-            processDatabaseChartUpdate(chartType);
-            targetDate = calculateTargetDate();
-            if (chartType === 'music') renderChart('music'); 
-            else if (chartType === 'album') renderChart('album'); 
-            else if (chartType === 'rpg') renderRPGChart();
-            
-            updateTimerDisplay(targetDate.getTime() - new Date().getTime()); 
-            return;
-        }
-        updateTimerDisplay(distance);
-    }, 1000);
-    
-    updateTimerDisplay(targetDate.getTime() - new Date().getTime());
+    // Substitui o tempo rodando por um texto indicando a atualização manual
+    timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Manual (Botão <i class="fas fa-sync-alt"></i> no topo)</span>`;
 };
+
+// O botão de Reload (Refresh) agora é o responsável por "fechar o ciclo" e salvar as posições anteriores
+document.addEventListener('DOMContentLoaded', () => {
+    const refreshBtn = document.querySelector('[data-action="refresh"]');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            // Salva as posições atuais como o novo Marco Zero para o próximo ciclo ANTES de atualizar
+            saveChartDataToLocalStorage('music');
+            saveChartDataToLocalStorage('album');
+            saveChartDataToLocalStorage('rpg');
+        });
+    }
+});
 
 async function handleConfirmAction() {
     const actionType = actionTypeSelect.value; if (!actionType) { showToast("Selecione um tipo de ação.", 'error'); return; }
