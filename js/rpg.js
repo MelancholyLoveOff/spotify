@@ -3,11 +3,18 @@
 const computeChartData = (artistsArray) => {
     if (!artistsArray) return [];
     const artistsWithPopularity = artistsArray.map(artist => {
-        const totalStreams = artist.careerTotalStreams || 0, personalPoints = artist.personalPoints || 150; 
-        const basePoints = totalStreams / 1000000, pointsModifier = personalPoints / 100, finalScore = Math.floor(basePoints * pointsModifier); 
-        return { id: artist.id, name: artist.name, img: artist.img, popularity: finalScore };
+        // SOMA DINÂMICA: Pega todas as músicas desse artista e soma os streams totais
+        const artistSongs = db.songs.filter(s => s.artistIds && s.artistIds.includes(artist.id));
+        const totalStreams = artistSongs.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
+        
+        const personalPoints = artist.personalPoints || 150; 
+        const basePoints = totalStreams / 1000000; 
+        const pointsModifier = personalPoints / 100; 
+        const finalScore = Math.floor(basePoints * pointsModifier); 
+        return { id: artist.id, name: artist.name, img: artist.img, bgPos: artist.bgPos, popularity: finalScore };
     });
-    return artistsWithPopularity.sort((a, b) => b.popularity - a.popularity).slice(0, 20);
+    // Filtra para remover quem tem 0 pontos e organiza:
+    return artistsWithPopularity.filter(a => a.popularity > 0).sort((a, b) => b.popularity - a.popularity).slice(0, 20);
 };
 
 function renderRPGChart() {
@@ -29,7 +36,7 @@ function renderRPGChart() {
                     <i class="fas ${iconClass}"></i>
                 </span>
                 <span style="position:absolute; top:16px; left:16px; font-weight:900; text-shadow:0 2px 4px rgba(0,0,0,0.8); font-size:18px;">#${currentRank}</span>
-                <img src="${artist.img}" alt="${artist.name}" class="artist-card-img" style="object-position: center ${artist.bgPos};">
+                <img src="${artist.img}" alt="${artist.name}" class="artist-card-img" style="object-position: center ${artist.bgPos || '20%'};">
                 <p class="artist-card-name">${artist.name}</p>
                 <span class="artist-card-type">${displayPoints.toLocaleString('pt-BR')} pontos</span>
             </div>`;
@@ -44,7 +51,13 @@ const saveChartDataToLocalStorage = (chartType) => {
         currentChartData = dataList.reduce((acc, item, index) => { acc[item.id] = index + 1; return acc; }, {}); previousMusicChartData = currentChartData; 
     } else if (chartType === 'album') {
         storageKey = PREVIOUS_ALBUM_CHART_KEY;
-        dataList = [...db.albums, ...db.singles].filter(item => (item.weeklyStreams || 0) > 0 && item.releaseDate && new Date(item.releaseDate) <= now).sort((a, b) => (b.weeklyStreams || 0) - (a.weeklyStreams || 0)).slice(0, 50);
+        // SOMA DINÂMICA para o Chart de Álbuns
+        dataList = [...db.albums, ...db.singles].map(item => {
+            const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
+            const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
+            return { ...item, calculatedStreams: currentStreams };
+        }).filter(item => item.calculatedStreams > 0 && item.releaseDate && new Date(item.releaseDate) <= now).sort((a, b) => b.calculatedStreams - a.calculatedStreams).slice(0, 50);
+        
         currentChartData = dataList.reduce((acc, item, index) => { acc[item.id] = index + 1; return acc; }, {}); previousAlbumChartData = currentChartData; 
     } else if (chartType === 'rpg') {
         storageKey = PREVIOUS_RPG_CHART_KEY; dataList = computeChartData(db.artists); 
@@ -148,7 +161,7 @@ async function handlePromotionAction(actionType) {
     if (config.isPromotion && streamsToAdd > 0 && isMain) {
         const allTracksInRelease = db.songs.filter(t => (t.albumIds && t.albumIds.includes(selectedReleaseId)) || (t.singleIds && t.singleIds.includes(selectedReleaseId)));
         const isLargeAlbum = allTracksInRelease.length > 30; const otherTracksInRelease = allTracksInRelease.filter(t => t.id !== selectedTrack.id);
-        const bSideTypes = ['B-side']; const preReleaseTypes = ['Pre-release Single']; const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
+        const bSideTypes = ['B-side', 'B-Side']; const preReleaseTypes = ['Pre-release Single']; const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
 
         otherTracksInRelease.forEach(otherTrack => {
             let gain = 0; let percentageUsed = 0; let maxPercentage = 0;
