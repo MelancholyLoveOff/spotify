@@ -28,9 +28,18 @@ const switchTab = (event, forceTabId = null) => {
     else return;
 
     if (targetTabId === 'studioSection') {
-        switchView('studioView'); const activeStudioTabButton = document.querySelector('.studio-tab-btn.active');
-        if (activeStudioTabButton?.dataset.form === 'edit') { populateEditableReleases(); editReleaseListContainer?.classList.remove('hidden'); editReleaseForm?.classList.add('hidden'); } 
-        else { const currentlyActiveForm = document.querySelector('.studio-form-content.active'); if (!currentlyActiveForm) { document.getElementById('wysiwygReleaseForm')?.classList.add('active'); document.querySelector('.studio-tab-btn[data-form="release"]')?.classList.add('active'); } }
+        switchView('studioView'); 
+        const editSection = document.getElementById('editReleaseSection');
+        if (editSection && editSection.classList.contains('active')) { 
+            populateEditableReleases(); 
+            editReleaseListContainer?.classList.remove('hidden'); 
+            editReleaseForm?.classList.add('hidden'); 
+        } else { 
+            const currentlyActiveForm = document.querySelector('.studio-form-content.active'); 
+            if (!currentlyActiveForm) { 
+                document.getElementById('wysiwygReleaseForm')?.classList.add('active'); 
+            } 
+        }
     } else {
         const mainViewElement = document.getElementById('mainView');
         if (mainViewElement?.classList.contains('hidden')) switchView('mainView');
