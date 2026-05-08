@@ -47,6 +47,16 @@ const PREVIOUS_MUSIC_CHART_KEY = 'spotifyRpg_previousMusicChart';
 const PREVIOUS_ALBUM_CHART_KEY = 'spotifyRpg_previousAlbumChart';
 const PREVIOUS_RPG_CHART_KEY = 'spotifyRpg_previousRpgChart';
 
+// Carrega os dados antigos do localStorage logo de cara para as setinhas (Subiu/Desceu) funcionarem
+let previousMusicChartData = {}, previousAlbumChartData = {}, previousRpgChartData = {};
+try {
+    previousMusicChartData = JSON.parse(localStorage.getItem(PREVIOUS_MUSIC_CHART_KEY)) || {};
+    previousAlbumChartData = JSON.parse(localStorage.getItem(PREVIOUS_ALBUM_CHART_KEY)) || {};
+    previousRpgChartData = JSON.parse(localStorage.getItem(PREVIOUS_RPG_CHART_KEY)) || {};
+} catch (e) {
+    previousMusicChartData = {}; previousAlbumChartData = {}; previousRpgChartData = {};
+}
+
 // Global State
 let supabaseClient;
 let db = { artists: [], albums: [], singles: [], songs: [], players: [] };
@@ -55,7 +65,6 @@ let viewHistory = [], editingTrackItem = null, albumCountdownInterval = null, ex
 let editAlbumTracklistSortable = null, activeTracklistEditor = null; 
 let audioElement = null, musicPlayerView = null, currentSong = null, currentQueue = [], currentQueueIndex = 0;
 let isPlaying = false, isShuffle = false, repeatMode = 'none';
-let previousMusicChartData = {}, previousAlbumChartData = {}, previousRpgChartData = {};
 
 // DOM Variables (serão injetadas pelo app.js)
 let allViews, searchInput, studioView, loginPrompt, loggedInInfo, playerSelect, loginButton, logoutButton, studioLaunchWrapper, studioTabs, studioForms;
