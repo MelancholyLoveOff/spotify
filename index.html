@@ -387,7 +387,23 @@
             </div>
         </div>
     </div>
-
+<div id="releaseOptionsModal" class="modal-overlay hidden">
+        <div class="modal-content action-modal-content">
+            <h3 id="optionsModalReleaseTitle" style="text-align: center; font-size: 18px; margin-bottom: 24px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nome do Lançamento</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="optEditReleaseBtn" class="submit-btn" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-pencil-alt" style="margin-right: 12px;"></i> Editar Lançamento
+                </button>
+                
+                <button id="optDeleteReleaseBtn" class="submit-btn" style="margin: 0; background: rgba(226, 33, 52, 0.1); color: var(--trend-down-red); justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-trash-alt" style="margin-right: 12px;"></i> Apagar Lançamento
+                </button>
+                
+                <button id="optCancelBtn" class="cancel-btn" style="margin-top: 16px; width: 100%;">Cancelar</button>
+            </div>
+        </div>
+    </div>
     <div id="featModal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3>Adicionar Feat</h3>
