@@ -20,27 +20,20 @@ function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgEl
         });
     }
 }
+
 function updateArtistEditPreviews() {
-    const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; 
-    const pos = editArtistBgPosition.value + '%';
+    const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; const pos = editArtistBgPosition.value + '%';
     
-    // Atualiza o novo círculo principal clicável que criamos
+    // Atualiza o novo círculo principal clicável do Mobile
     const mainCircle = document.getElementById('editArtistPreviewCircleMain');
     if (mainCircle) {
         mainCircle.src = url;
         mainCircle.style.objectPosition = `center ${pos}`;
     }
-
+    
     // Atualiza os previews antigos da parte de baixo
-    editArtistPreviewCircle.src = url; 
-    editArtistPreviewCircle.style.objectPosition = `center ${pos}`;
-    editArtistPreviewHeader.style.backgroundImage = `url('${url}')`; 
-    editArtistPreviewHeader.style.backgroundPosition = `center ${pos}`;
-}
-function updateArtistEditPreviews() {
-    const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; const pos = editArtistBgPosition.value + '%';
-    editArtistPreviewCircle.src = url; editArtistPreviewCircle.style.objectPosition = `center ${pos}`;
-    editArtistPreviewHeader.style.backgroundImage = `url('${url}')`; editArtistPreviewHeader.style.backgroundPosition = `center ${pos}`;
+    if (editArtistPreviewCircle) { editArtistPreviewCircle.src = url; editArtistPreviewCircle.style.objectPosition = `center ${pos}`; }
+    if (editArtistPreviewHeader) { editArtistPreviewHeader.style.backgroundImage = `url('${url}')`; editArtistPreviewHeader.style.backgroundPosition = `center ${pos}`; }
 }
 
 async function registerPlayer(username, password) {
@@ -537,6 +530,7 @@ async function handleWysiwygSubmit(event) {
      finally { submitWysiwygRelease.disabled = false; submitWysiwygRelease.innerHTML = `<i class="fas fa-check"></i> Lançar Projeto`; }
 }
 
+// === NOVO MENU DE 3 PONTINHOS DO LANÇAMENTO ===
 function populateEditableReleases() {
     if (!editReleaseList) return; if (!currentPlayer) { editReleaseList.innerHTML = '<p class="empty-state-small">Faça login</p>'; return; }
     const selectedArtistId = editArtistFilterSelect?.value; const playerArtistIds = currentPlayer.artists || [];
@@ -548,17 +542,22 @@ function populateEditableReleases() {
         editReleaseList.innerHTML = sortedReleases.map(release => `
             <div class="edit-release-item" style="display:flex; align-items:center; gap:16px; background:rgba(255,255,255,0.05); padding:12px; border-radius:4px;">
                 <img src="${release.imageUrl}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;">
-                <div style="flex-grow:1;">
-                    <span style="display:block; font-weight:600; color:#fff;">${release.title}</span>
-                     <span style="display:block; font-size:12px; color:#aaa;">
+                <div style="flex-grow:1; min-width: 0;">
+                    <span class="edit-release-title" style="display:block; font-weight:600; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${release.title}</span>
+                     <span style="display:block; font-size:12px; color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                           ${release.artist} - ${release.releaseDate ? new Date(release.releaseDate).getFullYear() : 'Sem Data'}
                           (${release.type === 'album' ? 'Álbum' : 'Single/EP'})
                      </span>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button type="button" class="circle-btn edit-release-btn" data-release-id="${release.id}" data-release-type="${release.type}" data-release-table="${release.tableName}"><i class="fas fa-pencil-alt"></i></button>
-                    <button type="button" class="circle-btn delete-release-btn" style="color:var(--trend-down-red);" data-release-id="${release.id}" data-release-type="${release.type}" data-release-table="${release.tableName}" data-release-title="${release.title}"><i class="fas fa-trash-alt"></i></button>
-                </div>
+                
+                <button type="button" class="release-options-btn" 
+                    data-release-id="${release.id}" 
+                    data-release-type="${release.type}" 
+                    data-release-table="${release.tableName}" 
+                    data-release-title="${release.title}" 
+                    style="background: transparent; border: none; color: var(--text-secondary); font-size: 20px; padding: 12px 8px; cursor: pointer; flex-shrink: 0;">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
             </div>
         `).join('');
     }
@@ -733,11 +732,44 @@ function initializeStudio() {
     wysiwygTracklistEditor?.addEventListener('click', (e) => { const editBtn = e.target.closest('.edit-track-btn'), rmBtn = e.target.closest('.remove-track-btn'), trkItem = e.target.closest('.track-list-item-display'); if (editBtn && trkItem) { activeTracklistEditor = wysiwygTracklistEditor; openAlbumTrackModal(trkItem); } else if (rmBtn && trkItem) { trkItem.remove(); updateTrackNumbers(wysiwygTracklistEditor); } });
     editAlbumTracklistEditor?.addEventListener('click', (e) => { const editBtn = e.target.closest('.edit-track-btn'), rmBtn = e.target.closest('.remove-track-btn'), trkItem = e.target.closest('.track-list-item-display'); if (editBtn && trkItem) { activeTracklistEditor = editAlbumTracklistEditor; openAlbumTrackModal(trkItem); } else if (rmBtn && trkItem) { trkItem.remove(); updateTrackNumbers(editAlbumTracklistEditor); } });
 
+    // === NOVO CONTROLE DE OPÇÕES DE LANÇAMENTO (3 PONTINHOS) ===
+    let currentOptionsRelease = {};
+    
+    // 1. Ao clicar nos 3 pontinhos, abre o Modal
     editReleaseList?.addEventListener('click', (e) => {
-         const editButton = e.target.closest('.edit-release-btn'), deleteButton = e.target.closest('.delete-release-btn');
-         if (editButton) { const releaseId = editButton.dataset.releaseId, releaseType = editButton.dataset.releaseType; openEditForm(releaseId, releaseType); } 
-         else if (deleteButton) { const releaseId = deleteButton.dataset.releaseId, releaseType = deleteButton.dataset.releaseType, tableName = deleteButton.dataset.releaseTable, releaseTitle = deleteButton.closest('.edit-release-item')?.querySelector('.edit-release-title')?.textContent || 'este lançamento', release = (releaseType === 'album' ? db.albums : db.singles).find(r => r.id === releaseId), trackIdsToDelete = release?.trackIds || []; openDeleteConfirmModal(releaseId, tableName, releaseTitle, trackIdsToDelete); }
+        const optionsBtn = e.target.closest('.release-options-btn');
+        if (optionsBtn) {
+            currentOptionsRelease = {
+                id: optionsBtn.dataset.releaseId,
+                type: optionsBtn.dataset.releaseType,
+                table: optionsBtn.dataset.releaseTable,
+                title: optionsBtn.dataset.releaseTitle
+            };
+            const titleDisplay = document.getElementById('optionsModalReleaseTitle');
+            if(titleDisplay) titleDisplay.textContent = currentOptionsRelease.title;
+            document.getElementById('releaseOptionsModal')?.classList.remove('hidden');
+        }
     });
+
+    // 2. Ação de Editar dentro do Modal
+    document.getElementById('optEditReleaseBtn')?.addEventListener('click', () => {
+        document.getElementById('releaseOptionsModal')?.classList.add('hidden');
+        openEditForm(currentOptionsRelease.id, currentOptionsRelease.type);
+    });
+
+    // 3. Ação de Apagar dentro do Modal
+    document.getElementById('optDeleteReleaseBtn')?.addEventListener('click', () => {
+        document.getElementById('releaseOptionsModal')?.classList.add('hidden');
+        const release = (currentOptionsRelease.type === 'album' ? db.albums : db.singles).find(r => r.id === currentOptionsRelease.id);
+        const trackIdsToDelete = release?.trackIds || [];
+        openDeleteConfirmModal(currentOptionsRelease.id, currentOptionsRelease.table, currentOptionsRelease.title, trackIdsToDelete);
+    });
+
+    // 4. Cancelar / Fechar Modal
+    document.getElementById('optCancelBtn')?.addEventListener('click', () => {
+        document.getElementById('releaseOptionsModal')?.classList.add('hidden');
+    });
+    // ==============================================================
 
     editReleaseForm?.addEventListener('submit', handleUpdateRelease); cancelEditBtn?.addEventListener('click', () => { editReleaseForm?.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); }); cancelDeleteBtn?.addEventListener('click', closeDeleteConfirmModal); confirmDeleteBtn?.addEventListener('click', handleDeleteRelease); editArtistFilterSelect?.addEventListener('change', populateEditableReleases); wysiwygReleaseForm?.addEventListener('submit', handleWysiwygSubmit); existingTrackSearch?.addEventListener('input', populateExistingTrackSearch); cancelExistingTrackBtn?.addEventListener('click', closeExistingTrackModal); existingTrackResults?.addEventListener('click', handleExistingTrackSelect);
 
