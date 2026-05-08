@@ -390,15 +390,6 @@ body {
 #loggedInInfo { display: flex; justify-content: space-between; align-items: center; }
 #logoutButton { margin-left: 10px; border-color: var(--text-secondary); color: var(--text-primary);}
 
-.studio-tabs { display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--background-tertiary); padding-bottom: 16px; overflow-x: auto; scrollbar-width: none;}
-.studio-tabs::-webkit-scrollbar { display: none; }
-.studio-tab-btn {
-  background: none; border: none; color: var(--text-secondary); font-size: 14px;
-  font-weight: 700; padding: 8px 16px; border-radius: 500px; cursor: pointer; transition: background 0.2s; white-space: nowrap;
-}
-.studio-tab-btn:hover { background: rgba(255,255,255,0.1); }
-.studio-tab-btn.active { color: var(--background-primary); background-color: var(--text-primary); }
-
 .studio-form { background-color: var(--background-secondary); padding: 24px; border-radius: 8px; }
 .studio-form-content { display: none; animation: fadeIn 0.3s ease; }
 .studio-form-content.active { display: block; }
@@ -547,10 +538,10 @@ body.player-open { overflow: hidden; }
 
 /* 1. Aumentar área de toque para editar as faixas (B-side -> Title) e evitar corte na tela */
 .track-list-item-display {
-    flex-wrap: wrap; /* Se a tela for muito fina, as ações caem para a linha de baixo */
+    flex-wrap: wrap; 
 }
 .track-list-item-display .track-info-display {
-    flex-basis: 50%; /* Garante que o texto quebre antes de empurrar os botões para fora */
+    flex-basis: 50%; 
 }
 .track-list-item-display .track-actions {
     margin-left: auto;
@@ -558,7 +549,7 @@ body.player-open { overflow: hidden; }
 }
 .track-list-item-display .edit-track-btn, 
 .track-list-item-display .remove-track-btn {
-    padding: 12px !important; /* Área de toque muito maior (Regra de ouro UX Mobile) */
+    padding: 12px !important; 
     font-size: 18px !important;
     background: rgba(255, 255, 255, 0.08) !important;
     border-radius: 6px;
@@ -576,7 +567,7 @@ body.player-open { overflow: hidden; }
 .action-modal-content {
     padding: 24px 16px 40px !important;
     max-height: 90vh !important;
-    border-radius: 20px 20px 0 0 !important; /* Arredonda só em cima */
+    border-radius: 20px 20px 0 0 !important;
     position: absolute;
     bottom: 0;
     width: 100%;
