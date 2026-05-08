@@ -168,4 +168,323 @@
         </div>
         <div class="page-detail-body">
             <h3 class="section-title">Popular</h3>
-            <div id="popularSongsList" class="popular-
+            <div id="popularSongsList" class="popular-songs-list"></div>
+            <div class="section-header" style="margin-top: 40px;"><h3 class="section-title">Álbuns</h3><span class="see-all-btn discography-link" data-discog-type="albums">Mostrar Tudo</span></div>
+            <div id="albumsList" class="horizontal-scroll-list"></div>
+            <div class="section-header" style="margin-top: 40px;"><h3 class="section-title">Singles e EPs</h3><span class="see-all-btn discography-link" data-discog-type="singles">Mostrar Tudo</span></div>
+            <div id="singlesList" class="horizontal-scroll-list"></div>
+            <h3 class="section-title" style="margin-top: 40px;">Fãs também curtem</h3>
+            <div id="recommendedGrid" class="artists-grid"></div>
+        </div>
+    </div>
+
+    <div id="albumDetail" class="page-view hidden">
+        <button class="back-btn" data-action="back"><i class="fas fa-chevron-left"></i></button>
+        <header class="album-header">
+            <div id="albumDetailBg" class="header-bg"></div><div class="header-overlay"></div>
+            <div class="album-header-content">
+                <img id="albumDetailCover" src="https://i.imgur.com/AD3MbBi.png" alt="Capa do Álbum">
+                <div class="album-text-info">
+                    <p class="album-type-label">Álbum</p>
+                    <h1 id="albumDetailTitle">Nome do Álbum</h1>
+                    <div id="albumNormalInfoContainer">
+                        <p id="albumDetailInfo">Por Artista • 2025</p>
+                        <button class="main-play-btn" style="margin: 16px auto 0;"><i class="fas fa-play" style="margin-left: 2px;"></i></button>
+                    </div>
+                    <div id="albumCountdownContainer" class="hidden">
+                        <div id="albumCountdownTimer" style="display:flex; gap:16px; margin-top:16px; justify-content:center;"></div>
+                        <p class="release-date-text" style="margin-top:8px;">Lançamento em <span id="albumCountdownReleaseDate"></span></p>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-detail-body"><div id="albumTracklist" class="tracklist-container"></div></div>
+    </div>
+
+    <div id="discographyDetail" class="page-view hidden">
+        <button class="back-btn" data-action="back"><i class="fas fa-chevron-left"></i></button>
+        <main class="main-container">
+            <h2 id="discographyTypeTitle" class="section-title" style="margin-top: 32px;">Discografia</h2>
+            <div id="discographyGrid" class="artists-grid full-page-grid"></div>
+        </main>
+    </div>
+
+    <div id="studioView" class="page-view hidden">
+        <main class="main-container">
+            <section id="studioSection" class="content-section active">
+                <h2 class="section-title">Estúdio</h2>
+                
+                <div class="studio-login-wrapper" id="authWrapper">
+                    <div id="loginPrompt">
+                        <div class="studio-form-group"><label>Nome de Usuário</label><input type="text" id="usernameInput" placeholder="Seu nome de jogador" required=""></div>
+                        <div class="studio-form-group"><label>Senha</label><input type="password" id="passwordInput" placeholder="Sua senha" required=""></div>
+                        <button class="submit-btn" id="loginButton" style="width:100%;">Entrar</button>
+                        <p style="text-align:center; margin-top: 16px; font-size: 13px;">Não tem conta? <a href="#" id="showRegisterBtn" style="color: var(--spotify-green);">Cadastre-se</a></p>
+                    </div>
+                    <div id="registerPrompt" class="hidden">
+                        <div class="studio-form-group"><label>Escolha seu Nome</label><input type="text" id="regUsernameInput" placeholder="Nome único" required=""></div>
+                        <div class="studio-form-group"><label>Crie uma Senha</label><input type="password" id="regPasswordInput" placeholder="Sua senha segura" required=""></div>
+                        <button class="submit-btn" id="registerButton" style="width:100%;">Criar Conta</button>
+                        <p style="text-align:center; margin-top: 16px; font-size: 13px;">Já tem conta? <a href="#" id="showLoginBtn" style="color: var(--spotify-green);">Fazer Login</a></p>
+                    </div>
+                </div>
+
+                <div id="loggedInInfo" class="hidden" style="margin-bottom: 24px;">
+                    <p>Logado como: <strong id="playerName"></strong></p>
+                    <button class="small-btn" id="logoutButton">Sair</button>
+                </div>
+
+                <div id="studioLaunchWrapper" class="hidden">
+                    <nav class="studio-tabs">
+                        <button class="studio-tab-btn active" data-form="release">Novo Lançamento</button>
+                        <button class="studio-tab-btn" data-form="edit">Editar</button>
+                        <button class="studio-tab-btn" data-form="artist">Novo Artista</button>
+                        <button class="studio-tab-btn" data-form="editArtist">Editar Artista</button>
+                    </nav>
+
+                    <form id="wysiwygReleaseForm" class="studio-form-content active" style="padding: 0; background: transparent;">
+                        <div class="album-header" style="padding: 40px 24px 24px; border-radius: 8px 8px 0 0;">
+                            <div id="wysiwygBg" class="header-bg" style="background-image: url('https://i.imgur.com/AD3MbBi.png'); filter: blur(30px) brightness(0.4); transform: scale(1.2);"></div>
+                            <div class="header-overlay" style="background: linear-gradient(to top, var(--background-secondary) 0%, rgba(0,0,0,0.4) 100%);"></div>
+                            <div class="album-header-content" style="width: 100%; flex-wrap: wrap;">
+                                <div style="position: relative; width: 200px; height: 200px; flex-shrink: 0; cursor: pointer; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5); margin: 0 auto;" onclick="document.getElementById('wysiwygCoverFile').click()">
+                                    <img id="wysiwygCoverImg" src="https://i.imgur.com/AD3MbBi.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+                                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; border-radius: 4px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><i class="fas fa-camera" style="font-size: 32px; margin-bottom: 8px;"></i><span style="font-size: 12px; font-weight: 600;">Alterar Capa</span></div>
+                                </div>
+                                <input type="file" id="wysiwygCoverFile" accept="image/*" hidden="">
+                                <input type="hidden" id="wysiwygCoverUrl" value="https://i.imgur.com/AD3MbBi.png">
+                                <div class="album-text-info" style="flex-grow: 1; min-width: 250px;">
+                                    <select id="wysiwygReleaseType" class="wysiwyg-select" style="font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; border: 1px dashed rgba(255,255,255,0.3); padding: 4px; width: fit-content;"><option value="single">SINGLE / EP</option><option value="album">ÁLBUM</option></select>
+                                    <input type="text" id="wysiwygTitle" class="wysiwyg-input" placeholder="Nome do Lançamento" required="" style="font-size: clamp(28px, 6vw + 1rem, 40px); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 8px; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3); border-bottom: 1px dashed rgba(255,255,255,0.3); text-align: center;">
+                                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                                        <img id="wysiwygArtistImg" src="https://i.imgur.com/AD3MbBi.png" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                        <select id="wysiwygArtistSelect" class="wysiwyg-select" required="" style="border-bottom: 1px dashed rgba(255,255,255,0.3);"></select>
+                                        <span style="color: rgba(255,255,255,0.8);">•</span>
+                                        <input type="datetime-local" id="wysiwygReleaseDate" class="wysiwyg-input" required="" style="width: auto; color: rgba(255,255,255,0.8); font-weight: 500; font-size: 14px; border-bottom: 1px dashed rgba(255,255,255,0.3); padding: 4px;">
+                                    </div>
+                                    <div style="margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;" id="deluxeOptionsWrapper">
+                                        <select id="wysiwygReleaseNature" class="wysiwyg-select" style="font-size: 13px;"><option value="original">Lançamento Original</option><option value="deluxe">É Versão Deluxe</option></select>
+                                        <select id="wysiwygOriginalAlbumSelect" class="wysiwyg-select hidden" style="font-size: 13px;"><option value="">Selecione o álbum base...</option></select>
+                                        <button type="button" id="btnImportDeluxe" class="small-btn hidden" style="border-color: var(--spotify-green); color: var(--spotify-green);">Importar Faixas</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="page-detail-body" style="background: var(--background-secondary); border-radius: 0 0 8px 8px; padding: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                                <button type="submit" class="submit-btn" id="submitWysiwygRelease" style="margin: 0;"><i class="fas fa-check"></i> Lançar Projeto</button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="small-btn" id="openWysiwygExistingTrackBtn">+ Existente</button>
+                                    <button type="button" class="small-btn" id="openWysiwygAddTrackBtn" style="border-color:var(--spotify-green); color:var(--spotify-green);">+ Nova Faixa</button>
+                                </div>
+                            </div>
+                            <div class="track-header" style="display: flex; color: var(--text-secondary); font-size: 12px; font-weight: 400; padding: 0 16px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px;">
+                                <div style="width: 24px; text-align: center; margin-right: 24px;">#</div><div style="flex-grow: 1;">TÍTULO</div><div style="margin-right: 56px;"><i class="far fa-clock"></i></div>
+                            </div>
+                            <div id="wysiwygTracklistEditor" class="tracklist-container" style="min-height: 100px; margin-top: 0;"><p style="color: var(--text-subdued); text-align: center; font-size: 14px; margin-top: 24px;">Nenhuma faixa adicionada.</p></div>
+                        </div>
+                    </form>
+
+                    <div id="editReleaseSection" class="studio-form-content">
+                        <h3>Gerenciar Lançamentos</h3>
+                        <div class="studio-form-group"><label>Filtrar por Artista</label><select id="editArtistFilterSelect" class="wysiwyg-select" style="background: rgba(255,255,255,0.1); padding: 14px; width: 100%; border-radius: 4px;"></select></div>
+                        <div id="editReleaseListContainer"><div id="editReleaseList" class="release-edit-list" style="display: flex; flex-direction: column; gap: 12px;"></div></div>
+
+                        <form id="editReleaseForm" class="studio-form hidden" style="padding: 0; background: transparent; margin-top: 24px;">
+                            <input type="hidden" id="editReleaseId"><input type="hidden" id="editReleaseType"><input type="hidden" id="editReleaseTableName">
+                            <div class="album-header" style="padding: 40px 24px 24px; border-radius: 8px 8px 0 0;">
+                                <div id="editWysiwygBg" class="header-bg" style="background-image: url('https://i.imgur.com/AD3MbBi.png'); filter: blur(30px) brightness(0.4); transform: scale(1.2);"></div>
+                                <div class="header-overlay" style="background: linear-gradient(to top, var(--background-secondary) 0%, rgba(0,0,0,0.4) 100%);"></div>
+                                <div class="album-header-content" style="width: 100%; flex-wrap: wrap;">
+                                    <div style="position: relative; width: 200px; height: 200px; flex-shrink: 0; cursor: pointer; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5); margin: 0 auto;" onclick="document.getElementById('editReleaseCoverFile').click()">
+                                        <img id="editWysiwygCoverImg" src="https://i.imgur.com/AD3MbBi.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; border-radius: 4px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><i class="fas fa-camera" style="font-size: 32px; margin-bottom: 8px;"></i><span style="font-size: 12px; font-weight: 600;">Alterar Capa</span></div>
+                                    </div>
+                                    <input type="file" id="editReleaseCoverFile" accept="image/*" hidden=""><input type="hidden" id="editReleaseCoverUrl" value="https://i.imgur.com/AD3MbBi.png">
+                                    <div class="album-text-info" style="flex-grow: 1; min-width: 250px;">
+                                        <p class="album-type-label">Editando Lançamento</p>
+                                        <input type="text" id="editReleaseTitle" class="wysiwyg-input" required="" style="font-size: clamp(28px, 6vw + 1rem, 40px); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 8px; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3); border-bottom: 1px dashed rgba(255,255,255,0.3); text-align: center;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                                            <img id="editWysiwygArtistImg" src="https://i.imgur.com/AD3MbBi.png" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"><strong id="editArtistNameDisplay" style="color: white;">Artista</strong><span style="color: rgba(255,255,255,0.8);">•</span>
+                                            <input type="datetime-local" id="editReleaseDate" class="wysiwyg-input" required="" style="width: auto; color: rgba(255,255,255,0.8); font-weight: 500; font-size: 14px; border-bottom: 1px dashed rgba(255,255,255,0.3); padding: 4px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="page-detail-body" style="background: var(--background-secondary); border-radius: 0 0 8px 8px; padding: 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                                    <div style="display: flex; gap: 16px;"><button type="submit" class="submit-btn" id="saveEditBtn" style="margin: 0;"><i class="fas fa-save"></i> Salvar</button><button type="button" class="cancel-btn small-btn" id="cancelEditBtn" style="border: none; background: transparent;">Cancelar</button></div>
+                                    <div id="editTracklistActions" style="display: flex; gap: 8px;">
+                                        <button type="button" class="small-btn" id="openEditExistingTrackModalBtn">+ Existente</button>
+                                        <button type="button" class="small-btn" id="openEditAddTrackModalBtn" style="border-color:var(--spotify-green); color:var(--spotify-green);">+ Nova</button>
+                                    </div>
+                                </div>
+                                <div class="track-header" style="display: flex; color: var(--text-secondary); font-size: 12px; font-weight: 400; padding: 0 16px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px;"><div style="width: 24px; text-align: center; margin-right: 24px;">#</div><div style="flex-grow: 1;">TÍTULO</div><div style="margin-right: 56px;"><i class="far fa-clock"></i></div></div>
+                                <div id="editAlbumTracklistEditor" class="tracklist-container" style="min-height: 100px; margin-top: 0;"></div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <form id="newArtistForm" class="studio-form studio-form-content">
+                        <h3>Cadastrar Novo Artista</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">Este artista ficará vinculado à sua conta permanentemente e todos os streams que ele receber no Studio contarão para seus Charts.</p>
+                        <div class="studio-form-group"><label>Nome do Artista</label><input type="text" id="newArtistName" placeholder="Ex: Olivia Rodrigo" required=""></div>
+                        <div class="studio-form-group">
+                            <label>Imagem (Capa/Foto de Perfil)</label>
+                            <input type="file" id="newArtistImageFile" accept="image/*" class="file-upload-input" style="margin-bottom: 8px; width: 100%;">
+                            <input type="url" id="newArtistImageUrl" placeholder="Ou cole a URL da imagem aqui" required="">
+                        </div>
+                        <button type="submit" class="submit-btn" id="submitNewArtist" style="width:100%;">Criar Artista</button>
+                    </form>
+
+                    <form id="editArtistForm" class="studio-form studio-form-content">
+                        <h3>Editar Perfil do Artista</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">Ajuste o nome, troque a foto e defina a posição do corte da imagem para os banners e perfis.</p>
+                        <div class="studio-form-group"><label>Selecione o Artista</label><select id="editArtistSelect" class="wysiwyg-select" style="width: 100%; border: 1px dashed rgba(255,255,255,0.3); padding: 14px; border-radius: 4px;"></select></div>
+                        <div id="editArtistFields" class="hidden">
+                            <div class="studio-form-group"><label>Nome do Artista</label><input type="text" id="editArtistNameInput" required=""></div>
+                            
+                            <div class="studio-form-group" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
+                                <label style="align-self: flex-start;">Trocar Ícone / Capa do Artista</label>
+                                
+                                <div style="position: relative; width: 140px; height: 140px; flex-shrink: 0; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border-radius: 50%; margin: 16px auto;" onclick="document.getElementById('editArtistImageFile').click()">
+                                    <img id="editArtistPreviewCircleMain" src="https://i.imgur.com/AD3MbBi.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                    
+                                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 1; transition: opacity 0.2s; border-radius: 50%;">
+                                        <i class="fas fa-camera" style="font-size: 28px; margin-bottom: 8px; color: white;"></i>
+                                        <span style="font-size: 11px; font-weight: 700; color: white; text-align: center; text-transform: uppercase;">Tocar para<br>Alterar</span>
+                                    </div>
+                                </div>
+
+                                <input type="file" id="editArtistImageFile" accept="image/*" hidden="">
+                                <input type="url" id="editArtistImageUrl" required="" placeholder="Ou cole a URL direta aqui" class="wysiwyg-input" style="border-bottom: 1px dashed rgba(255,255,255,0.3); padding: 8px; margin-top: 8px; width: 100%; text-align: center;">
+                            </div>
+
+                            <div class="studio-form-group">
+                                <label>Ajuste de Posição Vertical (Corte da Foto)</label>
+                                <input type="range" id="editArtistBgPosition" min="0" max="100" value="20" style="width:100%; margin-bottom: 8px; cursor: pointer;">
+                                <div style="display: flex; gap: 16px; margin-top: 16px;">
+                                    <div style="flex: 1; text-align: center;"><span style="font-size: 12px; color: #aaa;">Preview Perfil</span><br><img id="editArtistPreviewCircle" src="https://i.imgur.com/AD3MbBi.png" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; object-position: center 20%; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+                                    <div style="flex: 2; text-align: center;"><span style="font-size: 12px; color: #aaa;">Preview Capa</span><br><div id="editArtistPreviewHeader" style="width: 100%; height: 100px; border-radius: 4px; background-image: url('https://i.imgur.com/AD3MbBi.png'); background-size: cover; background-position: center 20%; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div></div>
+                                </div>
+                            </div>
+                            <div class="modal-actions"><button type="submit" class="submit-btn" id="submitEditArtist" style="width: 100%;">Salvar Alterações</button></div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="deleteConfirmModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="color: var(--trend-down-red);">Confirmar Exclusão</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Tem certeza que deseja apagar "<strong id="deleteReleaseName" style="color: #fff;"></strong>"?</p>
+            <input type="hidden" id="deleteRecordId"><input type="hidden" id="deleteTableName"><input type="hidden" id="deleteTrackIds">
+            <div style="display:flex; gap:16px;">
+                <button class="small-btn" id="cancelDeleteBtn" style="flex:1; justify-content:center;">Cancelar</button>
+                <button class="submit-btn" id="confirmDeleteBtn" style="flex:1; background:var(--trend-down-red); color:#fff; margin:0;">Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="featModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Adicionar Feat</h3>
+            <div class="studio-form-group"><label>Artista</label><select id="featArtistSelect"></select></div>
+            <div class="studio-form-group"><label>Tipo</label><select id="featTypeSelect"><option value="Feat.">Feat.</option><option value="Dueto/Grupo">Dueto/Grupo</option></select></div>
+            <div style="display:flex; gap:16px; margin-top:24px;">
+                <button class="small-btn" id="cancelFeatBtn" style="flex:1; justify-content:center;">Cancelar</button>
+                <button class="submit-btn" id="confirmFeatBtn" style="flex:1; margin:0;">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="albumTrackModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="albumTrackModalTitle">Adicionar Faixa</h3>
+            <input type="hidden" id="editingTrackItemId"><input type="hidden" id="editingTrackExistingId">
+            <div class="studio-form-group"><label>Nome</label><input type="text" id="albumTrackNameInput"></div>
+            <div class="studio-form-group"><label>Duração</label><input type="text" id="albumTrackDurationInput" placeholder="0:00"></div>
+            <div class="studio-form-group">
+                <label>Tipo</label>
+                <select id="albumTrackTypeSelect"><option value="Title Track">Title Track</option><option value="Pre-release Single">Pre-release</option><option value="B-side">B-side</option><option value="Intro">Intro</option><option value="Outro">Outro</option></select>
+            </div>
+            <div class="feat-section">
+                <label>Feats</label>
+                <div id="albumTrackFeatList" style="display:flex; gap:8px; margin-bottom:8px; flex-wrap: wrap;"></div>
+                <button type="button" class="small-btn add-inline-feat-btn">+ Feat</button>
+                <div id="inlineFeatAdder" class="hidden" style="margin-top:16px; background:rgba(255,255,255,0.05); padding:16px; border-radius:4px;">
+                    <div class="studio-form-group"><label>Artista</label><select id="inlineFeatArtistSelect"></select></div>
+                    <div class="studio-form-group"><label>Tipo</label><select id="inlineFeatTypeSelect"><option value="Feat.">Feat.</option><option value="Dueto/Grupo">Dueto/Grupo</option></select></div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="small-btn" id="cancelInlineFeatBtn" style="flex:1; justify-content:center;">Cancelar</button>
+                        <button class="small-btn" id="confirmInlineFeatBtn" style="flex:1; justify-content:center; border-color:#fff;">Ok</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-top:32px;">
+                <button class="small-btn" id="cancelAlbumTrackBtn" style="flex:1; justify-content:center;">Cancelar</button>
+                <button class="submit-btn" id="saveAlbumTrackBtn" style="flex:1; margin:0;">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="existingTrackModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Buscar Existente</h3>
+            <div class="studio-form-group"><input type="text" id="existingTrackSearch" placeholder="Digite o nome..."></div>
+            <div id="existingTrackResults" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; margin-top:16px;"></div>
+            <button class="small-btn" id="cancelExistingTrackBtn" style="width:100%; justify-content:center; margin-top:24px;">Fechar</button>
+        </div>
+    </div>
+
+    <div id="selectOriginalAlbumModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Importar Faixas Deluxe</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">Selecione o álbum original de onde deseja puxar as faixas para criar esta versão Deluxe.</p>
+            <div class="studio-form-group">
+                <label>Álbum Original</label>
+                <select id="originalAlbumSelect" class="wysiwyg-select" style="width: 100%;"></select>
+            </div>
+            <div style="display:flex; gap:16px; margin-top:32px;">
+                <button class="small-btn" id="cancelImportBtn" style="flex:1; justify-content:center;">Cancelar</button>
+                <button class="submit-btn" id="confirmImportBtn" style="flex:1; margin:0;">Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="musicPlayer" class="page-view hidden">
+        <div class="player-header"><button class="player-close-btn"><i class="fas fa-chevron-down"></i></button><span id="playerAlbumTitle">Nome do Álbum</span><button><i class="fas fa-ellipsis-v"></i></button></div>
+        <div class="player-body">
+            <img id="playerCoverArt" src="https://i.imgur.com/AD3MbBi.png">
+            <div class="player-song-info">
+                <div class="player-song-text"><h2 id="playerSongTitle">Nome da Música</h2><p id="playerArtistName">Artista</p></div>
+                <button class="player-add-btn"><i class="far fa-heart"></i></button>
+            </div>
+            <div class="player-seeker">
+                <input type="range" id="playerSeekBar" value="0" min="0" max="100">
+                <div class="player-time"><span id="playerCurrentTime">0:00</span><span id="playerTotalTime">0:00</span></div>
+            </div>
+            <div class="player-controls">
+                <button class="player-btn" id="playerShuffleBtn"><i class="fas fa-random"></i></button>
+                <button class="player-btn" id="playerPrevBtn"><i class="fas fa-step-backward"></i></button>
+                <button class="player-btn main-play" id="playerPlayPauseBtn"><i class="fas fa-play" style="margin-left:2px;"></i></button>
+                <button class="player-btn" id="playerNextBtn"><i class="fas fa-step-forward"></i></button>
+                <button class="player-btn" id="playerRepeatBtn"><i class="fas fa-repeat"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioElement"></audio>
+
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/rpg.js"></script>
+    <script src="js/studio.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
