@@ -1,21 +1,5 @@
 // js/studio.js
-function updateArtistEditPreviews() {
-    const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; 
-    const pos = editArtistBgPosition.value + '%';
-    
-    // Atualiza o novo círculo principal clicável que criamos
-    const mainCircle = document.getElementById('editArtistPreviewCircleMain');
-    if (mainCircle) {
-        mainCircle.src = url;
-        mainCircle.style.objectPosition = `center ${pos}`;
-    }
 
-    // Atualiza os previews antigos da parte de baixo
-    editArtistPreviewCircle.src = url; 
-    editArtistPreviewCircle.style.objectPosition = `center ${pos}`;
-    editArtistPreviewHeader.style.backgroundImage = `url('${url}')`; 
-    editArtistPreviewHeader.style.backgroundPosition = `center ${pos}`;
-}
 function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgElementId, onCompleteCb) {
     const fileInput = document.getElementById(fileInputId); const urlInput = document.getElementById(urlInputId);
     const imgElement = document.getElementById(imgElementId); const bgElement = document.getElementById(bgElementId);
@@ -36,7 +20,23 @@ function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgEl
         });
     }
 }
+function updateArtistEditPreviews() {
+    const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; 
+    const pos = editArtistBgPosition.value + '%';
+    
+    // Atualiza o novo círculo principal clicável que criamos
+    const mainCircle = document.getElementById('editArtistPreviewCircleMain');
+    if (mainCircle) {
+        mainCircle.src = url;
+        mainCircle.style.objectPosition = `center ${pos}`;
+    }
 
+    // Atualiza os previews antigos da parte de baixo
+    editArtistPreviewCircle.src = url; 
+    editArtistPreviewCircle.style.objectPosition = `center ${pos}`;
+    editArtistPreviewHeader.style.backgroundImage = `url('${url}')`; 
+    editArtistPreviewHeader.style.backgroundPosition = `center ${pos}`;
+}
 function updateArtistEditPreviews() {
     const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; const pos = editArtistBgPosition.value + '%';
     editArtistPreviewCircle.src = url; editArtistPreviewCircle.style.objectPosition = `center ${pos}`;
