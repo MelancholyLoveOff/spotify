@@ -1,3 +1,5 @@
+// js/studio.js
+
 function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgElementId, onCompleteCb) {
     const fileInput = document.getElementById(fileInputId); const urlInput = document.getElementById(urlInputId);
     const imgElement = document.getElementById(imgElementId); const bgElement = document.getElementById(bgElementId);
@@ -94,6 +96,8 @@ async function handleArtistSubmit(event) {
 
         showToast(`Artista "${name}" criado e vinculado com sucesso!`, 'success');
         document.getElementById('newArtistForm')?.reset(); await refreshAllData(); 
+        
+        // Simula o clique na opção "Novo Lançamento" do menu hambúrguer para voltar
         document.querySelector('.studio-menu-opt[data-form="release"]')?.click();
         
     } catch(e) { showToast("Erro ao criar artista: " + e.message, 'error'); } finally { submitBtn.disabled = false; submitBtn.textContent = 'Criar Artista'; }
@@ -298,22 +302,51 @@ function cancelInlineFeat() { if(!inlineFeatAdder || !addInlineFeatBtn) return; 
 
 function openAlbumTrackModal(itemToEdit = null) {
     if (!albumTrackModal || !albumTrackNameInput || !albumTrackDurationInput || !albumTrackTypeSelect || !albumTrackFeatList || !editingTrackItemId || !editingTrackExistingId) return;
-    albumTrackNameInput.value = ''; albumTrackDurationInput.value = ''; albumTrackTypeSelect.value = 'B-side'; albumTrackFeatList.innerHTML = ''; editingTrackItemId.value = ''; editingTrackExistingId.value = ''; editingTrackItem = null;
-    inlineFeatAdder?.classList.add('hidden'); if (addInlineFeatBtn) addInlineFeatBtn.innerHTML = '+ Feat';
-    albumTrackNameInput.disabled = false; albumTrackDurationInput.disabled = false; const featSectionElement = albumTrackFeatList.closest('.feat-section'); if (featSectionElement) featSectionElement.classList.remove('hidden');
+    
+    albumTrackNameInput.value = ''; 
+    albumTrackDurationInput.value = ''; 
+    albumTrackTypeSelect.value = 'B-Side'; 
+    albumTrackFeatList.innerHTML = ''; 
+    editingTrackItemId.value = ''; 
+    editingTrackExistingId.value = ''; 
+    editingTrackItem = null;
+    inlineFeatAdder?.classList.add('hidden'); 
+    if (addInlineFeatBtn) addInlineFeatBtn.innerHTML = '+ Feat';
+    
+    albumTrackNameInput.disabled = false; 
+    albumTrackDurationInput.disabled = false; 
+    const featSectionElement = albumTrackFeatList.closest('.feat-section'); 
+    if (featSectionElement) featSectionElement.classList.remove('hidden');
 
     if (itemToEdit) {
-        editingTrackItem = itemToEdit; editingTrackItemId.value = itemToEdit.dataset.itemId || `temp_edit_${Date.now()}`;
-        albumTrackNameInput.value = itemToEdit.dataset.trackName || ''; albumTrackDurationInput.value = itemToEdit.dataset.durationStr || ''; albumTrackTypeSelect.value = itemToEdit.dataset.trackType || 'B-side';
-        const existingSongId = itemToEdit.dataset.existingSongId; const featsToPopulate = JSON.parse(itemToEdit.dataset.feats || '[]');
-        if (!existingSongId) { albumTrackModalTitle.textContent = 'Editar Faixa (Nova)'; } else { albumTrackModalTitle.textContent = 'Editar Faixa (Existente)'; editingTrackExistingId.value = existingSongId; }
-         try {
-             featsToPopulate.forEach(f => {
-                 const tag = document.createElement('span'); tag.className = 'feat-tag'; tag.style.cssText = "background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;";
-                 tag.textContent = `${f.type} ${f.name}`; tag.dataset.artistId = f.id; tag.dataset.featType = f.type; tag.dataset.artistName = f.name; tag.addEventListener('click', () => tag.remove()); albumTrackFeatList.appendChild(tag);
-             });
-         } catch (e) {}
-    } else { albumTrackModalTitle.textContent = 'Adicionar Faixa'; editingTrackItemId.value = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`; }
+        editingTrackItem = itemToEdit; 
+        editingTrackItemId.value = itemToEdit.dataset.itemId || `temp_edit_${Date.now()}`;
+        albumTrackNameInput.value = itemToEdit.dataset.trackName || ''; 
+        albumTrackDurationInput.value = itemToEdit.dataset.durationStr || ''; 
+        
+        // CORREÇÃO: Garante que selecione a opção certa ignorando maiúsculas e minúsculas
+        const currentType = itemToEdit.dataset.trackType || 'B-Side';
+        const matchedOption = Array.from(albumTrackTypeSelect.options).find(opt => opt.value.toLowerCase() === currentType.toLowerCase());
+        albumTrackTypeSelect.value = matchedOption ? matchedOption.value : 'B-Side';
+
+        const existingSongId = itemToEdit.dataset.existingSongId; 
+        const featsToPopulate = JSON.parse(itemToEdit.dataset.feats || '[]');
+        if (!existingSongId) { 
+            albumTrackModalTitle.textContent = 'Editar Faixa (Nova)'; 
+        } else { 
+            albumTrackModalTitle.textContent = 'Editar Faixa (Existente)'; 
+            editingTrackExistingId.value = existingSongId; 
+        }
+        try {
+            featsToPopulate.forEach(f => {
+                const tag = document.createElement('span'); tag.className = 'feat-tag'; tag.style.cssText = "background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;";
+                tag.textContent = `${f.type} ${f.name}`; tag.dataset.artistId = f.id; tag.dataset.featType = f.type; tag.dataset.artistName = f.name; tag.addEventListener('click', () => tag.remove()); albumTrackFeatList.appendChild(tag);
+            });
+        } catch (e) {}
+    } else { 
+        albumTrackModalTitle.textContent = 'Adicionar Faixa'; 
+        editingTrackItemId.value = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`; 
+    }
     albumTrackModal.classList.remove('hidden');
 }
 
@@ -537,7 +570,7 @@ async function handleWysiwygSubmit(event) {
      finally { submitWysiwygRelease.disabled = false; submitWysiwygRelease.innerHTML = `<i class="fas fa-check"></i> Lançar Projeto`; }
 }
 
-// === NOVO MENU DE 3 PONTINHOS DO LANÇAMENTO ===
+// === MENU DE 3 PONTINHOS DO LANÇAMENTO ===
 function populateEditableReleases() {
     if (!editReleaseList) return; if (!currentPlayer) { editReleaseList.innerHTML = '<p class="empty-state-small">Faça login</p>'; return; }
     const selectedArtistId = editArtistFilterSelect?.value; const playerArtistIds = currentPlayer.artists || [];
@@ -732,13 +765,9 @@ function initializeStudio() {
             const formTarget = e.currentTarget.dataset.form;
             const labelText = e.currentTarget.textContent.trim();
             
-            // Atualiza o título na tela principal
             document.getElementById('currentStudioMenuLabel').textContent = labelText;
-            
-            // Esconde o menu
             document.getElementById('studioMenuModal').classList.add('hidden');
             
-            // Esconde todos os formulários e mostra o correto
             studioForms.forEach(f => f.classList.remove('active'));
             let targetElementId;
             
@@ -763,7 +792,6 @@ function initializeStudio() {
     // === NOVO CONTROLE DE OPÇÕES DE LANÇAMENTO (3 PONTINHOS) ===
     let currentOptionsRelease = {};
     
-    // 1. Ao clicar nos 3 pontinhos, abre o Modal
     editReleaseList?.addEventListener('click', (e) => {
         const optionsBtn = e.target.closest('.release-options-btn');
         if (optionsBtn) {
@@ -779,13 +807,11 @@ function initializeStudio() {
         }
     });
 
-    // 2. Ação de Editar dentro do Modal
     document.getElementById('optEditReleaseBtn')?.addEventListener('click', () => {
         document.getElementById('releaseOptionsModal')?.classList.add('hidden');
         openEditForm(currentOptionsRelease.id, currentOptionsRelease.type);
     });
 
-    // 3. Ação de Apagar dentro do Modal
     document.getElementById('optDeleteReleaseBtn')?.addEventListener('click', () => {
         document.getElementById('releaseOptionsModal')?.classList.add('hidden');
         const release = (currentOptionsRelease.type === 'album' ? db.albums : db.singles).find(r => r.id === currentOptionsRelease.id);
@@ -793,7 +819,6 @@ function initializeStudio() {
         openDeleteConfirmModal(currentOptionsRelease.id, currentOptionsRelease.table, currentOptionsRelease.title, trackIdsToDelete);
     });
 
-    // 4. Cancelar / Fechar Modal
     document.getElementById('optCancelBtn')?.addEventListener('click', () => {
         document.getElementById('releaseOptionsModal')?.classList.add('hidden');
     });
