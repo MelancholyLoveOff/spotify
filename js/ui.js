@@ -88,7 +88,14 @@ const renderChart = (type) => {
         previousData = previousMusicChartData;
     } else if (type === 'album') {
         containerId = 'albumChartsList';
-        dataList = [...db.albums, ...db.singles].filter(item => (item.weeklyStreams || 0) > 0 && item.releaseDate && new Date(item.releaseDate) <= now).sort((a, b) => (b.weeklyStreams || 0) - (a.weeklyStreams || 0)).slice(0, 50); 
+        // FIX: Usa 'calculatedStreams' derivados da soma das faixas, em vez de depender do DB que não atualiza
+        dataList = [...db.albums, ...db.singles].map(item => {
+            const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
+            const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
+            const totalStreams = albumTracks.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
+            return { ...item, calculatedStreams: currentStreams, calculatedTotalStreams: totalStreams };
+        }).filter(item => item.calculatedStreams > 0 && item.releaseDate && new Date(item.releaseDate) <= now)
+          .sort((a, b) => b.calculatedStreams - a.calculatedStreams).slice(0, 50); 
         previousData = previousAlbumChartData;
     } else { return; }
 
@@ -99,14 +106,15 @@ const renderChart = (type) => {
         const currentRank = index + 1; const previousRank = previousData[item.id]; 
         let iconClass = 'fa-minus'; let trendClass = 'trend-stable';
 
-        if (previousRank === undefined) { trendClass = 'trend-new'; } else if (currentRank < previousRank) { iconClass = 'fa-caret-up'; trendClass = 'trend-up'; } else if (currentRank > previousRank) { iconClass = 'fa-caret-down'; trendClass = 'trend-down'; }
+        if (previousRank === undefined) { trendClass = 'trend-new'; } 
+        else if (currentRank < previousRank) { iconClass = 'fa-caret-up'; trendClass = 'trend-up'; } 
+        else if (currentRank > previousRank) { iconClass = 'fa-caret-down'; trendClass = 'trend-down'; }
+        
         const indicatorHtml = `<span class="chart-rank-indicator ${trendClass}"><i class="fas ${iconClass}"></i></span>`;
 
         if (type === 'music') {
             const artistName = formatArtistString(item.artistIds, item.collabType);
             const cover = item.cover !== 'https://i.imgur.com/AD3MbBi.png' ? item.cover : getCoverUrl(item.albumId);
-            
-            // Novos contadores (Diário vs Total)
             const dailyStreams = (item.streams || 0).toLocaleString('pt-BR');
             const totalStreams = (item.totalStreams || 0).toLocaleString('pt-BR');
             
@@ -125,9 +133,9 @@ const renderChart = (type) => {
                     </div>
                 </div>`;
         } else { 
-            // Novos contadores (Diário vs Total para Álbuns)
-            const dailyStreams = (item.weeklyStreams || 0).toLocaleString('pt-BR');
-            const totalStreams = (item.totalStreams || 0).toLocaleString('pt-BR');
+            // FIX: Lê as variáveis "calculated" que acabamos de montar
+            const dailyStreams = (item.calculatedStreams || 0).toLocaleString('pt-BR');
+            const totalStreams = (item.calculatedTotalStreams || 0).toLocaleString('pt-BR');
             
             return `
                 <div class="chart-item" data-album-id="${item.id}">
