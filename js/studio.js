@@ -1,5 +1,3 @@
-// js/studio.js
-
 function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgElementId, onCompleteCb) {
     const fileInput = document.getElementById(fileInputId); const urlInput = document.getElementById(urlInputId);
     const imgElement = document.getElementById(imgElementId); const bgElement = document.getElementById(bgElementId);
@@ -62,7 +60,9 @@ function loginPlayer(username, password) {
         currentPlayer = foundPlayer; localStorage.setItem('spotifyRpg_loggedInPlayerId', currentPlayer.id); document.getElementById('playerName').textContent = currentPlayer.name;
         loginPrompt?.classList.add('hidden'); registerPrompt?.classList.add('hidden'); loggedInInfo?.classList.remove('hidden'); studioLaunchWrapper?.classList.remove('hidden'); document.getElementById('actionsLoginPrompt')?.classList.add('hidden'); document.getElementById('actionsWrapper')?.classList.remove('hidden');
         populateArtistSelector(currentPlayer.id); displayArtistActions();
-        if (document.querySelector('.studio-tab-btn[data-form="edit"]')?.classList.contains('active')) populateEditableReleases();
+        
+        const editSection = document.getElementById('editReleaseSection');
+        if (editSection && editSection.classList.contains('active')) populateEditableReleases();
     } else { showToast("Usuário ou senha inválidos.", 'error'); const pwInput = document.getElementById('passwordInput'); if (pwInput) pwInput.value = ''; }
 }
 
@@ -72,7 +72,13 @@ function logoutPlayer() {
     loginPrompt?.classList.remove('hidden'); registerPrompt?.classList.add('hidden'); loggedInInfo?.classList.add('hidden'); studioLaunchWrapper?.classList.add('hidden'); document.getElementById('actionsLoginPrompt')?.classList.remove('hidden'); document.getElementById('actionsWrapper')?.classList.add('hidden'); if (artistActionsList) artistActionsList.innerHTML = '';
     if (document.getElementById('usernameInput')) document.getElementById('usernameInput').value = ''; if (document.getElementById('passwordInput')) document.getElementById('passwordInput').value = '';
     if (editReleaseList) editReleaseList.innerHTML = '<p class="empty-state-small">Faça login para ver seus lançamentos.</p>'; if (editArtistFilterSelect) editArtistFilterSelect.innerHTML = '<option value="all">Todos os Artistas</option>'; if(wysiwygArtistSelect) wysiwygArtistSelect.innerHTML = '<option value="">Selecione...</option>'; if(editArtistSelect) { editArtistSelect.innerHTML = '<option value="">Selecione...</option>'; editArtistFields?.classList.add('hidden'); }
-    editReleaseForm?.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); studioTabs.forEach(t => t.classList.remove('active')); studioForms.forEach(f => f.classList.remove('active')); document.querySelector('.studio-tab-btn[data-form="release"]')?.classList.add('active'); document.getElementById('wysiwygReleaseForm')?.classList.add('active');
+    
+    // Reseta visualização do menu do estúdio
+    editReleaseForm?.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); 
+    studioForms.forEach(f => f.classList.remove('active')); 
+    document.getElementById('wysiwygReleaseForm')?.classList.add('active');
+    const label = document.getElementById('currentStudioMenuLabel');
+    if(label) label.textContent = 'Novo Lançamento';
 }
 
 async function handleArtistSubmit(event) {
@@ -87,7 +93,8 @@ async function handleArtistSubmit(event) {
         if (playerError) throw playerError;
 
         showToast(`Artista "${name}" criado e vinculado com sucesso!`, 'success');
-        document.getElementById('newArtistForm')?.reset(); await refreshAllData(); document.querySelector('.studio-tab-btn[data-form="release"]')?.click();
+        document.getElementById('newArtistForm')?.reset(); await refreshAllData(); 
+        document.querySelector('.studio-menu-opt[data-form="release"]')?.click();
         
     } catch(e) { showToast("Erro ao criar artista: " + e.message, 'error'); } finally { submitBtn.disabled = false; submitBtn.textContent = 'Criar Artista'; }
 }
@@ -711,16 +718,37 @@ function initializeStudio() {
 
     editArtistImageUrl?.addEventListener('input', updateArtistEditPreviews); editArtistBgPosition?.addEventListener('input', updateArtistEditPreviews);
 
-    studioTabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            const clickedTab = e.currentTarget, formTarget = clickedTab.dataset.form;
-            studioTabs.forEach(t => t.classList.remove('active')); studioForms.forEach(f => f.classList.remove('active')); clickedTab.classList.add('active');
+    // === LÓGICA DO NOVO MENU HAMBÚRGUER DO ESTÚDIO ===
+    document.getElementById('openStudioMenuBtn')?.addEventListener('click', () => {
+        document.getElementById('studioMenuModal').classList.remove('hidden');
+    });
+
+    document.getElementById('closeStudioMenuBtn')?.addEventListener('click', () => {
+        document.getElementById('studioMenuModal').classList.add('hidden');
+    });
+
+    document.querySelectorAll('.studio-menu-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const formTarget = e.currentTarget.dataset.form;
+            const labelText = e.currentTarget.textContent.trim();
+            
+            // Atualiza o título na tela principal
+            document.getElementById('currentStudioMenuLabel').textContent = labelText;
+            
+            // Esconde o menu
+            document.getElementById('studioMenuModal').classList.add('hidden');
+            
+            // Esconde todos os formulários e mostra o correto
+            studioForms.forEach(f => f.classList.remove('active'));
             let targetElementId;
+            
             if (formTarget === 'release') { targetElementId = 'wysiwygReleaseForm'; initAlbumForm(); } 
             else if (formTarget === 'edit') { targetElementId = 'editReleaseSection'; populateEditableReleases(); editReleaseListContainer?.classList.remove('hidden'); editReleaseForm?.classList.add('hidden'); } 
             else if (formTarget === 'artist') { targetElementId = 'newArtistForm'; } 
             else if (formTarget === 'editArtist') { targetElementId = 'editArtistForm'; if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change')); }
-            const targetElement = document.getElementById(targetElementId); if (targetElement) targetElement.classList.add('active'); 
+            
+            const targetElement = document.getElementById(targetElementId); 
+            if (targetElement) targetElement.classList.add('active'); 
         });
     });
 
