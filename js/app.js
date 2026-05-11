@@ -193,8 +193,17 @@ function initializeBodyClickListener() {
         if (discogLink) { event.preventDefault(); openDiscographyDetail(discogLink.dataset.discogType); return; }
         
         const refreshButton = event.target.closest('[data-action="refresh"]');
-        if(refreshButton){ 
-            event.preventDefault(); 
+        if(refreshButton){
+            // 1. PRIMEIRO PASSO: Tira a "Fotografia" (salva o estado anterior)
+            try {
+                if (typeof saveChartDataToLocalStorage === 'function') {
+                    saveChartDataToLocalStorage('music');
+                    saveChartDataToLocalStorage('album');
+                    saveChartDataToLocalStorage('rpg');
+                }
+            } catch(e) { console.error("Erro a guardar histórico:", e); }
+
+            // 2. SÓ DEPOIS faz o Refresh e contacta a base de dados
             const icon = refreshButton.querySelector('i'); 
             if(icon) icon.classList.add('fa-spin'); 
             refreshButton.disabled = true; 
