@@ -88,7 +88,6 @@ const renderChart = (type) => {
         previousData = previousMusicChartData;
     } else if (type === 'album') {
         containerId = 'albumChartsList';
-        // FIX: Usa 'calculatedStreams' derivados da soma das faixas, em vez de depender do DB que não atualiza
         dataList = [...db.albums, ...db.singles].map(item => {
             const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
             const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
@@ -133,7 +132,6 @@ const renderChart = (type) => {
                     </div>
                 </div>`;
         } else { 
-            // FIX: Lê as variáveis "calculated" que acabamos de montar
             const dailyStreams = (item.calculatedStreams || 0).toLocaleString('pt-BR');
             const totalStreams = (item.calculatedTotalStreams || 0).toLocaleString('pt-BR');
             
@@ -198,7 +196,6 @@ const openAlbumDetail = (albumId) => {
     const countdownContainer = document.getElementById('albumCountdownContainer'), normalInfoContainer = document.getElementById('albumNormalInfoContainer'), tracklistContainer = document.getElementById('albumTracklist');
     document.getElementById('albumDetailBg').style.backgroundImage = `url(${album.imageUrl})`; document.getElementById('albumDetailCover').src = album.imageUrl; document.getElementById('albumDetailTitle').textContent = album.title;
 
-    // === CÁLCULO DINÂMICO PARA ÁLBUM / EP / SINGLE ===
     let displayType = 'Álbum';
     if (album.type === 'single' || album.tableName === 'singles') {
         const numTracks = album.tracks ? album.tracks.length : 0;
@@ -206,17 +203,19 @@ const openAlbumDetail = (albumId) => {
     }
     const typeLabelEl = document.querySelector('#albumDetail .album-type-label');
     if (typeLabelEl) typeLabelEl.textContent = displayType;
-    // =================================================
 
     const releaseDate = new Date(album.releaseDate), now = new Date(), isPreRelease = releaseDate > now, artistObj = db.artists.find(a => a.id === album.artistId);
     if (isPreRelease) {
         normalInfoContainer?.classList.add('hidden'); countdownContainer?.classList.remove('hidden');
         const releaseDateStr = releaseDate.toLocaleString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         document.getElementById('albumCountdownReleaseDate').textContent = releaseDateStr; startAlbumCountdown(album.releaseDate, 'albumCountdownTimer');
-        tracklistContainer.innerHTML = (album.tracks || []).map(track => {
+        
+        // FIX: Usamos "index + 1" para contar sempre de 1 para cima!
+        tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
             const fullSong = db.songs.find(s => s.id === track.id); let isAvailable = false; const preReleaseAvailableTypes = ['Title Track', 'Pre-release Single'];
             if (fullSong) { const hasSongReleased = fullSong.parentReleaseDate && new Date(fullSong.parentReleaseDate) <= now; const isDesignatedPreRelease = preReleaseAvailableTypes.includes(fullSong.trackType); isAvailable = hasSongReleased || isDesignatedPreRelease; }
-            const artistName = formatArtistString(track.artistIds, track.collabType), trackNumDisplay = track.trackNumber ? track.trackNumber : '?';
+            const artistName = formatArtistString(track.artistIds, track.collabType);
+            const trackNumDisplay = index + 1; 
             if (isAvailable) { return `<div class="track-row available" data-song-id="${track.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${track.duration}</span></div>`; } 
             else { return `<div class="track-row unavailable"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration"><i class="fas fa-lock"></i></span></div>`; }
         }).join('') || '<p class="empty-state-small">Tracklist ainda não revelada.</p>';
@@ -224,8 +223,11 @@ const openAlbumDetail = (albumId) => {
         normalInfoContainer?.classList.remove('hidden'); countdownContainer?.classList.add('hidden');
         const releaseYear = releaseDate.getFullYear(), totalAlbumStreamsFormatted = (album.totalStreams || 0).toLocaleString('pt-BR');
         document.getElementById('albumDetailInfo').innerHTML = `Por <strong class="artist-link" data-artist-name="${artistObj ? artistObj.name : ''}">${album.artist}</strong> • ${releaseYear} • ${totalAlbumStreamsFormatted} streams totais`;
-        tracklistContainer.innerHTML = (album.tracks || []).map(song => {
-            const artistName = formatArtistString(song.artistIds, song.collabType), streams = (song.totalStreams || 0), trackNumDisplay = song.trackNumber ? song.trackNumber : '?';
+        
+        // FIX: O mesmo aqui para lançamentos já lançados!
+        tracklistContainer.innerHTML = (album.tracks || []).map((song, index) => {
+            const artistName = formatArtistString(song.artistIds, song.collabType), streams = (song.totalStreams || 0);
+            const trackNumDisplay = index + 1; 
             return `<div class="track-row available" data-song-id="${song.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${song.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${streams.toLocaleString('pt-BR')}</span></div>`;
         }).join('') || '<p class="empty-state-small">Nenhuma faixa encontrada para este lançamento.</p>'; 
     }
