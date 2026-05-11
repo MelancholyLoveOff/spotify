@@ -198,6 +198,16 @@ const openAlbumDetail = (albumId) => {
     const countdownContainer = document.getElementById('albumCountdownContainer'), normalInfoContainer = document.getElementById('albumNormalInfoContainer'), tracklistContainer = document.getElementById('albumTracklist');
     document.getElementById('albumDetailBg').style.backgroundImage = `url(${album.imageUrl})`; document.getElementById('albumDetailCover').src = album.imageUrl; document.getElementById('albumDetailTitle').textContent = album.title;
 
+    // === CÁLCULO DINÂMICO PARA ÁLBUM / EP / SINGLE ===
+    let displayType = 'Álbum';
+    if (album.type === 'single' || album.tableName === 'singles') {
+        const numTracks = album.tracks ? album.tracks.length : 0;
+        displayType = (numTracks >= 4) ? 'EP' : 'Single';
+    }
+    const typeLabelEl = document.querySelector('#albumDetail .album-type-label');
+    if (typeLabelEl) typeLabelEl.textContent = displayType;
+    // =================================================
+
     const releaseDate = new Date(album.releaseDate), now = new Date(), isPreRelease = releaseDate > now, artistObj = db.artists.find(a => a.id === album.artistId);
     if (isPreRelease) {
         normalInfoContainer?.classList.add('hidden'); countdownContainer?.classList.remove('hidden');
