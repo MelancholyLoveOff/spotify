@@ -91,19 +91,6 @@ const setupCountdown = (timerId, chartType) => {
     timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Manual (Botão <i class="fas fa-sync-alt"></i> no topo)</span>`;
 };
 
-// O botão de Reload (Refresh) agora é o responsável por "fechar o ciclo" e salvar as posições anteriores
-document.addEventListener('DOMContentLoaded', () => {
-    const refreshBtn = document.querySelector('[data-action="refresh"]');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            // Salva as posições atuais como o novo Marco Zero para o próximo ciclo ANTES de atualizar
-            saveChartDataToLocalStorage('music');
-            saveChartDataToLocalStorage('album');
-            saveChartDataToLocalStorage('rpg');
-        });
-    }
-});
-
 async function handleConfirmAction() {
     const actionType = actionTypeSelect.value; if (!actionType) { showToast("Selecione um tipo de ação.", 'error'); return; }
     if (IMAGE_ACTION_CONFIG[actionType]) { await handleImageAction(actionType); } else if (ACTION_CONFIG[actionType]) { await handlePromotionAction(actionType); } else { showToast("Tipo de ação desconhecido.", 'error'); }
