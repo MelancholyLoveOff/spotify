@@ -151,14 +151,16 @@ const initializeData = (data) => {
             });
 
             if (item.type === 'album') db.albums.push(item); else db.singles.push(item);
-            involvedArtistIds.forEach(aId => {
+           involvedArtistIds.forEach(aId => {
                 const artistEntry = db.artists.find(a => a.id === aId);
                 if (artistEntry) {
-                    if (item.type === 'album') { if (!artistEntry.albums.some(a => a.id === item.id)) artistEntry.albums.push(item); } 
-                    else { if (!artistEntry.singles.some(a => a.id === item.id)) artistEntry.singles.push(item); }
+                    // VERIFICAÇÃO ADICIONADA: Só empurra o álbum se for o Dono do Projeto
+                    if (aId === item.artistId) {
+                        if (item.type === 'album') { if (!artistEntry.albums.some(a => a.id === item.id)) artistEntry.albums.push(item); } 
+                        else { if (!artistEntry.singles.some(a => a.id === item.id)) artistEntry.singles.push(item); }
+                    }
                 }
             });
-        });
 
         db.artists.forEach(artist => {
             const artistSongs = db.songs.filter(song => song.artistIds && song.artistIds.includes(artist.id));
