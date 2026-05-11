@@ -161,6 +161,7 @@ const initializeData = (data) => {
                     }
                 }
             });
+        });
 
         db.artists.forEach(artist => {
             const artistSongs = db.songs.filter(song => song.artistIds && song.artistIds.includes(artist.id));
