@@ -86,9 +86,15 @@ const renderChart = (type) => {
         containerId = 'musicChartsList';
         dataList = [...db.songs].filter(song => (song.streams || 0) > 0 && song.parentReleaseDate && new Date(song.parentReleaseDate) <= now).sort((a, b) => (b.streams || 0) - (a.streams || 0)).slice(0, 50); 
         previousData = previousMusicChartData;
-    } else if (type === 'album') {
+   } else if (type === 'album') {
         containerId = 'albumChartsList';
-        dataList = [...db.albums, ...db.singles].map(item => {
+        dataList = [...db.albums, ...db.singles].filter(item => {
+            // Permite se for um álbum completo OU se for single com 4 ou mais faixas (EP)
+            const isAlbum = item.type === 'album';
+            const numTracks = item.tracks ? item.tracks.length : 0;
+            const isEP = item.type === 'single' && numTracks >= 4;
+            return isAlbum || isEP;
+        }).map(item => {
             const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
             const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
             const totalStreams = albumTracks.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
