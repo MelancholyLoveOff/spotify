@@ -4,8 +4,6 @@ if (window.supabase && SUPABASE_URL.startsWith('http')) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxBd7onVw6zTqRStKsWdEvzrn3kOUjZ33nfJ6UjsW9TRE4S6au9XVVW1ngOgl8oAmdWeg/exec";
-
 async function carregarPosicoesAnteriores() {
     try {
         const response = await fetch(GOOGLE_SHEETS_API_URL);
