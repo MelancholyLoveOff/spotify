@@ -88,12 +88,10 @@ const saveChartDataToLocalStorage = (chartType) => {
     try { localStorage.setItem(storageKey, JSON.stringify(currentChartData)); } catch (e) {}
 };
 
-// === REMOVIDO O CRONÔMETRO AUTOMÁTICO ===
 const setupCountdown = (timerId, chartType) => {
     const timerElement = document.getElementById(timerId); 
     if (!timerElement) return;
     
-    // Substitui o tempo rodando por um texto indicando a atualização manual
     timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Manual (Botão <i class="fas fa-sync-alt"></i> no topo)</span>`;
 };
 
@@ -116,7 +114,9 @@ async function handleImageAction(actionType) {
         const { error } = await supabaseClient.from('artists').update({ personal_points: newPoints }).eq('id', artistId);
         if (error) throw error;
         artist.personalPoints = newPoints; displayArtistActions(); 
-        showToast(`Ação de Imagem Concluída!\n${message}`, 'success'); actionModal.classList.add('hidden');
+        
+        // MOSTRA O TOAST MAS MANTÉM A JANELA ABERTA PARA O FLOOD
+        showToast(`Ação de Imagem Concluída!\n${message}`, 'success'); 
     } catch (err) { console.error('Erro ao salvar pontos pessoais:', err); showToast(`Erro ao salvar ação: ${err.message}`, 'error'); } 
     finally { confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; }
 }
@@ -182,7 +182,8 @@ async function handlePromotionAction(actionType) {
         if (totalDistributedGain > 0) { alertMessage += `✨ +${totalDistributedGain.toLocaleString('pt-BR')} streams distribuídos para outras faixas:\n`; alertMessage += distributionDetails.join('\n'); alertMessage += "\n\n"; }
         alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`; if (!isMain && config.limit !== 5) { alertMessage += ` (Limite de 5 usos para participações "Feat.")`; }
 
-        showToast(alertMessage, 'success'); actionModal.classList.add('hidden');
+        // MOSTRA O TOAST MAS MANTÉM A JANELA ABERTA PARA O FLOOD
+        showToast(alertMessage, 'success'); 
     } catch (err) { console.error('Erro ao tentar persistir ação de streams no Supabase:', err); showToast(`Erro ao salvar ação: ${err.message}`, 'error'); } 
     finally { confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; updateActionLimitInfo(); }
 }
