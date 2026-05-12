@@ -1,191 +1,591 @@
-// js/api.js
+// js/studio.js
 
-if (window.supabase && SUPABASE_URL.startsWith('http')) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
-
-async function carregarPosicoesAnteriores() {
-    try {
-        const response = await fetch(GOOGLE_SHEETS_API_URL);
-        const posicoesData = await response.json();
-        const musicChart = {}; const albumChart = {};
-        if (Array.isArray(posicoesData)) {
-            posicoesData.forEach(item => {
-                if (item.type === 'song') musicChart[item.id] = item.rank;
-                if (item.type === 'album') albumChart[item.id] = item.rank;
-            });
-        }
-        window.previousMusicChartData = musicChart; window.previousAlbumChartData = albumChart;
-        console.log("Posições do chart carregadas da Planilha Oficial com sucesso!");
-    } catch (e) {
-        console.error("Erro ao carregar histórico do Sheets", e);
-        window.previousMusicChartData = {}; window.previousAlbumChartData = {};
+function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgElementId, onCompleteCb) {
+    const fileInput = document.getElementById(fileInputId); const urlInput = document.getElementById(urlInputId);
+    const imgElement = document.getElementById(imgElementId); const bgElement = document.getElementById(bgElementId);
+    if (fileInput && urlInput) {
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            if(imgElement) imgElement.style.opacity = '0.5';
+            try {
+                const url = await uploadImageToImgbb(file);
+                urlInput.value = url;
+                if(imgElement) { imgElement.src = url; imgElement.style.opacity = '1'; }
+                if(bgElement) bgElement.style.backgroundImage = `url('${url}')`;
+                if(onCompleteCb) onCompleteCb(url);
+            } catch (error) { showToast('Erro upload imagem: ' + error.message, 'error'); if(imgElement) imgElement.style.opacity = '1'; } finally { fileInput.value = ''; }
+        });
     }
 }
-carregarPosicoesAnteriores();
 
-async function uploadImageToImgbb(file) {
-    const formData = new FormData(); formData.append('image', file);
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-    if (!response.ok) throw new Error('Falha no upload da imagem');
-    const data = await response.json(); return data.data.url;
+function updateArtistEditPreviews() {
+    const url = editArtistImageUrl.value || 'https://i.imgur.com/AD3MbBi.png'; const pos = editArtistBgPosition.value + '%';
+    const mainCircle = document.getElementById('editArtistPreviewCircleMain');
+    if (mainCircle) { mainCircle.src = url; mainCircle.style.objectPosition = `center ${pos}`; }
+    if (editArtistPreviewCircle) { editArtistPreviewCircle.src = url; editArtistPreviewCircle.style.objectPosition = `center ${pos}`; }
+    if (editArtistPreviewHeader) { editArtistPreviewHeader.style.backgroundImage = `url('${url}')`; editArtistPreviewHeader.style.backgroundPosition = `center ${pos}`; }
 }
 
-const parsePgArray = (arr) => {
-    if (Array.isArray(arr)) return arr;
-    if (typeof arr === 'string') return arr.replace(/^{|}$/g, '').split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
-    return [];
-};
-
-async function loadAllData() {
-    if (!supabaseClient && window.supabase && SUPABASE_URL.startsWith('http')) { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
-    if (!supabaseClient) { console.error("Supabase fail."); return null; }
-
+async function registerPlayer(username, password) {
+    if (!username || !password) { showToast("Preencha usuário e senha.", 'error'); return; }
     try {
-        const [artistsRes, albumsRes, songsRes, singlesRes, playersRes] = await Promise.all([
-            supabaseClient.from('artists').select('*'),
-            supabaseClient.from('albums').select('*'),
-            supabaseClient.from('songs').select('*'),
-            supabaseClient.from('singles').select('*'),
-            supabaseClient.from('players').select('*')
-        ]);
-        if (artistsRes.error) throw artistsRes.error;
-
-        const musicasMap = new Map();
-        (songsRes.data || []).forEach(row => {
-            const albumIds = parsePgArray(row.album_ids), singleIds = parsePgArray(row.single_ids), artistIds = parsePgArray(row.artist_ids);
-            const parentReleaseId = (albumIds.length > 0) ? albumIds[0] : (singleIds.length > 0 ? singleIds[0] : null);
-            musicasMap.set(row.id, {
-                id: row.id, title: row.title || 'Faixa Desconhecida', duration: row.duration_seconds ? new Date(row.duration_seconds * 1000).toISOString().substr(14, 5) : "0:00",
-                trackNumber: row.track_number || 0, durationSeconds: row.duration_seconds || 0, artistIds: artistIds, collabType: row.collab_type,
-                albumId: parentReleaseId, albumIds: albumIds, singleIds: singleIds, streams: row.streams || 0, totalStreams: row.total_streams || 0, trackType: row.track_type || 'B-side',
-                yt_id: row.yt_id, 
-                audio_url: row.audio_url,
-                yt_audio_id: row.yt_audio_id
-            });
-        });
-
-        const artistsMapById = new Map();
-        const artistsList = (artistsRes.data || []).map(row => {
-            let rawUrl = row.image_url || 'https://i.imgur.com/AD3MbBi.png', cleanUrl = rawUrl, bgPos = '20';
-            if (rawUrl.includes('#pos=')) [cleanUrl, bgPos] = rawUrl.split('#pos=');
-            const artist = {
-                id: row.id, name: row.name || 'Artista Desconhecido', img: cleanUrl, rawUrl: rawUrl, bgPos: bgPos + '%',
-                RPGPoints: row.rpg_points || 0, LastActive: row.last_active || null, personalPoints: row.personal_points || 150 
-            };
-            for (const key in ACTION_CONFIG) { const config = ACTION_CONFIG[key]; artist[config.localCountKey] = row[config.localCountKey] || 0; artist[config.bonusLocalKey] = row[config.bonusLocalKey] || false; }
-            artistsMapById.set(artist.id, artist.name); return artist;
-        });
-
-        const formatReleases = (records, isAlbum) => {
-            if (!records) return [];
-            return records.map(row => {
-                const tracks = Array.from(musicasMap.values()).filter(song => (isAlbum ? song.albumIds.includes(row.id) : song.singleIds.includes(row.id))).sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0)); 
-                const totalDuration = tracks.reduce((sum, track) => sum + (track.durationSeconds || 0), 0);
-                const totalAlbumStreams = tracks.reduce((sum, track) => sum + (track.totalStreams || 0), 0);
-                return {
-                    id: row.id, title: row.title || 'Título Desconhecido', artist: row.artist_id ? artistsMapById.get(row.artist_id) : "Artista Desconhecido", artistId: row.artist_id,
-                    imageUrl: row.image_url || 'https://i.imgur.com/AD3MbBi.png', releaseDate: row.release_date, isDeluxe: row.is_deluxe || false, tracks: tracks, trackIds: tracks.map(t => t.id),
-                    totalDurationSeconds: totalDuration, weeklyStreams: row.weekly_streams || 0, totalStreams: totalAlbumStreams, type: isAlbum ? 'album' : 'single', tableName: isAlbum ? 'albums' : 'singles'
-                };
-            });
-        };
-
-        return {
-            allArtists: artistsList, albums: formatReleases(albumsRes.data, true), singles: formatReleases(singlesRes.data, false),
-            players: (playersRes.data || []).map(row => ({ id: row.id, name: row.name, password: row.password, artists: parsePgArray(row.artist_ids) })),
-            musicas: Array.from(musicasMap.values()) 
-        };
-    } catch (error) { console.error("Falha ao carregar dados do Supabase:", error); return null; }
+        const { data: existing, error: searchError } = await supabaseClient.from('players').select('id').ilike('name', username);
+        if (searchError) throw searchError;
+        if (existing && existing.length > 0) { showToast("Este nome em uso.", 'error'); return; }
+        const { data, error } = await supabaseClient.from('players').insert([{ name: username, password: password, artist_ids: [] }]).select();
+        if (error) throw error;
+        showToast("Conta criada! Fazendo login...", 'success');
+        const newPlayer = { id: data[0].id, name: data[0].name, password: data[0].password, artists: [] };
+        db.players.push(newPlayer); loginPlayer(username, password);
+        if (regUsernameInput) regUsernameInput.value = ''; if (regPasswordInput) regPasswordInput.value = '';
+    } catch (err) { showToast("Erro: " + err.message, 'error'); }
 }
 
-const mapTable = (t) => { if(t === 'Músicas') return 'songs'; if(t === 'Álbuns') return 'albums'; if(t === 'Singles e EPs') return 'singles'; return t; };
-
-const mapFieldsToSupabase = (tableName, fields) => {
-    const payload = {};
-    if(fields['Nome do Álbum'] || fields['Nome do Single/EP']) payload.title = fields['Nome do Álbum'] || fields['Nome do Single/EP'];
-    if(fields['Nome da Faixa']) payload.title = fields['Nome da Faixa'];
-    if (tableName === 'Músicas') { if(fields['Artista']) payload.artist_ids = Array.isArray(fields['Artista']) ? fields['Artista'] : [fields['Artista']]; } 
-    else { if(fields['Artista']) payload.artist_id = Array.isArray(fields['Artista']) ? fields['Artista'][0] : fields['Artista']; }
-    if(fields['Capa do Álbum'] || fields['Capa']) payload.image_url = (fields['Capa do Álbum'] || fields['Capa'])[0].url;
-    if(fields['Data de Lançamento']) payload.release_date = fields['Data de Lançamento'];
-    if(fields['Duração']) payload.duration_seconds = fields['Duração'];
-    if(fields['Nº da Faixa']) payload.track_number = fields['Nº da Faixa'];
-    if(fields['Tipo de Faixa']) payload.track_type = fields['Tipo de Faixa'];
-    if(fields['Tipo de Colaboração']) payload.collab_type = fields['Tipo de Colaboração'];
-    if(fields['Álbuns']) payload.album_ids = fields['Álbuns'];
-    if(fields['Singles e EPs']) payload.single_ids = fields['Singles e EPs'];
-    if(fields['É deluxe?'] !== undefined) payload.is_deluxe = fields['É deluxe?'];
-    if(fields['current_rank'] !== undefined) payload.current_rank = fields['current_rank'];
-    if(fields['previous_rank'] !== undefined) payload.previous_rank = fields['previous_rank'];
-    if(fields['peak_rank'] !== undefined) payload.peak_rank = fields['peak_rank'];
-    
-    if(fields['YouTube ID'] !== undefined) payload.yt_id = fields['YouTube ID'];
-    if(fields['Audio URL'] !== undefined) payload.audio_url = fields['Audio URL'];
-    if(fields['YouTube Audio ID'] !== undefined) payload.yt_audio_id = fields['YouTube Audio ID'];
-    
-    return payload;
-};
-
-async function createAirtableRecord(tableName, fields) { const { data, error } = await supabaseClient.from(mapTable(tableName)).insert([mapFieldsToSupabase(tableName, fields)]).select(); if (error) throw error; return { id: data[0].id }; }
-async function batchCreateAirtableRecords(tableName, recordsFields) { const { data, error } = await supabaseClient.from(mapTable(tableName)).insert(recordsFields.map(f => mapFieldsToSupabase(tableName, f))).select(); if (error) throw error; return data; }
-async function updateAirtableRecord(tableName, recordId, fields) { const { data, error } = await supabaseClient.from(mapTable(tableName)).update(mapFieldsToSupabase(tableName, fields)).eq('id', recordId).select(); if (error) throw error; return { id: data[0].id }; }
-async function batchUpdateAirtableRecords(tableName, recordsToUpdate) {
-    const table = mapTable(tableName); const promises = recordsToUpdate.map(rec => supabaseClient.from(table).update(mapFieldsToSupabase(tableName, rec.fields)).eq('id', rec.id).select());
-    const results = await Promise.all(promises); return results.map(r => r.data ? r.data[0] : null);
+function loginPlayer(username, password) {
+    if (!username || !password) { showToast("Insira usuário e senha.", 'error'); return; }
+    const foundPlayer = db.players.find(p => p.name.toLowerCase() === username.toLowerCase());
+    if (foundPlayer && foundPlayer.password === password) {
+        currentPlayer = foundPlayer; localStorage.setItem('spotifyRpg_loggedInPlayerId', currentPlayer.id); document.getElementById('playerName').textContent = currentPlayer.name;
+        loginPrompt?.classList.add('hidden'); registerPrompt?.classList.add('hidden'); loggedInInfo?.classList.remove('hidden'); studioLaunchWrapper?.classList.remove('hidden'); document.getElementById('actionsLoginPrompt')?.classList.add('hidden'); document.getElementById('actionsWrapper')?.classList.remove('hidden');
+        populateArtistSelector(currentPlayer.id); displayArtistActions();
+        const editSection = document.getElementById('editReleaseSection');
+        if (editSection && editSection.classList.contains('active')) populateEditableReleases();
+    } else { showToast("Usuário ou senha inválidos.", 'error'); const pwInput = document.getElementById('passwordInput'); if (pwInput) pwInput.value = ''; }
 }
-async function deleteAirtableRecord(tableName, recordId) { const { error } = await supabaseClient.from(mapTable(tableName)).delete().eq('id', recordId); if (error) throw error; return { deleted: true, id: recordId }; }
-async function batchDeleteAirtableRecords(tableName, recordIds) { const { error } = await supabaseClient.from(mapTable(tableName)).delete().in('id', recordIds); if (error) return { success: false, results: [] }; return { success: true, results: recordIds.map(id => ({id: id, deleted: true})) }; }
 
-const initializeData = (data) => {
+function logoutPlayer() {
+    currentPlayer = null; localStorage.removeItem('spotifyRpg_loggedInPlayerId');
+    if (document.getElementById('playerName')) document.getElementById('playerName').textContent = '';
+    loginPrompt?.classList.remove('hidden'); registerPrompt?.classList.add('hidden'); loggedInInfo?.classList.add('hidden'); studioLaunchWrapper?.classList.add('hidden'); document.getElementById('actionsLoginPrompt')?.classList.remove('hidden'); document.getElementById('actionsWrapper')?.classList.add('hidden'); if (artistActionsList) artistActionsList.innerHTML = '';
+    if (document.getElementById('usernameInput')) document.getElementById('usernameInput').value = ''; if (document.getElementById('passwordInput')) document.getElementById('passwordInput').value = '';
+    if (editReleaseList) editReleaseList.innerHTML = '<p class="empty-state-small">Faça login para ver lançamentos.</p>'; if (editArtistFilterSelect) editArtistFilterSelect.innerHTML = '<option value="all">Todos os Artistas</option>'; if(wysiwygArtistSelect) wysiwygArtistSelect.innerHTML = '<option value="">Selecione...</option>'; if(editArtistSelect) { editArtistSelect.innerHTML = '<option value="">Selecione...</option>'; editArtistFields?.classList.add('hidden'); }
+    editReleaseForm?.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); studioForms.forEach(f => f.classList.remove('active')); document.getElementById('wysiwygReleaseForm')?.classList.add('active');
+    const label = document.getElementById('currentStudioMenuLabel'); if(label) label.textContent = 'Novo Lançamento';
+}
+
+async function handleArtistSubmit(event) {
+    event.preventDefault(); const submitBtn = document.getElementById('submitNewArtist'), name = document.getElementById('newArtistName')?.value.trim(), imageUrl = document.getElementById('newArtistImageUrl')?.value.trim();
+    if (!name || !imageUrl) return;
+    submitBtn.disabled = true; submitBtn.textContent = 'Criando...';
     try {
-        const artistsMapById = new Map();
-        db.artists = (data.allArtists || []).map(artist => {
-            const artistEntry = { ...artist, albums: [], singles: [], careerTotalStreams: 0 };
-            artistsMapById.set(artist.id, artist.name); return artistEntry;
+        const { data: artistData, error: artistError } = await supabaseClient.from('artists').insert([{ name: name, image_url: imageUrl, is_main_artist: true, personal_points: 150, rpg_points: 0 }]).select();
+        if (artistError) throw artistError;
+        const newArtistIds = [...(currentPlayer.artists || []), artistData[0].id];
+        await supabaseClient.from('players').update({ artist_ids: newArtistIds }).eq('id', currentPlayer.id);
+        showToast(`Artista criado!`, 'success'); document.getElementById('newArtistForm')?.reset(); await refreshAllData(); document.querySelector('.studio-menu-opt[data-form="release"]')?.click();
+    } catch(e) { showToast("Erro: " + e.message, 'error'); } finally { submitBtn.disabled = false; submitBtn.textContent = 'Criar Artista'; }
+}
+
+async function handleEditArtistSubmit(event) {
+    event.preventDefault(); const artistId = editArtistSelect?.value, newName = editArtistNameInput?.value.trim(), newUrl = editArtistImageUrl?.value.trim(), newPos = editArtistBgPosition?.value;
+    if (!artistId || !newName || !newUrl) return; submitEditArtist.disabled = true; submitEditArtist.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+        await supabaseClient.from('artists').update({ name: newName, image_url: `${newUrl}#pos=${newPos}` }).eq('id', artistId);
+        showToast("Atualizado com sucesso!", 'success'); await refreshAllData();
+    } catch (err) { showToast("Erro: " + err.message, 'error'); } finally { submitEditArtist.disabled = false; submitEditArtist.textContent = 'Salvar Alterações'; }
+}
+
+function populateArtistSelector(playerId) {
+    const player = db.players.find(p => p.id === playerId); if (!player) return;
+    const playerArtistIds = player.artists || [];
+    const optionsHtml = playerArtistIds.map(id => { const artist = db.artists.find(a => a.id === id); return artist ? `<option value="${artist.id}">${artist.name}</option>` : ''; }).join('');
+    if (wysiwygArtistSelect) {
+        if (playerArtistIds.length === 0) { wysiwygArtistSelect.innerHTML = `<option value="">Nenhum artista</option>`; } 
+        else { wysiwygArtistSelect.innerHTML = `<option value="" disabled selected>Selecione...</option>${optionsHtml}`; if (playerArtistIds.length === 1) { wysiwygArtistSelect.value = playerArtistIds[0]; const artist = db.artists.find(a => a.id === playerArtistIds[0]); if(artist && wysiwygArtistImg) wysiwygArtistImg.src = artist.img; } }
+    }
+    if (editArtistFilterSelect) { editArtistFilterSelect.innerHTML = `<option value="all">Todos os Artistas</option>${optionsHtml}`; }
+    if (editArtistSelect) {
+        if (playerArtistIds.length === 0) { editArtistSelect.innerHTML = `<option value="">Nenhum artista</option>`; editArtistFields?.classList.add('hidden'); } 
+        else { editArtistSelect.innerHTML = `<option value="" disabled selected>Selecione...</option>${optionsHtml}`; }
+    }
+}
+
+function displayArtistActions() {
+    if (!currentPlayer || !artistActionsList) return;
+    const playerArtists = currentPlayer.artists.map(id => db.artists.find(a => a.id === id)).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
+    if (playerArtists.length === 0) { artistActionsList.innerHTML = "<p class='empty-state-small'>Você não controla nenhum artista.</p>"; return; }
+    artistActionsList.innerHTML = playerArtists.map(artist => `
+        <div class="edit-release-item" data-artist-id="${artist.id}" style="display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 4px;">
+            <img src="${artist.img}" alt="${artist.name}" class="edit-release-cover" style="width: 48px; height: 48px; object-fit: cover; object-position: center ${artist.bgPos}; border-radius: 50%;">
+            <div class="edit-release-info" style="flex-grow: 1;">
+                <span class="edit-release-title" style="display: block; font-weight: 600; color: #fff;">${artist.name}</span>
+                <span class="edit-release-artist" style="display: block; font-size: 12px; color: #aaa;">Status de Imagem: <strong style="color:var(--text-primary)">${artist.personalPoints || 150} pontos</strong></span>
+            </div>
+            <div class="action-buttons"><button class="small-btn btn-open-action-modal">Selecionar Ação</button></div>
+        </div>`).join('');
+
+    document.querySelectorAll('.btn-open-action-modal').forEach(b => {
+        b.addEventListener('click', (e) => {
+            const artistId = e.currentTarget.closest('.edit-release-item').dataset.artistId; const artist = db.artists.find(a => a.id === artistId); if (!artist) return;
+            modalArtistName.textContent = artist.name; modalArtistId.value = artist.id; populateReleaseSelectForActions(artist.id);
+            actionTypeSelect.value = ""; trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento primeiro</option>'; trackSelectWrapper.classList.add('hidden'); actionLimitInfo.classList.add('hidden'); confirmActionButton.disabled = true; confirmActionButton.textContent = 'Confirmar Ação'; 
+            releaseSelectWrapper.classList.remove('hidden'); actionModal.classList.remove('hidden');
         });
+    });
+}
 
-        const releaseDateMap = new Map();
-        [...(data.albums || []), ...(data.singles || [])].forEach(item => { if (item.id && item.releaseDate) releaseDateMap.set(item.id, item.releaseDate); });
+function populateReleaseSelectForActions(artistId) {
+    const mainReleases = [...db.albums, ...db.singles].filter(r => r.artistId === artistId); const mainReleaseIds = new Set(mainReleases.map(r => r.id));
+    const featuredReleaseIds = new Set(); const actionableTypes = ['Title Track', 'Pre-release Single']; 
+    db.songs.forEach(track => {
+        if (track.artistIds && track.artistIds.includes(artistId) && (actionableTypes.includes(track.trackType) || track.isBonusTrack)) {
+            if (track.albumIds) track.albumIds.forEach(id => featuredReleaseIds.add(id));
+            if (track.singleIds) track.singleIds.forEach(id => featuredReleaseIds.add(id));
+        }
+    });
+    const allReleaseIds = new Set([...mainReleaseIds, ...featuredReleaseIds]); const allReleases = [...db.albums, ...db.singles].filter(r => allReleaseIds.has(r.id));
+    releaseSelect.innerHTML = '<option value="" disabled selected>Selecione o Lançamento...</option>';
+    if (allReleases.length === 0) { releaseSelect.innerHTML += '<option value="" disabled>Nenhum lançamento</option>'; return; }
+    allReleases.sort((a, b) => a.title.localeCompare(b.title)).forEach(r => { const o = document.createElement('option'); o.value = r.id; o.textContent = r.isDeluxe ? `${r.title} (Deluxe)` : r.title; releaseSelect.appendChild(o); });
+}
 
-        db.songs = (data.musicas || []).map(song => {
-            const allLinkedIds = [...(song.albumIds || []), ...(song.singleIds || [])]; let earliestDate = null;
-            if (allLinkedIds.length > 0) {
-                const validDates = allLinkedIds.map(id => releaseDateMap.get(id)).filter(Boolean).map(dateStr => new Date(dateStr)).filter(d => !isNaN(d.getTime()));
-                if (validDates.length > 0) earliestDate = new Date(Math.min.apply(null, validDates));
+function populateTrackSelectForActions(releaseId, artistId) {
+    const actionableTypes = ['Title Track', 'Pre-release Single'];
+    const releaseActionableTracks = db.songs.filter(t => {
+        const inRelease = (t.albumIds && t.albumIds.includes(releaseId)) || (t.singleIds && t.singleIds.includes(releaseId));
+        return inRelease && (actionableTypes.includes(t.trackType) || t.isBonusTrack) && t.artistIds.includes(artistId);
+    });
+    trackSelect.innerHTML = '<option value="" disabled selected>Selecione a Faixa Título...</option>';
+    if (releaseActionableTracks.length === 0) { trackSelect.innerHTML += '<option value="" disabled>Nenhuma faixa acionável</option>'; trackSelectWrapper.classList.remove('hidden'); return; }
+    releaseActionableTracks.sort((a, b) => a.title.localeCompare(b.title)).forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.title} (${t.isBonusTrack && !actionableTypes.includes(t.trackType) ? 'Bônus' : t.trackType})`; trackSelect.appendChild(o); });
+    trackSelectWrapper.classList.remove('hidden');
+}
+
+function updateActionLimitInfo() {
+    const artistId = modalArtistId.value, actionType = actionTypeSelect.value, trackId = trackSelect.value, artist = db.artists.find(a => a.id === artistId);
+    if (!artist || !actionType || !ACTION_CONFIG[actionType] || !trackId) { actionLimitInfo.classList.add('hidden'); confirmActionButton.disabled = true; return; }
+    const track = db.songs.find(t => t.id === trackId); if (!track) return;
+    const config = ACTION_CONFIG[actionType], limit = (config.limit === 5) ? 5 : (track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo' ? config.limit : 5), currentCount = artist[config.localCountKey] || 0;
+    currentActionCount.textContent = currentCount; maxActionCount.textContent = limit; actionLimitInfo.classList.remove('hidden');
+    if (currentCount >= limit) { currentActionCount.style.color = 'var(--trend-down-red)'; confirmActionButton.disabled = true; confirmActionButton.textContent = 'Limite Atingido'; } 
+    else { currentActionCount.style.color = 'var(--text-primary)'; confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; }
+}
+
+function populateTracklistEditor(editorElement, tracks) {
+    if (!editorElement) return; editorElement.innerHTML = ''; 
+    if (!tracks || tracks.length === 0) { editorElement.innerHTML = '<p class="empty-state-small">Nenhuma faixa adicionada.</p>'; return; }
+    const sortedTracks = [...tracks].sort((a, b) => (a.trackNumber || 99) - (b.trackNumber || 99));
+
+    sortedTracks.forEach(track => {
+        const fullSong = db.songs.find(s => s.id === track.id); if (!fullSong) return;
+        const featsData = (fullSong.artistIds || []).slice(1).map(artistId => { const artist = db.artists.find(a => a.id === artistId); return { id: artistId, type: fullSong.collabType || 'Feat.', name: artist ? artist.name : '?' }; });
+        const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px;';
+        newItem.dataset.itemId = `existing_${fullSong.id}`; newItem.dataset.existingSongId = fullSong.id; newItem.dataset.trackName = fullSong.title.replace(/ \(feat\. .+\)$/i, ''); newItem.dataset.durationStr = fullSong.duration; newItem.dataset.trackType = fullSong.trackType; newItem.dataset.feats = JSON.stringify(featsData);
+        
+        newItem.dataset.ytId = fullSong.yt_id || ''; 
+        newItem.dataset.ytAudioId = fullSong.yt_audio_id || ''; 
+        newItem.dataset.audioUrl = fullSong.audio_url || '';
+
+        let artistText = "Desconhecido"; const mainArtist = db.artists.find(a => a.id === fullSong.artistIds[0]);
+        if (mainArtist) { if (featsData.length > 0) { artistText = featsData[0].type === "Dueto/Grupo" ? `${mainArtist.name} & ${featsData.map(f=>f.name).join(', ')}` : `${mainArtist.name} (feat. ${featsData.map(f=>f.name).join(', ')})`; } else { artistText = mainArtist.name; } }
+
+        const titleDisplay = (fullSong.id) ? `<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;" title="Faixa Existente"></i>${fullSong.title}` : fullSong.title;
+        const ytIcon = fullSong.yt_id ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com MV"></i>' : '';
+        const auIcon = (fullSong.yt_audio_id || fullSong.audio_url) ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
+
+        newItem.innerHTML = `
+            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
+            <span class="track-number track-number-display">${fullSong.trackNumber || '?'}</span>
+            <div class="track-info" style="flex-grow:1;">
+                <span class="track-title" style="color: ${(fullSong.id)?'var(--spotify-green)':'var(--text-primary)'};">${titleDisplay} ${ytIcon} ${auIcon}</span>
+                <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${fullSong.trackType}</span></span>
+            </div>
+            <span class="track-duration" style="margin-right: 16px;">${fullSong.duration}</span>
+            <div class="track-actions" style="display:flex; gap:12px;">
+                <button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button>
+                <button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button>
+            </div>
+        `;
+        editorElement.appendChild(newItem);
+    });
+    updateTrackNumbers(editorElement); 
+}
+
+function updateTrackNumbers(editorElement) {
+    if (!editorElement) return; const trackItems = editorElement.querySelectorAll('.track-list-item-display');
+    if (trackItems.length === 0) { if (!editorElement.querySelector('p')) { editorElement.innerHTML = '<p style="color: var(--text-subdued); text-align: center; font-size: 14px; margin-top: 24px;">Nenhuma faixa adicionada.</p>'; } } 
+    else { const emptyState = editorElement.querySelector('p'); if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) { emptyState.remove(); } }
+    trackItems.forEach((item, index) => { let numberSpan = item.querySelector('.track-number-display'); if (numberSpan) { numberSpan.textContent = `${index + 1}`; } });
+}
+
+function populateArtistSelectForFeat(targetSelectElement) {
+    let currentMainArtistId = null; let selectElement = targetSelectElement;
+    if (activeTracklistEditor === editAlbumTracklistEditor || editReleaseForm?.classList.contains('active')) { const artistDisplay = document.getElementById('editArtistNameDisplay'); currentMainArtistId = db.artists.find(a => a.name === artistDisplay?.textContent)?.id; selectElement = inlineFeatArtistSelect; } 
+    else if (activeTracklistEditor === wysiwygTracklistEditor || wysiwygReleaseForm?.classList.contains('active')) { currentMainArtistId = wysiwygArtistSelect?.value; selectElement = inlineFeatArtistSelect; } 
+    if (!selectElement) return;
+    const featOptions = db.artists.filter(artist => artist.id !== currentMainArtistId).sort((a, b) => a.name.localeCompare(b.name)).map(artist => `<option value="${artist.id}">${artist.name}</option>`).join('');
+    selectElement.innerHTML = featOptions || '<option value="">Nenhum outro artista disponível</option>';
+}
+
+function openFeatModal(buttonElement) { const targetListId = buttonElement.dataset.target; currentFeatTarget = document.getElementById(targetListId); if (!currentFeatTarget || !featModal) return; populateArtistSelectForFeat(featArtistSelect); featModal.classList.remove('hidden'); }
+function closeFeatModal() { featModal?.classList.add('hidden'); currentFeatTarget = null; if(featArtistSelect) featArtistSelect.innerHTML = ''; if(featTypeSelect) featTypeSelect.value = 'Feat.'; }
+function confirmFeat() { const artistId = featArtistSelect?.value; const artistName = featArtistSelect?.options[featArtistSelect.selectedIndex]?.text || 'Desconhecido'; const featType = featTypeSelect?.value; if (!artistId || !currentFeatTarget) return; const tag = document.createElement('span'); tag.className = 'feat-tag'; tag.style.cssText = "background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;"; tag.textContent = `${featType} ${artistName}`; tag.dataset.artistId = artistId; tag.dataset.featType = featType; tag.dataset.artistName = artistName; tag.addEventListener('click', () => tag.remove()); currentFeatTarget.appendChild(tag); closeFeatModal(); }
+function toggleInlineFeatAdder() { if (!inlineFeatAdder || !addInlineFeatBtn) return; if (inlineFeatAdder.classList.contains('hidden')) { populateArtistSelectForFeat(inlineFeatArtistSelect); inlineFeatAdder.classList.remove('hidden'); addInlineFeatBtn.innerHTML = '<i class="fas fa-times"></i> Cancelar Feat'; } else { inlineFeatAdder.classList.add('hidden'); addInlineFeatBtn.innerHTML = '+ Feat'; if(inlineFeatArtistSelect) inlineFeatArtistSelect.innerHTML = ''; if(inlineFeatTypeSelect) inlineFeatTypeSelect.value = 'Feat.'; } }
+function confirmInlineFeat() { const artistId = inlineFeatArtistSelect?.value; const artistName = inlineFeatArtistSelect?.options[inlineFeatArtistSelect.selectedIndex]?.text || 'Desconhecido'; const featType = inlineFeatTypeSelect?.value; if (!artistId || !albumTrackFeatList) return; const tag = document.createElement('span'); tag.className = 'feat-tag'; tag.style.cssText = "background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;"; tag.textContent = `${featType} ${artistName}`; tag.dataset.artistId = artistId; tag.dataset.featType = featType; tag.dataset.artistName = artistName; tag.addEventListener('click', () => tag.remove()); albumTrackFeatList.appendChild(tag); toggleInlineFeatAdder(); }
+function cancelInlineFeat() { if(!inlineFeatAdder || !addInlineFeatBtn) return; inlineFeatAdder.classList.add('hidden'); addInlineFeatBtn.innerHTML = '+ Feat'; if(inlineFeatArtistSelect) inlineFeatArtistSelect.innerHTML = ''; if(inlineFeatTypeSelect) inlineFeatTypeSelect.value = 'Feat.'; }
+
+function openAlbumTrackModal(itemToEdit = null) {
+    if (!albumTrackModal) return;
+    albumTrackNameInput.value = ''; albumTrackDurationInput.value = ''; albumTrackTypeSelect.value = 'B-Side'; albumTrackFeatList.innerHTML = ''; editingTrackItemId.value = ''; editingTrackExistingId.value = ''; editingTrackItem = null;
+    
+    const ytInput = document.getElementById('albumTrackYoutubeInput'); if (ytInput) ytInput.value = '';
+    const audioInput = document.getElementById('albumTrackAudioInput'); if (audioInput) audioInput.value = '';
+
+    inlineFeatAdder?.classList.add('hidden'); if (addInlineFeatBtn) addInlineFeatBtn.innerHTML = '+ Feat';
+    albumTrackNameInput.disabled = false; albumTrackDurationInput.disabled = false; albumTrackFeatList.closest('.feat-section')?.classList.remove('hidden');
+
+    if (itemToEdit) {
+        editingTrackItem = itemToEdit; editingTrackItemId.value = itemToEdit.dataset.itemId || `temp_edit_${Date.now()}`;
+        albumTrackNameInput.value = itemToEdit.dataset.trackName || ''; albumTrackDurationInput.value = itemToEdit.dataset.durationStr || ''; 
+        const matchedOption = Array.from(albumTrackTypeSelect.options).find(opt => opt.value.toLowerCase() === (itemToEdit.dataset.trackType || 'B-Side').toLowerCase()); albumTrackTypeSelect.value = matchedOption ? matchedOption.value : 'B-Side';
+        
+        if (ytInput && itemToEdit.dataset.ytId && itemToEdit.dataset.ytId !== 'undefined' && itemToEdit.dataset.ytId !== 'null') ytInput.value = `https://youtube.com/watch?v=${itemToEdit.dataset.ytId}`;
+        
+        if (audioInput) {
+            if (itemToEdit.dataset.ytAudioId && itemToEdit.dataset.ytAudioId !== 'undefined' && itemToEdit.dataset.ytAudioId !== 'null') {
+                audioInput.value = `https://youtube.com/watch?v=${itemToEdit.dataset.ytAudioId}`;
+            } else if (itemToEdit.dataset.audioUrl && itemToEdit.dataset.audioUrl !== 'undefined' && itemToEdit.dataset.audioUrl !== 'null') {
+                audioInput.value = itemToEdit.dataset.audioUrl;
             }
-            return { ...song, streams: song.streams || 0, totalStreams: song.totalStreams || 0, cover: 'https://i.imgur.com/AD3MbBi.png', artist: artistsMapById.get((song.artistIds || [])[0]) || 'Artista Desconhecido', parentReleaseDate: earliestDate ? earliestDate.toISOString() : null };
-        });
+        }
 
-        db.albums = []; db.singles = [];
-        [...(data.albums || []), ...(data.singles || [])].forEach(item => {
-            const involvedArtistIds = new Set([item.artistId]); 
-            (item.trackIds || []).forEach(trackId => {
-                const songInDb = db.songs.find(sDb => sDb.id === trackId);
-                if (songInDb) {
-                    if (songInDb.artistIds) songInDb.artistIds.forEach(id => involvedArtistIds.add(id));
-                    if (songInDb.albumId === item.id && songInDb.cover === 'https://i.imgur.com/AD3MbBi.png') songInDb.cover = item.imageUrl;
-                    else if (!songInDb.albumId) { if (songInDb.cover === 'https://i.imgur.com/AD3MbBi.png') songInDb.cover = item.imageUrl; songInDb.albumId = item.id; }
-                    if (!songInDb.parentReleaseDate && item.releaseDate) songInDb.parentReleaseDate = item.releaseDate;
+        const existingSongId = itemToEdit.dataset.existingSongId; const featsToPopulate = JSON.parse(itemToEdit.dataset.feats || '[]');
+        if (!existingSongId) { albumTrackModalTitle.textContent = 'Editar Faixa (Nova)'; } else { albumTrackModalTitle.textContent = 'Editar Faixa (Existente)'; editingTrackExistingId.value = existingSongId; }
+        featsToPopulate.forEach(f => { const tag = document.createElement('span'); tag.className = 'feat-tag'; tag.style.cssText = "background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;"; tag.textContent = `${f.type} ${f.name}`; tag.dataset.artistId = f.id; tag.dataset.featType = f.type; tag.dataset.artistName = f.name; tag.addEventListener('click', () => tag.remove()); albumTrackFeatList.appendChild(tag); });
+    } else { albumTrackModalTitle.textContent = 'Adicionar Faixa'; editingTrackItemId.value = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`; }
+    albumTrackModal.classList.remove('hidden');
+}
+
+function closeAlbumTrackModal() { albumTrackModal?.classList.add('hidden'); editingTrackItem = null; if(editingTrackItemId) editingTrackItemId.value = ''; if(editingTrackExistingId) editingTrackExistingId.value = ''; inlineFeatAdder?.classList.add('hidden'); if (addInlineFeatBtn) addInlineFeatBtn.innerHTML = '+ Feat'; }
+
+function saveAlbumTrack() {
+    if (!activeTracklistEditor) return;
+    let existingSongId = editingTrackExistingId.value; const name = albumTrackNameInput.value.trim(); const durationStr = albumTrackDurationInput.value.trim(); const type = albumTrackTypeSelect.value; const durationSec = parseDurationToSeconds(durationStr); const itemId = editingTrackItemId.value;
+    const featTags = albumTrackFeatList.querySelectorAll('.feat-tag'); const featsData = Array.from(featTags).map(tag => ({ id: tag.dataset.artistId, type: tag.dataset.featType, name: tag.dataset.artistName })); const featsJSON = JSON.stringify(featsData);
+    if (!name || !durationStr || durationSec === 0) { showToast("Nome da faixa e duração são obrigatórios.", 'error'); return; }
+
+    const ytRaw = document.getElementById('albumTrackYoutubeInput')?.value || '';
+    const ytId = (typeof extractYouTubeID === 'function') ? extractYouTubeID(ytRaw) : null;
+    
+    const audioRaw = document.getElementById('albumTrackAudioInput')?.value || '';
+    const ytAudioId = (typeof extractYouTubeID === 'function') ? extractYouTubeID(audioRaw) : null;
+    const audioUrl = (!ytAudioId && audioRaw) ? ((typeof convertToDirectAudioLink === 'function') ? convertToDirectAudioLink(audioRaw) : audioRaw) : '';
+
+    const ytIcon = ytId ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com MV"></i>' : '';
+    const auIcon = (ytAudioId || audioUrl) ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
+
+    let targetElement = editingTrackItem || activeTracklistEditor.querySelector(`[data-item-id="${itemId}"]`);
+    let mainArtistName = "Desconhecido";
+    if (activeTracklistEditor === wysiwygTracklistEditor) { const sel = document.getElementById('wysiwygArtistSelect'); if(sel && sel.selectedIndex >= 0 && sel.value !== "") mainArtistName = sel.options[sel.selectedIndex].text; } 
+    else if (activeTracklistEditor === editAlbumTracklistEditor) { const disp = document.getElementById('editArtistNameDisplay'); if(disp) mainArtistName = disp.textContent; }
+
+    let artistText = mainArtistName;
+    if (featsData.length > 0) { if (featsData[0].type === "Dueto/Grupo") artistText = `${mainArtistName} & ${featsData.map(f=>f.name).join(', ')}`; else artistText = `${mainArtistName} (feat. ${featsData.map(f=>f.name).join(', ')})`; }
+    
+    if (targetElement) {
+        targetElement.dataset.trackName = name; targetElement.dataset.durationStr = durationStr; targetElement.dataset.feats = featsJSON; targetElement.dataset.trackType = type;
+        targetElement.dataset.ytId = ytId || ''; targetElement.dataset.ytAudioId = ytAudioId || ''; targetElement.dataset.audioUrl = audioUrl || ''; 
+        
+        targetElement.innerHTML = `
+            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
+            <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:${existingSongId ? 'var(--spotify-green)' : 'var(--text-primary)'};">${existingSongId ? '<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>' : ''}${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
+            <span class="track-duration" style="margin-right: 16px;">${durationStr}</span>
+            <div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+    } else {
+        const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px; border: 1px solid transparent;';
+        newItem.dataset.itemId = itemId; newItem.dataset.trackName = name; newItem.dataset.durationStr = durationStr; newItem.dataset.trackType = type; newItem.dataset.feats = featsJSON;
+        newItem.dataset.ytId = ytId || ''; newItem.dataset.ytAudioId = ytAudioId || ''; newItem.dataset.audioUrl = audioUrl || ''; 
+        newItem.innerHTML = `
+            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
+            <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:var(--text-primary);">${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
+            <span class="track-duration" style="margin-right: 16px;">${durationStr}</span>
+            <div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+        const emptyState = activeTracklistEditor.querySelector('p'); if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) emptyState.remove();
+        activeTracklistEditor.appendChild(newItem);
+    }
+    updateTrackNumbers(activeTracklistEditor); closeAlbumTrackModal();
+}
+
+function openExistingTrackModal(context) { 
+    if (!currentPlayer) { showToast("Faça login", 'error'); return; }
+    let activeArtistId = null;
+    if(activeTracklistEditor === wysiwygTracklistEditor){ activeArtistId = wysiwygArtistSelect?.value; } else if (activeTracklistEditor === editAlbumTracklistEditor){ const artistDisplay = document.getElementById('editArtistNameDisplay'); activeArtistId = db.artists.find(a => a.name === artistDisplay?.textContent)?.id; }
+    if (!activeArtistId) { showToast("Selecione o Artista Principal na capa.", 'error'); return; }
+    existingTrackModalContext = context; if(existingTrackSearch) existingTrackSearch.value = ''; populateExistingTrackSearch(); existingTrackModal?.classList.remove('hidden');
+}
+
+function closeExistingTrackModal() { existingTrackModal?.classList.add('hidden'); if(existingTrackSearch) existingTrackSearch.value = ''; if(existingTrackResults) existingTrackResults.innerHTML = '<p class="empty-state-small">Busque por uma faixa.</p>'; }
+function populateExistingTrackSearch() {
+    if (!existingTrackResults || !currentPlayer) return; let selectedArtistId = null;
+    if(activeTracklistEditor === wysiwygTracklistEditor){ selectedArtistId = wysiwygArtistSelect?.value; } else if (activeTracklistEditor === editAlbumTracklistEditor){ selectedArtistId = db.artists.find(a => a.name === document.getElementById('editArtistNameDisplay')?.textContent)?.id; }
+    if (!selectedArtistId) return; const query = existingTrackSearch?.value.toLowerCase().trim() || '';
+    const filteredSongs = db.songs.filter(song => song.artistIds && song.artistIds.includes(selectedArtistId) && (query === '' || song.title.toLowerCase().includes(query))).sort((a, b) => (b.totalStreams || 0) - (a.totalStreams || 0));
+    if (filteredSongs.length === 0) { existingTrackResults.innerHTML = '<p class="empty-state-small">Nenhuma faixa encontrada.</p>'; } else { existingTrackResults.innerHTML = filteredSongs.map(song => `<div class="existing-track-item" data-song-id="${song.id}" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; cursor:pointer;"><img src="${song.cover || getCoverUrl(song.albumId)}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"><div style="flex-grow:1;"><span style="display:block; font-size:14px; font-weight:600; color:#fff;">${song.title}</span><span style="display:block; font-size:12px; color:#aaa;">${song.artist}</span></div><i class="fas fa-plus" style="color:var(--text-secondary);"></i></div>`).join(''); }
+}
+
+function handleExistingTrackSelect(event) { const selectedItem = event.target.closest('.existing-track-item'); if (!selectedItem) return; const songId = selectedItem.dataset.songId; if (!songId) return; if (existingTrackModalContext === 'album') addExistingTrackToAlbum(songId); }
+
+function addExistingTrackToAlbum(songId) {
+    const song = db.songs.find(s => s.id === songId); if (!song || !activeTracklistEditor) return;
+    if (activeTracklistEditor.querySelector(`[data-existing-song-id="${song.id}"]`)) { showToast("Esta música já foi adicionada.", 'error'); return; }
+    const featsData = (song.artistIds || []).slice(1).map(artistId => { const artist = db.artists.find(a => a.id === artistId); return { id: artistId, type: song.collabType || 'Feat.', name: artist ? artist.name : '?' }; });
+    const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px;';
+    newItem.dataset.itemId = `existing_${song.id}`; newItem.dataset.existingSongId = song.id; newItem.dataset.trackName = song.title.replace(/ \(feat\. .+\)$/i, ''); newItem.dataset.durationStr = song.duration; newItem.dataset.trackType = song.trackType; newItem.dataset.feats = JSON.stringify(featsData);
+
+    let artistText = "Existente"; if (featsData.length > 0) { artistText = featsData[0].type === "Dueto/Grupo" ? `Dueto com ${featsData.map(f=>f.name).join(', ')}` : `feat. ${featsData.map(f=>f.name).join(', ')}`; }
+    newItem.innerHTML = `<i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span><div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:var(--spotify-green);"><i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>${song.title}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${song.trackType}</span></span></div><span class="track-duration" style="margin-right: 16px;">${song.duration}</span><div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+    const emptyState = activeTracklistEditor.querySelector('p'); if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) emptyState.remove(); activeTracklistEditor.appendChild(newItem); updateTrackNumbers(activeTracklistEditor); closeExistingTrackModal();
+}
+
+function initAlbumForm() {
+     if (wysiwygTracklistEditor) wysiwygTracklistEditor.innerHTML = '<p style="color: var(--text-subdued); text-align: center; font-size: 14px; margin-top: 24px;">Nenhuma faixa adicionada.</p>';
+     const releaseNature = document.getElementById('wysiwygReleaseNature'); if (releaseNature) { releaseNature.value = 'original'; releaseNature.dispatchEvent(new Event('change')); }
+     if (wysiwygTitle) wysiwygTitle.value = ''; if (wysiwygCoverUrl) wysiwygCoverUrl.value = 'https://i.imgur.com/AD3MbBi.png'; if (wysiwygCoverImg) wysiwygCoverImg.src = 'https://i.imgur.com/AD3MbBi.png'; if (wysiwygBg) wysiwygBg.style.backgroundImage = `url('https://i.imgur.com/AD3MbBi.png')`;
+     const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); if (wysiwygReleaseDate) wysiwygReleaseDate.value = now.toISOString().slice(0, 16); updateTrackNumbers(wysiwygTracklistEditor); 
+}
+
+async function handleWysiwygSubmit(event) {
+     event.preventDefault(); if (!submitWysiwygRelease) return;
+     submitWysiwygRelease.disabled = true; submitWysiwygRelease.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+     try {
+         const artistId = wysiwygArtistSelect?.value, title = document.getElementById('wysiwygTitle')?.value, coverUrl = document.getElementById('wysiwygCoverUrl')?.value, releaseDateTimeLocal = document.getElementById('wysiwygReleaseDate')?.value, releaseTypeSelected = document.getElementById('wysiwygReleaseType')?.value; 
+         if (!artistId || !title || !coverUrl || !releaseDateTimeLocal) throw new Error("Preencha todos os campos do cabeçalho.");
+         const releaseDateISO = releaseDateTimeLocal.split('T')[0]; if (isNaN(new Date(releaseDateISO).getTime())) throw new Error("Data inválida.");
+         const trackItems = wysiwygTracklistEditor?.querySelectorAll('.track-list-item-display'); if (!trackItems || trackItems.length === 0) throw new Error("Adicione pelo menos uma faixa para lançar o projeto.");
+
+         let totalDurationSeconds = 0; const musicRecordsToCreate = []; const musicRecordsToUpdate = [];
+         for (let i = 0; i < trackItems.length; i++) {
+             const item = trackItems[i]; const existingSongId = item.dataset.existingSongId; const name = item.dataset.trackName; const durationStr = item.dataset.durationStr; const type = item.dataset.trackType;
+             const ytId = item.dataset.ytId || null; 
+             const ytAudioId = item.dataset.ytAudioId || null; 
+             const audioUrl = item.dataset.audioUrl || null; 
+             
+             let feats = []; if (!existingSongId) { try { feats = JSON.parse(item.dataset.feats || '[]'); } catch (e) {} }
+             const durationSec = parseDurationToSeconds(durationStr);
+             if (!name || !durationStr || durationSec === 0) throw new Error(`Dados inválidos na Faixa ${i + 1}.`);
+             totalDurationSeconds += durationSec;
+
+             let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
+             if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
+
+             let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "YouTube Audio ID": ytAudioId, "Audio URL": audioUrl };
+             if(collaborationType) fieldsBase["Tipo de Colaboração"] = collaborationType;
+
+             if (existingSongId) { musicRecordsToUpdate.push({ id: existingSongId, fields: fieldsBase }); } else { musicRecordsToCreate.push(fieldsBase); }
+         }
+
+         let isAlbum = releaseTypeSelected === 'album'; 
+         if (!isAlbum) { if (totalDurationSeconds > 1800) throw new Error("Singles e EPs não podem ultrapassar 30 min. Altere o tipo para 'Álbuns'."); if (trackItems.length > 6) throw new Error("Singles e EPs não podem ter mais que 6 faixas. Altere o tipo para 'Álbuns'."); }
+         
+         const targetTableName = isAlbum ? 'Álbuns' : 'Singles e EPs'; const nameFieldName = isAlbum ? 'Nome do Álbum' : 'Nome do Single/EP'; const coverFieldName = isAlbum ? 'Capa do Álbum' : 'Capa'; const linkFieldName = isAlbum ? 'Álbuns' : 'Singles e EPs'; const isDeluxe = document.getElementById('wysiwygReleaseNature')?.value === 'deluxe';
+         const releaseRecordFields = { [nameFieldName]: title, "Artista": [artistId], [coverFieldName]: [{ "url": coverUrl }], "Data de Lançamento": releaseDateISO }; if (isDeluxe) releaseRecordFields["É deluxe?"] = true;
+         
+         const releaseResponse = await createAirtableRecord(targetTableName, releaseRecordFields); if (!releaseResponse || !releaseResponse.id) throw new Error("Falha ao criar o registro principal.");
+         const newReleaseId = releaseResponse.id;
+         musicRecordsToCreate.forEach(record => { record[linkFieldName] = [newReleaseId]; });
+         musicRecordsToUpdate.forEach(record => { const originalSong = db.songs.find(s => s.id === record.id); const existingLinks = (isAlbum ? originalSong?.albumIds : originalSong?.singleIds) || []; record.fields[linkFieldName] = [...new Set([...existingLinks, newReleaseId])]; });
+
+         let allMusicOpsSucceeded = true;
+         if (musicRecordsToCreate.length > 0) { const createdMusicResult = await batchCreateAirtableRecords('Músicas', musicRecordsToCreate); if (!createdMusicResult || createdMusicResult.length !== musicRecordsToCreate.length) allMusicOpsSucceeded = false; }
+         if (musicRecordsToUpdate.length > 0) { const updatedMusicResult = await batchUpdateAirtableRecords('Músicas', musicRecordsToUpdate); if (!updatedMusicResult || updatedMusicResult.length !== musicRecordsToUpdate.length) allMusicOpsSucceeded = false; }
+         if (!allMusicOpsSucceeded) showToast(`Projeto lançado, com erros nas faixas.`, 'error'); else showToast(`Projeto lançado com sucesso!`, 'success');
+
+         initAlbumForm(); await refreshAllData();
+     } catch (error) { showToast(`Erro: ${error.message}`, 'error'); } finally { submitWysiwygRelease.disabled = false; submitWysiwygRelease.innerHTML = `<i class="fas fa-check"></i> Lançar Projeto`; }
+}
+
+function populateEditableReleases() {
+    if (!editReleaseList) return; if (!currentPlayer) { editReleaseList.innerHTML = '<p class="empty-state-small">Faça login</p>'; return; }
+    const selectedArtistId = editArtistFilterSelect?.value; const playerArtistIds = currentPlayer.artists || [];
+    let releasesToDisplay = [...db.albums, ...db.singles].filter(release => selectedArtistId && selectedArtistId !== 'all' ? release.artistId === selectedArtistId : playerArtistIds.includes(release.artistId));
+    const sortedReleases = releasesToDisplay.sort((a, b) => new Date(b.releaseDate||0) - new Date(a.releaseDate||0));
+
+    if (sortedReleases.length === 0) { editReleaseList.innerHTML = '<p class="empty-state-small">Nenhum lançamento.</p>'; } 
+    else {
+        editReleaseList.innerHTML = sortedReleases.map(release => `
+            <div class="edit-release-item" style="display:flex; align-items:center; gap:16px; background:rgba(255,255,255,0.05); padding:12px; border-radius:4px;">
+                <img src="${release.imageUrl}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;">
+                <div style="flex-grow:1; min-width: 0;">
+                    <span class="edit-release-title" style="display:block; font-weight:600; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${release.title}</span>
+                     <span style="display:block; font-size:12px; color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${release.artist} - ${release.releaseDate ? new Date(release.releaseDate).getFullYear() : 'Sem Data'} (${release.type === 'album' ? 'Álbum' : 'Single/EP'})</span>
+                </div>
+                <button type="button" class="release-options-btn" data-release-id="${release.id}" data-release-type="${release.type}" data-release-table="${release.tableName}" data-release-title="${release.title}" style="background: transparent; border: none; color: var(--text-secondary); font-size: 20px; padding: 12px 8px; cursor: pointer; flex-shrink: 0;"><i class="fas fa-ellipsis-v"></i></button>
+            </div>
+        `).join('');
+    }
+}
+
+function openEditForm(releaseId, releaseType) {
+    const release = (releaseType === 'album' ? db.albums : db.singles).find(r => r.id === releaseId); if (!release || !editReleaseForm) return;
+    editReleaseId.value = release.id; editReleaseType.value = release.type; editReleaseTableName.value = release.tableName; editArtistNameDisplay.textContent = release.artist; editReleaseTitle.value = release.title; editReleaseCoverUrl.value = release.imageUrl; document.getElementById('editWysiwygCoverImg').src = release.imageUrl; document.getElementById('editWysiwygBg').style.backgroundImage = `url('${release.imageUrl}')`; 
+    const artistObj = db.artists.find(a => a.id === release.artistId); if(artistObj) { document.getElementById('editWysiwygArtistImg').src = artistObj.img; }
+    if (release.releaseDate) { try { const releaseDateObj = new Date(release.releaseDate); releaseDateObj.setMinutes(releaseDateObj.getMinutes() - releaseDateObj.getTimezoneOffset()); editReleaseDate.value = releaseDateObj.toISOString().slice(0, 16); } catch (e) { editReleaseDate.value = ''; } } else { editReleaseDate.value = ''; }
+    if (editAlbumTracklistEditor && editTracklistActions) { populateTracklistEditor(editAlbumTracklistEditor, release.tracks); if (typeof Sortable !== 'undefined') { if (editAlbumTracklistSortable) editAlbumTracklistSortable.destroy(); editAlbumTracklistSortable = Sortable.create(editAlbumTracklistEditor, { animation: 150, handle: '.drag-handle', onEnd: () => updateTrackNumbers(editAlbumTracklistEditor) }); } }
+    editReleaseListContainer?.classList.add('hidden'); editReleaseForm.classList.remove('hidden');
+}
+
+async function handleUpdateRelease(event) {
+    event.preventDefault();
+    const recordId = editReleaseId.value, tableName = editReleaseTableName.value, releaseType = editReleaseType.value, updatedTitle = editReleaseTitle.value.trim(), updatedCoverUrl = editReleaseCoverUrl.value.trim(), updatedReleaseDateTimeLocal = editReleaseDate.value;
+    const originalRelease = (releaseType === 'album' ? db.albums : db.singles).find(r => r.id === recordId); if (!originalRelease || !recordId || !tableName || !updatedTitle || !updatedCoverUrl || !updatedReleaseDateTimeLocal) return;
+    const artistId = originalRelease.artistId; const originalTrackIds = new Set(originalRelease.trackIds || []);
+
+    let updatedReleaseDateISO;
+    try { updatedReleaseDateISO = new Date(updatedReleaseDateTimeLocal).toISOString().split('T')[0]; if (isNaN(new Date(updatedReleaseDateISO).getTime())) throw new Error("Data inválida."); } catch (e) { showToast("Data inválida.", 'error'); return; }
+
+    saveEditBtn.disabled = true; saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const titleFieldName = (tableName === 'Álbuns') ? 'Nome do Álbum' : 'Nome do Single/EP'; const coverFieldName = (tableName === 'Álbuns') ? 'Capa do Álbum' : 'Capa';
+        const fieldsToUpdate = { [titleFieldName]: updatedTitle, [coverFieldName]: [{ "url": updatedCoverUrl }], "Data de Lançamento": updatedReleaseDateISO };
+        const updateResult = await updateAirtableRecord(tableName, recordId, fieldsToUpdate);
+        if (!updateResult || !updateResult.id) throw new Error("Falha ao atualizar o registro principal.");
+
+        if (tableName === 'Álbuns' || tableName === 'Singles e EPs') { 
+            const trackItems = editAlbumTracklistEditor.querySelectorAll('.track-list-item-display');
+            if (!editAlbumTracklistEditor.classList.contains('hidden')) { 
+                const musicRecordsToCreate = []; const musicRecordsToUpdate = []; const finalTrackIdsInEditor = new Set(); 
+                for (let i = 0; i < trackItems.length; i++) {
+                    const item = trackItems[i], existingSongId = item.dataset.existingSongId, name = item.dataset.trackName, durationStr = item.dataset.durationStr, type = item.dataset.trackType, durationSec = parseDurationToSeconds(durationStr);
+                    const ytId = item.dataset.ytId || null; 
+                    const ytAudioId = item.dataset.ytAudioId || null; 
+                    const audioUrl = item.dataset.audioUrl || null; 
+
+                    let feats = []; try { feats = JSON.parse(item.dataset.feats || '[]'); } catch (e) {}
+                    if (!name || (durationSec === 0 && !existingSongId) ) throw new Error(`Dados inválidos na Faixa ${i + 1}.`);
+
+                    const linkField = tableName === 'Álbuns' ? 'Álbuns' : 'Singles e EPs';
+                    let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
+                    if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
+                    
+                    let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "YouTube Audio ID": ytAudioId, "Audio URL": audioUrl };
+                    if(collaborationType) fieldsBase["Tipo de Colaboração"] = collaborationType;
+
+                    if (existingSongId) {
+                        finalTrackIdsInEditor.add(existingSongId); const originalSong = db.songs.find(s => s.id === existingSongId); const existingLinks = (tableName === 'Álbuns' ? originalSong?.albumIds : originalSong?.singleIds) || []; const updatedLinks = [...new Set([...existingLinks, recordId])];
+                        fieldsBase[linkField] = updatedLinks; musicRecordsToUpdate.push({ id: existingSongId, fields: fieldsBase });
+                    } else { fieldsBase[linkField] = [recordId]; musicRecordsToCreate.push(fieldsBase); }
+                } 
+                if (musicRecordsToCreate.length > 0) { const createResult = await batchCreateAirtableRecords('Músicas', musicRecordsToCreate); if (!createResult || createResult.length !== musicRecordsToCreate.length) throw new Error("Falha ao criar faixas novas."); createResult.forEach(record => finalTrackIdsInEditor.add(record.id)); }
+                const tracksToUnlinkIds = [...originalTrackIds].filter(id => !finalTrackIdsInEditor.has(id));
+                if (tracksToUnlinkIds.length > 0) {
+                    const unlinkPayload = []; const linkField = tableName === 'Álbuns' ? 'Álbuns' : 'Singles e EPs';
+                    for (const trackId of tracksToUnlinkIds) { const originalSong = db.songs.find(s => s.id === trackId); const existingLinks = (tableName === 'Álbuns' ? originalSong?.albumIds : originalSong?.singleIds) || []; const updatedLinks = existingLinks.filter(linkId => linkId !== recordId);  unlinkPayload.push({ id: trackId, fields: { [linkField]: updatedLinks } }); }
+                    await batchUpdateAirtableRecords('Músicas', unlinkPayload);
                 }
-            });
+                if (musicRecordsToUpdate.length > 0) { const updateExistingResult = await batchUpdateAirtableRecords('Músicas', musicRecordsToUpdate); if (!updateExistingResult || updateExistingResult.length !== musicRecordsToUpdate.length) throw new Error("Falha ao atualizar faixas existentes."); }
+            } 
+        } 
+        showToast("Atualizado com sucesso!", 'success'); editReleaseForm.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); await refreshAllData();
+    } catch (error) { showToast(`Erro: ${error.message}`, 'error'); } finally { saveEditBtn.disabled = false; saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Salvar'; }
+}
 
-            if (item.type === 'album') db.albums.push(item); else db.singles.push(item);
-           involvedArtistIds.forEach(aId => {
-                const artistEntry = db.artists.find(a => a.id === aId);
-                if (artistEntry) {
-                    if (aId === item.artistId) {
-                        if (item.type === 'album') { if (!artistEntry.albums.some(a => a.id === item.id)) artistEntry.albums.push(item); } 
-                        else { if (!artistEntry.singles.some(a => a.id === item.id)) artistEntry.singles.push(item); }
-                    }
-                }
-            });
-        });
+function openDeleteConfirmModal(recordId, tableName, releaseTitle, trackIds) { if (!deleteConfirmModal) return; deleteRecordId.value = recordId; deleteTableName.value = tableName; deleteReleaseName.textContent = releaseTitle; deleteTrackIds.value = JSON.stringify(trackIds || []); deleteConfirmModal.classList.remove('hidden'); }
+function closeDeleteConfirmModal() { if (!deleteConfirmModal) return; deleteConfirmModal.classList.add('hidden'); deleteRecordId.value = ''; deleteTableName.value = ''; deleteReleaseName.textContent = ''; deleteTrackIds.value = ''; }
 
-        db.artists.forEach(artist => {
-            const artistSongs = db.songs.filter(song => song.artistIds && song.artistIds.includes(artist.id));
-            artist.careerTotalStreams = artistSongs.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
+async function handleDeleteRelease() {
+    const recordId = deleteRecordId.value; const tableName = deleteTableName.value; const trackIdsString = deleteTrackIds.value; let associatedTrackIds = [];
+    try { associatedTrackIds = JSON.parse(trackIdsString || '[]'); } catch (e) {}
+    if (!recordId || !tableName) { closeDeleteConfirmModal(); return; }
+
+    confirmDeleteBtn.disabled = true; confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+        if (associatedTrackIds.length > 0) {
+            const updates = []; const deletes = [];
+            for (const trackId of associatedTrackIds) {
+                const song = db.songs.find(s => s.id === trackId); if (!song) continue;
+                const totalLinks = (song.albumIds || []).length + (song.singleIds || []).length;
+                if (totalLinks > 1) { const isAlbumTable = tableName === 'Álbuns'; const linkField = isAlbumTable ? 'Álbuns' : 'Singles e EPs'; const currentLinks = (isAlbumTable ? song.albumIds : song.singleIds) || []; updates.push({ id: trackId, fields: { [linkField]: currentLinks.filter(linkId => linkId !== recordId) } }); } 
+                else { deletes.push(trackId); }
+            }
+            if (updates.length > 0) await batchUpdateAirtableRecords('Músicas', updates);
+            if (deletes.length > 0) await batchDeleteAirtableRecords('Músicas', deletes);
+        }
+        const releaseDeleteResult = await deleteAirtableRecord(tableName, recordId);
+        if (releaseDeleteResult && releaseDeleteResult.deleted) { showToast("Lançamento apagado!", 'success'); closeDeleteConfirmModal(); await refreshAllData(); } else { throw new Error("Falha na exclusão."); }
+    } catch (error) { showToast(`Erro: ${error.message}`, 'error'); closeDeleteConfirmModal(); } finally { confirmDeleteBtn.disabled = false; confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Sim, Apagar'; }
+}
+
+function initializeStudio() {
+    setupImageUploadWithPreview('wysiwygCoverFile', 'wysiwygCoverUrl', 'wysiwygCoverImg', 'wysiwygBg'); setupImageUploadWithPreview('editReleaseCoverFile', 'editReleaseCoverUrl', 'editWysiwygCoverImg', 'editWysiwygBg'); setupImageUploadWithPreview('newArtistImageFile', 'newArtistImageUrl'); setupImageUploadWithPreview('editArtistImageFile', 'editArtistImageUrl', null, null, (url) => { updateArtistEditPreviews(); });
+    wysiwygArtistSelect?.addEventListener('change', (e) => { const artist = db.artists.find(a => a.id === e.target.value); if(artist && wysiwygArtistImg) wysiwygArtistImg.src = artist.img; });
+
+    const releaseNatureSelect = document.getElementById('wysiwygReleaseNature'), originalAlbumSelectInline = document.getElementById('wysiwygOriginalAlbumSelect'), btnImportDeluxe = document.getElementById('btnImportDeluxe');
+    releaseNatureSelect?.addEventListener('change', (e) => {
+        if (e.target.value === 'deluxe') {
+            const artistId = document.getElementById('wysiwygArtistSelect')?.value;
+            if (!artistId) { showToast("Selecione o Artista Principal primeiro.", 'error'); e.target.value = 'original'; return; }
+            const artistAlbums = db.albums.filter(a => a.artistId === artistId);
+            if (artistAlbums.length === 0) { showToast("Nenhum álbum anterior encontrado.", 'info'); e.target.value = 'original'; return; }
+            originalAlbumSelectInline.innerHTML = '<option value="">Selecione o álbum base...</option>' + artistAlbums.sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate)).map(album => `<option value="${album.id}">${album.title}</option>`).join('');
+            originalAlbumSelectInline.classList.remove('hidden'); btnImportDeluxe.classList.remove('hidden');
+        } else { originalAlbumSelectInline.classList.add('hidden'); btnImportDeluxe.classList.add('hidden'); originalAlbumSelectInline.innerHTML = ''; }
+    });
+
+    document.getElementById('wysiwygArtistSelect')?.addEventListener('change', () => { if (releaseNatureSelect && releaseNatureSelect.value === 'deluxe') { releaseNatureSelect.value = 'original'; releaseNatureSelect.dispatchEvent(new Event('change')); const albumTracklistEditor = document.getElementById('wysiwygTracklistEditor'); if(albumTracklistEditor) populateTracklistEditor(albumTracklistEditor, []); } });
+
+    btnImportDeluxe?.addEventListener('click', () => {
+        const albumIdToImport = originalAlbumSelectInline.value, albumTracklistEditor = document.getElementById('wysiwygTracklistEditor'), albumTitle = document.getElementById('wysiwygTitle'); 
+        if (!albumIdToImport) { showToast("Selecione um álbum para importar.", 'error'); return; }
+        const album = db.albums.find(a => a.id === albumIdToImport); if (!album) return;
+        populateTracklistEditor(albumTracklistEditor, album.tracks); if (albumTitle && !albumTitle.value.includes('Deluxe')) albumTitle.value = `${album.title} (Deluxe)`;
+    });
+
+    loginButton?.addEventListener('click', () => { const username = document.getElementById('usernameInput')?.value, password = document.getElementById('passwordInput')?.value; loginPlayer(username, password); });
+    logoutButton?.addEventListener('click', logoutPlayer); showRegisterBtn?.addEventListener('click', (e) => { e.preventDefault(); loginPrompt?.classList.add('hidden'); registerPrompt?.classList.remove('hidden'); }); showLoginBtn?.addEventListener('click', (e) => { e.preventDefault(); registerPrompt?.classList.add('hidden'); loginPrompt?.classList.remove('hidden'); }); registerButton?.addEventListener('click', () => { registerPlayer(regUsernameInput?.value, regPasswordInput?.value); }); newArtistForm?.addEventListener('submit', handleArtistSubmit); editArtistForm?.addEventListener('submit', handleEditArtistSubmit);
+
+    editArtistSelect?.addEventListener('change', (e) => {
+        const artistId = e.target.value; if (!artistId) { editArtistFields?.classList.add('hidden'); return; }
+        const artist = db.artists.find(a => a.id === artistId);
+        if (artist) { editArtistFields?.classList.remove('hidden'); editArtistNameInput.value = artist.name; editArtistImageUrl.value = artist.rawUrl; editArtistBgPosition.value = parseInt(artist.bgPos) || 20; updateArtistEditPreviews(); }
+    });
+    editArtistImageUrl?.addEventListener('input', updateArtistEditPreviews); editArtistBgPosition?.addEventListener('input', updateArtistEditPreviews);
+
+    document.getElementById('openStudioMenuBtn')?.addEventListener('click', () => { document.getElementById('studioMenuModal').classList.remove('hidden'); });
+    document.getElementById('closeStudioMenuBtn')?.addEventListener('click', () => { document.getElementById('studioMenuModal').classList.add('hidden'); });
+
+    document.querySelectorAll('.studio-menu-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const formTarget = e.currentTarget.dataset.form; const labelText = e.currentTarget.textContent.trim();
+            document.getElementById('currentStudioMenuLabel').textContent = labelText; document.getElementById('studioMenuModal').classList.add('hidden');
+            studioForms.forEach(f => f.classList.remove('active')); let targetElementId;
+            if (formTarget === 'release') { targetElementId = 'wysiwygReleaseForm'; initAlbumForm(); } else if (formTarget === 'edit') { targetElementId = 'editReleaseSection'; populateEditableReleases(); editReleaseListContainer?.classList.remove('hidden'); editReleaseForm?.classList.add('hidden'); } else if (formTarget === 'artist') { targetElementId = 'newArtistForm'; } else if (formTarget === 'editArtist') { targetElementId = 'editArtistForm'; if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change')); }
+            const targetElement = document.getElementById(targetElementId); if (targetElement) targetElement.classList.add('active'); 
         });
-        db.players = data.players || []; window.db = db; return true; 
-    } catch (error) { console.error("ERRO CRÍTICO:", error); return false; }
-};
+    });
+
+    confirmFeatBtn?.addEventListener('click', confirmFeat); cancelFeatBtn?.addEventListener('click', closeFeatModal); saveAlbumTrackBtn?.addEventListener('click', saveAlbumTrack); cancelAlbumTrackBtn?.addEventListener('click', closeAlbumTrackModal);
+    openWysiwygAddTrackBtn?.addEventListener('click', () => { activeTracklistEditor = wysiwygTracklistEditor; openAlbumTrackModal(); }); openWysiwygExistingTrackBtn?.addEventListener('click', () => { activeTracklistEditor = wysiwygTracklistEditor; openExistingTrackModal('album'); }); openEditAddTrackModalBtn?.addEventListener('click', () => { activeTracklistEditor = editAlbumTracklistEditor; openAlbumTrackModal(); }); openEditExistingTrackModalBtn?.addEventListener('click', () => { activeTracklistEditor = editAlbumTracklistEditor; openExistingTrackModal('album'); });
+    addInlineFeatBtn?.addEventListener('click', toggleInlineFeatAdder); confirmInlineFeatBtn?.addEventListener('click', confirmInlineFeat); cancelInlineFeatBtn?.addEventListener('click', cancelInlineFeat);
+
+    wysiwygTracklistEditor?.addEventListener('click', (e) => { const editBtn = e.target.closest('.edit-track-btn'), rmBtn = e.target.closest('.remove-track-btn'), trkItem = e.target.closest('.track-list-item-display'); if (editBtn && trkItem) { activeTracklistEditor = wysiwygTracklistEditor; openAlbumTrackModal(trkItem); } else if (rmBtn && trkItem) { trkItem.remove(); updateTrackNumbers(wysiwygTracklistEditor); } });
+    editAlbumTracklistEditor?.addEventListener('click', (e) => { const editBtn = e.target.closest('.edit-track-btn'), rmBtn = e.target.closest('.remove-track-btn'), trkItem = e.target.closest('.track-list-item-display'); if (editBtn && trkItem) { activeTracklistEditor = editAlbumTracklistEditor; openAlbumTrackModal(trkItem); } else if (rmBtn && trkItem) { trkItem.remove(); updateTrackNumbers(editAlbumTracklistEditor); } });
+
+    let currentOptionsRelease = {};
+    editReleaseList?.addEventListener('click', (e) => {
+        const optionsBtn = e.target.closest('.release-options-btn');
+        if (optionsBtn) { currentOptionsRelease = { id: optionsBtn.dataset.releaseId, type: optionsBtn.dataset.releaseType, table: optionsBtn.dataset.releaseTable, title: optionsBtn.dataset.releaseTitle }; const titleDisplay = document.getElementById('optionsModalReleaseTitle'); if(titleDisplay) titleDisplay.textContent = currentOptionsRelease.title; document.getElementById('releaseOptionsModal')?.classList.remove('hidden'); }
+    });
+
+    document.getElementById('optEditReleaseBtn')?.addEventListener('click', () => { document.getElementById('releaseOptionsModal')?.classList.add('hidden'); openEditForm(currentOptionsRelease.id, currentOptionsRelease.type); });
+    document.getElementById('optDeleteReleaseBtn')?.addEventListener('click', () => { document.getElementById('releaseOptionsModal')?.classList.add('hidden'); const release = (currentOptionsRelease.type === 'album' ? db.albums : db.singles).find(r => r.id === currentOptionsRelease.id); const trackIdsToDelete = release?.trackIds || []; openDeleteConfirmModal(currentOptionsRelease.id, currentOptionsRelease.table, currentOptionsRelease.title, trackIdsToDelete); });
+    document.getElementById('optCancelBtn')?.addEventListener('click', () => { document.getElementById('releaseOptionsModal')?.classList.add('hidden'); });
+
+    editReleaseForm?.addEventListener('submit', handleUpdateRelease); cancelEditBtn?.addEventListener('click', () => { editReleaseForm?.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); }); cancelDeleteBtn?.addEventListener('click', closeDeleteConfirmModal); confirmDeleteBtn?.addEventListener('click', handleDeleteRelease); editArtistFilterSelect?.addEventListener('change', populateEditableReleases); wysiwygReleaseForm?.addEventListener('submit', handleWysiwygSubmit); existingTrackSearch?.addEventListener('input', populateExistingTrackSearch); cancelExistingTrackBtn?.addEventListener('click', closeExistingTrackModal); existingTrackResults?.addEventListener('click', handleExistingTrackSelect);
+
+    initAlbumForm(); 
+    if (typeof Sortable !== 'undefined') {
+        if (wysiwygTracklistEditor) wysiwygTracklistSortable = Sortable.create(wysiwygTracklistEditor, { animation: 150, handle: '.drag-handle', onEnd: () => updateTrackNumbers(wysiwygTracklistEditor) });
+        if (editAlbumTracklistEditor) editAlbumTracklistSortable = Sortable.create(editAlbumTracklistEditor, { animation: 150, handle: '.drag-handle', onEnd: () => updateTrackNumbers(editAlbumTracklistEditor) });
+    }
+    
+    actionTypeSelect?.addEventListener('change', () => {
+        const actionType = actionTypeSelect.value;
+        if (IMAGE_ACTION_CONFIG[actionType]) { releaseSelectWrapper.classList.add('hidden'); trackSelectWrapper.classList.add('hidden'); actionLimitInfo.classList.add('hidden'); confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação de Imagem'; } 
+        else if (ACTION_CONFIG[actionType]) { releaseSelectWrapper.classList.remove('hidden'); updateActionLimitInfo(); } 
+        else { releaseSelectWrapper.classList.remove('hidden'); trackSelectWrapper.classList.add('hidden'); actionLimitInfo.classList.add('hidden'); confirmActionButton.disabled = true; }
+    });
+
+    releaseSelect?.addEventListener('change', () => { const artistId = modalArtistId.value; if (releaseSelect.value && artistId) { populateTrackSelectForActions(releaseSelect.value, artistId); } else { trackSelectWrapper.classList.add('hidden'); } });
+    trackSelect?.addEventListener('change', updateActionLimitInfo); cancelActionButton?.addEventListener('click', () => { actionModal.classList.add('hidden'); }); confirmActionButton?.addEventListener('click', handleConfirmAction);
+}
