@@ -122,3 +122,16 @@ function convertToDirectAudioLink(url) {
     }
     return url;
 }
+
+// Função para gerar e copiar link de compartilhamento
+function shareLink(type, id) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?${type}=${id}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast("Link copiado! Cole para compartilhar.", "success");
+    }).catch(err => {
+        showToast("Erro ao copiar link.", "error");
+        console.error('Erro ao copiar:', err);
+    });
+}
