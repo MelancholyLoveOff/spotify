@@ -133,6 +133,10 @@ const mapFieldsToSupabase = (tableName, fields) => {
     if(fields['current_rank'] !== undefined) payload.current_rank = fields['current_rank'];
     if(fields['previous_rank'] !== undefined) payload.previous_rank = fields['previous_rank'];
     if(fields['peak_rank'] !== undefined) payload.peak_rank = fields['peak_rank'];
+    
+    // <--- EXTRAÇÃO DO YOUTUBE ID PARA A BASE DE DADOS AQUI --->
+    if(fields['YouTube ID'] !== undefined) payload.yt_id = fields['YouTube ID'];
+    
     return payload;
 };
 
