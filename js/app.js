@@ -166,14 +166,11 @@ function initializeBodyClickListener() {
         if (artistCard) { openArtistDetail(artistCard.dataset.artistName); return; }
         if (artistLink) { event.preventDefault(); openArtistDetail(artistLink.dataset.artistName); return; }
         
-        // === CORREÇÃO DO BUG AQUI ===
-        // Agora o código ignora o clique se ele esbarrar na página '#albumDetail' inteira
         const albumCard = event.target.closest('[data-album-id]');
         if (albumCard && albumCard.id !== 'albumDetail') { 
             if (event.target.closest('.action-buttons') || albumCard.closest('#editReleaseList')) return; 
             openAlbumDetail(albumCard.dataset.albumId); return; 
         }
-        // ============================
         
         const mainPlayBtn = event.target.closest('.main-play-btn');
         if (mainPlayBtn) {
@@ -307,12 +304,17 @@ async function refreshAllData() {
                 try { populateArtistSelector(currentPlayer.id); } catch(e){}
                 try { displayArtistActions(); } catch(e){}
                 
-                if (document.querySelector('.studio-tab-btn[data-form="edit"]')?.classList.contains('active')) {
+                // --- CORREÇÃO: Atualizar as listas do Studio transparentemente (Sem F5) ---
+                const editSection = document.getElementById('editReleaseSection');
+                if (editSection && editSection.classList.contains('active')) {
                     try { populateEditableReleases(); } catch(e){}
                 }
-                if (document.querySelector('.studio-tab-btn[data-form="editArtist"]')?.classList.contains('active')) {
+                
+                const editArtistFormNode = document.getElementById('editArtistForm');
+                if (editArtistFormNode && editArtistFormNode.classList.contains('active')) {
                     if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change'));
                 }
+                // --------------------------------------------------------------------------
             }
             
             const artistDetailView = document.getElementById('artistDetail');
