@@ -267,7 +267,6 @@ function saveAlbumTrack() {
     const ytRaw = document.getElementById('albumTrackYoutubeInput')?.value || '';
     const ytId = (typeof extractYouTubeID === 'function') ? extractYouTubeID(ytRaw) : null;
     
-    // NOVO PROCESSAMENTO DE AUDIO (LÊ SE É YT OU MP3)
     const audioRaw = document.getElementById('albumTrackAudioInput')?.value || '';
     const ytAudioId = (typeof extractYouTubeID === 'function') ? extractYouTubeID(audioRaw) : null;
     const audioUrl = (!ytAudioId && audioRaw) ? ((typeof convertToDirectAudioLink === 'function') ? convertToDirectAudioLink(audioRaw) : audioRaw) : '';
@@ -449,7 +448,7 @@ async function handleUpdateRelease(event) {
                 for (let i = 0; i < trackItems.length; i++) {
                     const item = trackItems[i], existingSongId = item.dataset.existingSongId, name = item.dataset.trackName, durationStr = item.dataset.durationStr, type = item.dataset.trackType, durationSec = parseDurationToSeconds(durationStr);
                     const ytId = item.dataset.ytId || null; 
-                    const ytAudioId = item.dataset.ytAudioId || null; 
+                    const ytAudioId = item.dataset.ytAudioId || null; // CORREÇÃO: ADICIONADO
                     const audioUrl = item.dataset.audioUrl || null; 
 
                     let feats = []; try { feats = JSON.parse(item.dataset.feats || '[]'); } catch (e) {}
@@ -459,7 +458,7 @@ async function handleUpdateRelease(event) {
                     let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
                     if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
                     
-                    let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "YouTube Audio ID": ytAudioId, "Audio URL": audioUrl };
+                    let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "YouTube Audio ID": ytAudioId, "Audio URL": audioUrl }; // CORREÇÃO: ADICIONADO "YouTube Audio ID"
                     if(collaborationType) fieldsBase["Tipo de Colaboração"] = collaborationType;
 
                     if (existingSongId) {
@@ -467,7 +466,7 @@ async function handleUpdateRelease(event) {
                         fieldsBase[linkField] = updatedLinks; musicRecordsToUpdate.push({ id: existingSongId, fields: fieldsBase });
                     } else { fieldsBase[linkField] = [recordId]; musicRecordsToCreate.push(fieldsBase); }
                 } 
-                if (musicRecordsToCreate.length > 0) { const createResult = await batchCreateAirtableRecords('Músicas', musicRecordsToCreate.map(fields => fields)); if (!createResult || createResult.length !== musicRecordsToCreate.length) throw new Error("Falha ao criar faixas novas."); createResult.forEach(record => finalTrackIdsInEditor.add(record.id)); }
+                if (musicRecordsToCreate.length > 0) { const createResult = await batchCreateAirtableRecords('Músicas', musicRecordsToCreate); if (!createResult || createResult.length !== musicRecordsToCreate.length) throw new Error("Falha ao criar faixas novas."); createResult.forEach(record => finalTrackIdsInEditor.add(record.id)); }
                 const tracksToUnlinkIds = [...originalTrackIds].filter(id => !finalTrackIdsInEditor.has(id));
                 if (tracksToUnlinkIds.length > 0) {
                     const unlinkPayload = []; const linkField = tableName === 'Álbuns' ? 'Álbuns' : 'Singles e EPs';
