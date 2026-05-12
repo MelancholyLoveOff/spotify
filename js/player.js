@@ -1,5 +1,33 @@
 // js/player.js
 
+let ytPlayerReady = false;
+let ytPlayer;
+
+// Função chamada automaticamente pelo script do YouTube quando a API carrega
+function onYouTubeIframeAPIReady() {
+    ytPlayer = new YT.Player('ytplayer', {
+        height: '0',
+        width: '0',
+        playerVars: { 'controls': 0, 'playsinline': 1 },
+        events: {
+            'onReady': () => { ytPlayerReady = true; },
+            'onStateChange': onPlayerStateChange
+        }
+    });
+}
+
+// Deteta quando a música acaba para passar para a próxima
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.ENDED) {
+        if (repeatMode === 'one') {
+            ytPlayer.seekTo(0);
+            ytPlayer.playVideo();
+        } else {
+            playNext();
+        }
+    }
+}
+
 function openPlayer(songId, clickedElement) {
     const song = db.songs.find(s => s.id === songId); if (!song) return;
     const parentListContainer = clickedElement?.closest('.popular-songs-list, .tracklist-container, .chart-list');
@@ -18,13 +46,45 @@ function loadSong(song) {
     if (playerSongTitle) playerSongTitle.textContent = song.title; if (playerArtistName) playerArtistName.textContent = artistNameStr; if (miniPlayerTitle) miniPlayerTitle.textContent = song.title; if (miniPlayerArtist) miniPlayerArtist.textContent = artistNameStr;
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
+    
+    // --- LÓGICA DO YOUTUBE AQUI ---
+    if (ytPlayerReady && song.yt_id) {
+        ytPlayer.loadVideoById(song.yt_id);
+        if (!isPlaying) {
+            ytPlayer.pauseVideo();
+        }
+    }
+
     const durationSeconds = song.durationSeconds || 180;
     if (playerSeekBar) { playerSeekBar.value = 0; playerSeekBar.max = durationSeconds; } if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (playerTotalTime) playerTotalTime.textContent = formatTime(durationSeconds); if (miniPlayerProgress) { miniPlayerProgress.style.width = '0%'; miniPlayerProgress.dataset.max = durationSeconds; }
     if (isPlaying) { if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; } else { if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }
 }
 
-function playAudio() { if (!currentSong) return; isPlaying = true; if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; }
-function pauseAudio() { isPlaying = false; if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }
+function playAudio() { 
+    if (!currentSong) return; 
+    isPlaying = true; 
+    
+    // Tocar música real no YouTube se existir
+    if (ytPlayerReady && currentSong.yt_id) {
+        ytPlayer.playVideo();
+    }
+
+    if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
+    if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
+}
+
+function pauseAudio() { 
+    isPlaying = false; 
+    
+    // Pausar YouTube
+    if (ytPlayerReady && currentSong.yt_id) {
+        ytPlayer.pauseVideo();
+    }
+
+    if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; 
+    if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
+}
+
 function togglePlay(e) { if (e) e.stopPropagation(); if (isPlaying) pauseAudio(); else playAudio(); }
 
 function playNext() {
@@ -38,7 +98,14 @@ function playNext() {
 function playPrevious() {
     if (!currentQueue || currentQueue.length === 0 || !currentSong) return;
     const currentTime = playerSeekBar ? parseFloat(playerSeekBar.value) : 0;
-    if (currentTime > 3) { if (playerSeekBar) playerSeekBar.value = 0; if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; if(isPlaying) playAudio(); return; }
+    if (currentTime > 3) { 
+        if (playerSeekBar) playerSeekBar.value = 0; 
+        if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
+        if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
+        if(ytPlayerReady && currentSong.yt_id) ytPlayer.seekTo(0, true);
+        if(isPlaying) playAudio(); 
+        return; 
+    }
     if (isShuffle) { let randomIndex = currentQueueIndex; if (currentQueue.length > 1) { do { randomIndex = Math.floor(Math.random() * currentQueue.length); } while (randomIndex === currentQueueIndex); } currentQueueIndex = randomIndex; } else { currentQueueIndex--; }
     if (currentQueueIndex < 0) {
         if (repeatMode === 'all') { currentQueueIndex = currentQueue.length - 1; } 
@@ -59,13 +126,30 @@ function startSimulationTimer() {
     if (simulationInterval) clearInterval(simulationInterval);
     simulationInterval = setInterval(() => {
         if (isPlaying && playerSeekBar && currentSong) {
-            let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
-            if (currentValue < maxValue) {
-                currentValue += 1; playerSeekBar.value = currentValue;
-                if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentValue);
-                if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentValue / maxValue) * 100}%`;
-            } else {
-                if (repeatMode === 'one') { playerSeekBar.value = 0; if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; playAudio(); } else { playNext(); }
+            
+            // MODO 1: Música REAL a tocar via YouTube
+            if (ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                const currentTime = ytPlayer.getCurrentTime();
+                const duration = ytPlayer.getDuration();
+                
+                if (duration > 0) {
+                    playerSeekBar.max = duration;
+                    playerSeekBar.value = currentTime;
+                    if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentTime);
+                    if (playerTotalTime) playerTotalTime.textContent = formatTime(duration);
+                    if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
+                }
+            } 
+            // MODO 2: Fallback (Simulador antigo) caso a música não tenha ID do Youtube
+            else if (!currentSong.yt_id) {
+                let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
+                if (currentValue < maxValue) {
+                    currentValue += 1; playerSeekBar.value = currentValue;
+                    if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentValue);
+                    if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentValue / maxValue) * 100}%`;
+                } else {
+                    if (repeatMode === 'one') { playerSeekBar.value = 0; if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; playAudio(); } else { playNext(); }
+                }
             }
         }
     }, 1000);
@@ -78,8 +162,19 @@ function initializePlayerListeners() {
     playerPrevBtn?.addEventListener('click', playPrevious);
     playerShuffleBtn?.addEventListener('click', toggleShuffle);
     playerRepeatBtn?.addEventListener('click', toggleRepeat);
-    playerSeekBar?.addEventListener('input', () => { if (playerCurrentTime && playerSeekBar) playerCurrentTime.textContent = formatTime(playerSeekBar.value); if (miniPlayerProgress) miniPlayerProgress.style.width = `${(playerSeekBar.value / playerSeekBar.max) * 100}%`; });
-    playerSeekBar?.addEventListener('change', () => { if (isPlaying) playAudio(); });
+    
+    // Atualizado para controlar a barra de progresso no YouTube quando o utilizador arrasta
+    playerSeekBar?.addEventListener('input', () => { 
+        if (playerCurrentTime && playerSeekBar) playerCurrentTime.textContent = formatTime(playerSeekBar.value); 
+        if (miniPlayerProgress) miniPlayerProgress.style.width = `${(playerSeekBar.value / playerSeekBar.max) * 100}%`; 
+    });
+    playerSeekBar?.addEventListener('change', () => { 
+        if (ytPlayerReady && currentSong?.yt_id) {
+            ytPlayer.seekTo(playerSeekBar.value, true);
+        }
+        if (isPlaying) playAudio(); 
+    });
+    
     miniPlayer?.addEventListener('click', maximizePlayer);
     miniPlayerPlayPauseBtn?.addEventListener('click', togglePlay);
     startSimulationTimer();
