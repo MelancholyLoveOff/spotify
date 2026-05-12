@@ -194,24 +194,27 @@ function initializeBodyClickListener() {
         
         const refreshButton = event.target.closest('[data-action="refresh"]');
         if(refreshButton){
-            // 1. PRIMEIRO PASSO: Tira a "Fotografia" (salva o estado anterior)
-            try {
-                if (typeof saveChartDataToLocalStorage === 'function') {
-                    saveChartDataToLocalStorage('music');
-                    saveChartDataToLocalStorage('album');
-                    saveChartDataToLocalStorage('rpg');
-                }
-            } catch(e) { console.error("Erro a guardar histórico:", e); }
-
-            // 2. SÓ DEPOIS faz o Refresh e contacta a base de dados
             const icon = refreshButton.querySelector('i'); 
             if(icon) icon.classList.add('fa-spin'); 
             refreshButton.disabled = true; 
-            refreshAllData().finally(() => { 
-                if(icon) icon.classList.remove('fa-spin'); 
-                refreshButton.disabled = false; 
-                showToast('Dados atualizados com sucesso!', 'success'); 
-            }); 
+
+            // 1. Busca as posições oficiais da planilha do Admin ANTES de recarregar
+            carregarPosicoesAnteriores().then(() => {
+                
+                // Salva localmente apenas o chart de RPG (pois ele não usa a planilha)
+                try {
+                    if (typeof saveChartDataToLocalStorage === 'function') {
+                        saveChartDataToLocalStorage('rpg');
+                    }
+                } catch(e) { console.error("Erro a guardar histórico RPG:", e); }
+
+                // 2. Só agora faz o Refresh do Supabase para montar os charts novos
+                refreshAllData().finally(() => { 
+                    if(icon) icon.classList.remove('fa-spin'); 
+                    refreshButton.disabled = false; 
+                    showToast('Dados e Posições atualizados com sucesso!', 'success'); 
+                }); 
+            });
             return; 
         }
     });
