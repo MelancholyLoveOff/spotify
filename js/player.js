@@ -51,10 +51,15 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
-    // CARREGA AUDIO REAL
+    // CARREGA AUDIO REAL (COM CORREÇÃO PARA O ERRO NOT SUPPORTED)
     const audioEl = document.getElementById('audioElement');
-    if (song.audio_url) { audioEl.src = song.audio_url; audioEl.load(); } 
-    else { audioEl.src = ''; }
+    if (song.audio_url) { 
+        audioEl.src = song.audio_url; 
+        audioEl.load(); 
+    } else { 
+        audioEl.removeAttribute('src'); // Evita o erro no console
+        audioEl.load(); 
+    }
 
     // CARREGA YOUTUBE / LÓGICA DO BOTÃO
     const toggleBtn = document.getElementById('toggleVideoBtn');
@@ -81,11 +86,16 @@ function playAudio() {
     isPlaying = true; 
     const audioEl = document.getElementById('audioElement');
     
-    // TOCA APENAS O QUE ESTÁ SELECIONADO NA TELA
+    // TOCA APENAS O QUE ESTÁ SELECIONADO NA TELA (COM PROTEÇÃO DE PROMISE)
     if (isVideoMode) {
         if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
     } else {
-        if (currentSong.audio_url) audioEl.play();
+        if (currentSong.audio_url) {
+            const playPromise = audioEl.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => console.log("Aguardando carregamento do áudio..."));
+            }
+        }
         else if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); // Fallback se a pessoa só colocar o Youtube
     }
 
@@ -237,7 +247,10 @@ function initializePlayerListeners() {
                 if (isPlaying) {
                     if (ytPlayerReady) ytPlayer.pauseVideo();
                     if (currentSong.audio_url) {
-                        audioEl.play();
+                        const playPromise = audioEl.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => console.log("Aguardando carregamento..."));
+                        }
                     } else if (ytPlayerReady && currentSong.yt_id) {
                         ytPlayer.playVideo(); 
                     }
