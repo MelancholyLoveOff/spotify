@@ -51,13 +51,13 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
-    // CARREGA AUDIO REAL (COM CORREÇÃO PARA O ERRO NOT SUPPORTED)
+    // CARREGA AUDIO REAL
     const audioEl = document.getElementById('audioElement');
     if (song.audio_url) { 
         audioEl.src = song.audio_url; 
         audioEl.load(); 
     } else { 
-        audioEl.removeAttribute('src'); // Evita o erro no console
+        audioEl.removeAttribute('src');
         audioEl.load(); 
     }
 
@@ -86,17 +86,25 @@ function playAudio() {
     isPlaying = true; 
     const audioEl = document.getElementById('audioElement');
     
-    // TOCA APENAS O QUE ESTÁ SELECIONADO NA TELA (COM PROTEÇÃO DE PROMISE)
     if (isVideoMode) {
         if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
     } else {
         if (currentSong.audio_url) {
-            const playPromise = audioEl.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => console.log("Aguardando carregamento do áudio..."));
+            // Se o elemento de áudio já detetou erro (ex: link 404), vai direto para o Youtube!
+            if (audioEl.error) {
+                if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
+            } else {
+                const playPromise = audioEl.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Erro de reprodução ou link quebrado:", error);
+                        // Fallback Imediato: Se o áudio falhar ao arrancar, toca o YouTube
+                        if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
+                    });
+                }
             }
         }
-        else if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); // Fallback se a pessoa só colocar o Youtube
+        else if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); 
     }
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
@@ -107,7 +115,7 @@ function pauseAudio() {
     isPlaying = false; 
     const audioEl = document.getElementById('audioElement');
     audioEl.pause();
-    if (ytPlayerReady) ytPlayer.pauseVideo(); // Pausa ambos por segurança
+    if (ytPlayerReady) ytPlayer.pauseVideo();
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
@@ -167,19 +175,19 @@ function startSimulationTimer() {
         if (isPlaying && playerSeekBar && currentSong) {
             const audioEl = document.getElementById('audioElement');
             
-            // LER DO YOUTUBE SE ESTIVER NO MODO VÍDEO
             if (isVideoMode && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
                 updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
             } 
-            // LER DO AUDIO REAL SE EXISTIR
             else if (!isVideoMode && currentSong.audio_url && !audioEl.paused) {
                 updateProgressUI(audioEl.currentTime, audioEl.duration || currentSong.durationSeconds || 180);
             }
-            // LER DO YOUTUBE SE NÃO EXISTIR AUDIO MAS EXISTIR YOUTUBE
             else if (!isVideoMode && !currentSong.audio_url && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
                 updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
             }
-            // SIMULADOR ANTIGO
+            // Se tudo falhar e o YouTube assumir como fallback no modo Áudio
+            else if (!isVideoMode && currentSong.audio_url && audioEl.paused && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
+            }
             else if (!currentSong.yt_id && !currentSong.audio_url) {
                 let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
                 if (currentValue < maxValue) {
@@ -216,13 +224,25 @@ function initializePlayerListeners() {
     miniPlayer?.addEventListener('click', maximizePlayer);
     miniPlayerPlayPauseBtn?.addEventListener('click', togglePlay);
 
-    // MÁGICA DA SEPARAÇÃO VÍDEO/ÁUDIO ACONTECE AQUI
+    const audioEl = document.getElementById('audioElement');
+    
+    // OUVINTE DE ERRO CRÍTICO: Se o áudio der erro profundo (ex: 404 Not Found)
+    audioEl.addEventListener('error', () => {
+        if (isPlaying && !isVideoMode) {
+            if (ytPlayerReady && currentSong?.yt_id) {
+                if(typeof showToast === 'function') showToast("Link de áudio falhou. Usando o vídeo do YouTube...", "info");
+                ytPlayer.playVideo();
+            } else {
+                pauseAudio();
+            }
+        }
+    });
+
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             isVideoMode = !isVideoMode;
             const coverArt = document.getElementById('playerCoverArt');
-            const audioEl = document.getElementById('audioElement');
             
             if (isVideoMode) {
                 if(coverArt) { coverArt.style.opacity = '0'; coverArt.style.pointerEvents = 'none'; }
@@ -231,7 +251,6 @@ function initializePlayerListeners() {
                 toggleBtn.style.color = '#000';
                 toggleBtn.style.borderColor = 'var(--spotify-green)';
                 
-                // Muta a música e toca o vídeo
                 if (isPlaying) {
                     audioEl.pause();
                     if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
@@ -243,14 +262,13 @@ function initializePlayerListeners() {
                 toggleBtn.style.color = 'white';
                 toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)';
                 
-                // Muta o vídeo e toca a música
                 if (isPlaying) {
                     if (ytPlayerReady) ytPlayer.pauseVideo();
-                    if (currentSong.audio_url) {
+                    
+                    // Retoma a música (ou o YouTube se o áudio estava quebrado)
+                    if (currentSong.audio_url && !audioEl.error) {
                         const playPromise = audioEl.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(error => console.log("Aguardando carregamento..."));
-                        }
+                        if (playPromise !== undefined) playPromise.catch(() => { if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); });
                     } else if (ytPlayerReady && currentSong.yt_id) {
                         ytPlayer.playVideo(); 
                     }
