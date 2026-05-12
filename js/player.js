@@ -6,8 +6,8 @@ let ytPlayer;
 // Função chamada automaticamente pelo script do YouTube quando a API carrega
 function onYouTubeIframeAPIReady() {
     ytPlayer = new YT.Player('ytplayer', {
-        height: '0',
-        width: '0',
+        height: '10',
+        width: '10',
         playerVars: { 'controls': 0, 'playsinline': 1 },
         events: {
             'onReady': () => { ytPlayerReady = true; },
