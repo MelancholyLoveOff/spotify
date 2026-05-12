@@ -304,17 +304,12 @@ async function refreshAllData() {
                 try { populateArtistSelector(currentPlayer.id); } catch(e){}
                 try { displayArtistActions(); } catch(e){}
                 
-                // --- CORREÇÃO: Atualizar as listas do Studio transparentemente (Sem F5) ---
-                const editSection = document.getElementById('editReleaseSection');
-                if (editSection && editSection.classList.contains('active')) {
+                if (document.querySelector('.studio-tab-btn[data-form="edit"]')?.classList.contains('active')) {
                     try { populateEditableReleases(); } catch(e){}
                 }
-                
-                const editArtistFormNode = document.getElementById('editArtistForm');
-                if (editArtistFormNode && editArtistFormNode.classList.contains('active')) {
+                if (document.querySelector('.studio-tab-btn[data-form="editArtist"]')?.classList.contains('active')) {
                     if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change'));
                 }
-                // --------------------------------------------------------------------------
             }
             
             const artistDetailView = document.getElementById('artistDetail');
@@ -390,6 +385,30 @@ async function main() {
     
     switchView('mainView'); 
     activateMainViewSection('homeSection');
+
+    // --- NOVO: LER O LINK COMPARTILHADO ---
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Verifica se tem link de música
+    const songToPlay = urlParams.get('song');
+    if (songToPlay) {
+        const song = db.songs.find(s => s.id === songToPlay);
+        if (song) {
+            setTimeout(() => openPlayer(songToPlay), 500);
+        } else {
+            showToast("Música não encontrada.", "error");
+        }
+    }
+
+    // Verifica se tem link de álbum (Bônus!)
+    const albumToOpen = urlParams.get('album');
+    if (albumToOpen) {
+        const album = [...db.albums, ...db.singles].find(a => a.id === albumToOpen);
+        if (album) {
+            setTimeout(() => openAlbumDetail(albumToOpen), 300);
+        }
+    }
+    // ---------------------------------------
 }
 
 document.addEventListener('DOMContentLoaded', () => {
