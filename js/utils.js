@@ -15,7 +15,6 @@ function showToast(message, type = 'info') {
     if (type === 'success') icon = 'fa-check-circle';
     if (type === 'error') icon = 'fa-exclamation-circle';
 
-    // Adicionado o X de fechar e flex-grow para empurrar o X para a direita
     toast.innerHTML = `
         <i class="fas ${icon}"></i> 
         <div style="flex-grow: 1;">${message}</div>
@@ -24,14 +23,12 @@ function showToast(message, type = 'info') {
     
     container.appendChild(toast);
 
-    // Funcionalidade de fechar ao clicar no X
     const closeBtn = toast.querySelector('.close-toast-btn');
     closeBtn.addEventListener('click', () => {
         toast.classList.add('fade-out');
         toast.addEventListener('animationend', () => toast.remove());
     });
 
-    // Fecha automaticamente após um tempo, se não for fechada antes
     setTimeout(() => {
         if(document.body.contains(toast)) {
             toast.classList.add('fade-out');
@@ -40,7 +37,6 @@ function showToast(message, type = 'info') {
     }, Math.max(4000, message.length * 50)); 
 }
 
-// AS FUNÇÕES ABAIXO SÃO OBRIGATÓRIAS PARA O RPG FUNCIONAR:
 function getRandomInt(min, max) { return Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min) + 1)) + Math.ceil(min); }
 function getRandomFloat(min, max) { return Math.random() * (max - min) + min; }
 function getRandomPunishment() { const c = PUNISHMENT_CONFIG[Math.floor(Math.random() * PUNISHMENT_CONFIG.length)]; return { message: c.message, value: -getRandomInt(c.minLoss, c.maxLoss) }; }
@@ -65,15 +61,14 @@ function startAlbumCountdown(releaseDate, timerElementId) {
     if (!timerElement) return;
 
     const targetDate = new Date(releaseDate).getTime();
-    
-    if (albumCountdownInterval) clearInterval(albumCountdownInterval);
+    if (window.albumCountdownInterval) clearInterval(window.albumCountdownInterval);
 
-    albumCountdownInterval = setInterval(() => {
+    window.albumCountdownInterval = setInterval(() => {
         const now = new Date().getTime();
         const distance = targetDate - now;
 
         if (distance < 0) {
-            clearInterval(albumCountdownInterval);
+            clearInterval(window.albumCountdownInterval);
             timerElement.innerHTML = '<span style="font-size:24px; font-weight:bold; color: var(--spotify-green);">Lançado!</span>';
             return;
         }
@@ -82,7 +77,6 @@ function startAlbumCountdown(releaseDate, timerElementId) {
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
         const format = (num) => (num < 10 ? '0' + num : num);
 
         timerElement.innerHTML = `
@@ -109,17 +103,22 @@ function startAlbumCountdown(releaseDate, timerElementId) {
     }, 1000);
 }
 
-// Adicione no final do js/utils.js
+// EXTRAIR ID DO YOUTUBE
 function extractYouTubeID(url) {
     if (!url) return null;
     url = url.trim();
-    // Se a pessoa já colou apenas o ID de 11 caracteres sem querer:
     if (url.length === 11 && !url.includes('/') && !url.includes('http')) return url; 
-    
-    // Regex mágico que encontra o ID em qualquer link do YouTube
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-
+// CONVERTER DROPBOX PARA LINK DIRETO DE ÁUDIO
+function convertToDirectAudioLink(url) {
+    if (!url) return null;
+    url = url.trim();
+    if (url.includes("dropbox.com")) {
+        return url.replace("www.dropbox.com", "dl.dropboxusercontent.com").split("?")[0];
+    }
+    return url;
+}
