@@ -446,7 +446,14 @@
             <h3 id="albumTrackModalTitle">Adicionar Faixa</h3>
             <input type="hidden" id="editingTrackItemId"><input type="hidden" id="editingTrackExistingId">
             <div class="studio-form-group"><label>Nome</label><input type="text" id="albumTrackNameInput"></div>
+            
             <div class="studio-form-group"><label>Duração</label><input type="text" id="albumTrackDurationInput" placeholder="0:00"></div>
+            
+            <div class="studio-form-group">
+                <label>Link do YouTube (Opcional)</label>
+                <input type="url" id="albumTrackYoutubeInput" placeholder="Cole o link do vídeo aqui...">
+            </div>
+
             <div class="studio-form-group">
                 <label>Tipo</label>
                 <select id="albumTrackTypeSelect">
@@ -524,8 +531,10 @@
     </div>
 
     <audio id="audioElement"></audio>
+
     <div id="ytplayer" style="display: none;"></div>
     <script src="https://www.youtube.com/iframe_api"></script>
+
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
