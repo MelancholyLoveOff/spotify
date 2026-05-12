@@ -11,7 +11,8 @@ function onYouTubeIframeAPIReady() {
         playerVars: { 'controls': 0, 'playsinline': 1 },
         events: {
             'onReady': () => { ytPlayerReady = true; },
-            'onStateChange': onPlayerStateChange
+            'onStateChange': onPlayerStateChange,
+            'origin': window.location.origin
         }
     });
 }
