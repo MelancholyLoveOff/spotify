@@ -510,7 +510,7 @@
 
     <div id="musicPlayer" class="page-view hidden">
         <div class="player-header"><button class="player-close-btn"><i class="fas fa-chevron-down"></i></button><span id="playerAlbumTitle">Nome do Álbum</span><button><i class="fas fa-ellipsis-v"></i></button></div>
-       <div class="player-body">
+        <div class="player-body">
             <div class="player-media-container" style="position: relative; width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); background: #000;">
                 
                 <div id="ytplayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
@@ -525,14 +525,15 @@
             </div>
 
             <div class="player-song-info">
-            <div class="player-song-info">
                 <div class="player-song-text"><h2 id="playerSongTitle">Nome da Música</h2><p id="playerArtistName">Artista</p></div>
                 <button class="player-add-btn"><i class="far fa-heart"></i></button>
             </div>
+            
             <div class="player-seeker">
                 <input type="range" id="playerSeekBar" value="0" min="0" max="100">
                 <div class="player-time"><span id="playerCurrentTime">0:00</span><span id="playerTotalTime">0:00</span></div>
             </div>
+            
             <div class="player-controls">
                 <button class="player-btn" id="playerShuffleBtn"><i class="fas fa-random"></i></button>
                 <button class="player-btn" id="playerPrevBtn"><i class="fas fa-step-backward"></i></button>
@@ -545,7 +546,7 @@
 
     <audio id="audioElement"></audio>
 
-<div id="ytplayer" style="position: absolute; top: -9999px; left: -9999px; width: 10px; height: 10px; opacity: 0; pointer-events: none;"></div>    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
