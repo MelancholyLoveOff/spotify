@@ -4,6 +4,29 @@ if (window.supabase && SUPABASE_URL.startsWith('http')) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
+// 🔥 CONFIGURAÇÃO DO GOOGLE SHEETS
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxBd7onVw6zTqRStKsWdEvzrn3kOUjZ33nfJ6UjsW9TRE4S6au9XVVW1ngOgl8oAmdWeg/exec";
+
+// ------------------------------------------------------------------
+// LER AS POSIÇÕES DO DIA ANTERIOR DA PLANILHA (PARA AS SETINHAS)
+// ------------------------------------------------------------------
+async function carregarPosicoesAnteriores() {
+    try {
+        const response = await fetch(GOOGLE_SHEETS_API_URL);
+        const posicoesData = await response.json();
+        
+        window.previousMusicChartData = posicoesData; 
+        window.previousAlbumChartData = posicoesData;
+        console.log("Posições do chart carregadas da Planilha Oficial com sucesso!");
+    } catch (e) {
+        console.error("Erro ao carregar histórico do Sheets", e);
+        window.previousMusicChartData = {}; 
+        window.previousAlbumChartData = {};
+    }
+}
+// Chamar imediatamente para ter as setinhas prontas quando a interface carregar
+carregarPosicoesAnteriores();
+
 async function uploadImageToImgbb(file) {
     const formData = new FormData(); formData.append('image', file);
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
@@ -113,12 +136,6 @@ async function batchDeleteAirtableRecords(tableName, recordIds) { const { error 
 
 const initializeData = (data) => {
     try {
-        try {
-            const prevMusic = localStorage.getItem(PREVIOUS_MUSIC_CHART_KEY); previousMusicChartData = prevMusic ? JSON.parse(prevMusic) : {};
-            const prevAlbum = localStorage.getItem(PREVIOUS_ALBUM_CHART_KEY); previousAlbumChartData = prevAlbum ? JSON.parse(prevAlbum) : {};
-            const prevRpg = localStorage.getItem(PREVIOUS_RPG_CHART_KEY); previousRpgChartData = prevRpg ? JSON.parse(prevRpg) : {};
-        } catch (e) { previousMusicChartData = {}; previousAlbumChartData = {}; previousRpgChartData = {}; }
-
         const artistsMapById = new Map();
         db.artists = (data.allArtists || []).map(artist => {
             const artistEntry = { ...artist, albums: [], singles: [], careerTotalStreams: 0 };
@@ -154,7 +171,6 @@ const initializeData = (data) => {
            involvedArtistIds.forEach(aId => {
                 const artistEntry = db.artists.find(a => a.id === aId);
                 if (artistEntry) {
-                    // VERIFICAÇÃO ADICIONADA: Só empurra o álbum se for o Dono do Projeto
                     if (aId === item.artistId) {
                         if (item.type === 'album') { if (!artistEntry.albums.some(a => a.id === item.id)) artistEntry.albums.push(item); } 
                         else { if (!artistEntry.singles.some(a => a.id === item.id)) artistEntry.singles.push(item); }
