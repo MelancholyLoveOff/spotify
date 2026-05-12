@@ -108,3 +108,18 @@ function startAlbumCountdown(releaseDate, timerElementId) {
         `;
     }, 1000);
 }
+
+// Adicione no final do js/utils.js
+function extractYouTubeID(url) {
+    if (!url) return null;
+    url = url.trim();
+    // Se a pessoa já colou apenas o ID de 11 caracteres sem querer:
+    if (url.length === 11 && !url.includes('/') && !url.includes('http')) return url; 
+    
+    // Regex mágico que encontra o ID em qualquer link do YouTube
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+
