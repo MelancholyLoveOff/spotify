@@ -2,14 +2,15 @@
 
 let ytPlayerReady = false;
 let ytPlayer;
-let isVideoMode = false; // Controla se estamos a ver a Capa ou o Vídeo
+let isVideoMode = false;
 
+// Função carregada pelo YouTube
 function onYouTubeIframeAPIReady() {
     ytPlayer = new YT.Player('ytplayer', {
         height: '100%',
         width: '100%',
         playerVars: { 
-            'controls': 0, // Esconde os controlos do YouTube
+            'controls': 0, 
             'playsinline': 1,
             'origin': window.location.origin,
             'disablekb': 1,
@@ -23,6 +24,7 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
+// Passar de música quando o vídeo acaba
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.ENDED) {
         if (repeatMode === 'one') {
@@ -53,23 +55,22 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
+    // --- LÓGICA DO BOTÃO VÍDEO ---
     const toggleBtn = document.getElementById('toggleVideoBtn');
-    
-    // Se a música tiver YouTube ID: Carrega o vídeo e MOSTRA o botão de vídeo
     if (ytPlayerReady && song.yt_id) {
         ytPlayer.loadVideoById(song.yt_id);
         if (!isPlaying) ytPlayer.pauseVideo();
         if (toggleBtn) toggleBtn.style.display = 'inline-flex';
     } else {
-        // Se não tiver YouTube, esconde o botão
         if (toggleBtn) toggleBtn.style.display = 'none';
+        if (ytPlayerReady) ytPlayer.stopVideo(); // Pára o vídeo anterior
     }
 
-    // Resetar o ecrã sempre para "Modo Áudio" (mostrar a Capa do Álbum) ao mudar de música
+    // Resetar para Capa sempre que troca de música
     isVideoMode = false;
     if (playerCoverArt) {
         playerCoverArt.style.opacity = '1';
-        playerCoverArt.style.pointerEvents = 'auto'; // Impede de clicar no vídeo acidentalmente
+        playerCoverArt.style.pointerEvents = 'auto';
     }
     if (toggleBtn) {
         toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>';
@@ -144,7 +145,7 @@ function startSimulationTimer() {
     simulationInterval = setInterval(() => {
         if (isPlaying && playerSeekBar && currentSong) {
             
-            // Lê do YouTube
+            // LER TEMPO DO YOUTUBE
             if (ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
                 const currentTime = ytPlayer.getCurrentTime();
                 const duration = ytPlayer.getDuration();
@@ -157,7 +158,7 @@ function startSimulationTimer() {
                     if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
                 }
             } 
-            // Simulador antigo (se não tiver yt_id)
+            // SIMULADOR (Para músicas sem vídeo)
             else if (!currentSong.yt_id) {
                 let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
                 if (currentValue < maxValue) {
@@ -180,22 +181,20 @@ function initializePlayerListeners() {
     playerShuffleBtn?.addEventListener('click', toggleShuffle);
     playerRepeatBtn?.addEventListener('click', toggleRepeat);
     
-    // Sincronizar o toque da barra
+    // Sincronizar o arrasto da barra
     playerSeekBar?.addEventListener('input', () => { 
         if (playerCurrentTime && playerSeekBar) playerCurrentTime.textContent = formatTime(playerSeekBar.value); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = `${(playerSeekBar.value / playerSeekBar.max) * 100}%`; 
     });
     playerSeekBar?.addEventListener('change', () => { 
-        if (ytPlayerReady && currentSong?.yt_id) {
-            ytPlayer.seekTo(playerSeekBar.value, true);
-        }
+        if (ytPlayerReady && currentSong?.yt_id) ytPlayer.seekTo(playerSeekBar.value, true);
         if (isPlaying) playAudio(); 
     });
     
     miniPlayer?.addEventListener('click', maximizePlayer);
     miniPlayerPlayPauseBtn?.addEventListener('click', togglePlay);
-    
-    // NOVA FUNCIONALIDADE: LÓGICA DO BOTÃO VÍDEO / ÁUDIO
+
+    // ADICIONAR LÓGICA DO BOTÃO VÍDEO
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
@@ -203,20 +202,18 @@ function initializePlayerListeners() {
             const coverArt = document.getElementById('playerCoverArt');
             
             if (isVideoMode) {
-                // Revela o vídeo (Esconde a capa)
                 if(coverArt) {
-                    coverArt.style.opacity = '0';
-                    coverArt.style.pointerEvents = 'none'; // Permite clicar no vídeo do YT se quiser
+                    coverArt.style.opacity = '0'; // Esconde a capa
+                    coverArt.style.pointerEvents = 'none'; 
                 }
                 toggleBtn.innerHTML = '<i class="fas fa-music"></i> <span>Mudar para Áudio</span>';
                 toggleBtn.style.background = 'var(--spotify-green)';
                 toggleBtn.style.color = '#000';
                 toggleBtn.style.borderColor = 'var(--spotify-green)';
             } else {
-                // Esconde o vídeo (Mostra a capa)
                 if(coverArt) {
-                    coverArt.style.opacity = '1';
-                    coverArt.style.pointerEvents = 'auto'; // Impede de clicar no YT por trás
+                    coverArt.style.opacity = '1'; // Mostra a capa
+                    coverArt.style.pointerEvents = 'auto'; 
                 }
                 toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>';
                 toggleBtn.style.background = 'rgba(255,255,255,0.1)';
