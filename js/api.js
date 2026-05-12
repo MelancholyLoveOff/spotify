@@ -10,13 +10,27 @@ const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxBd7onVw
 // ------------------------------------------------------------------
 // LER AS POSIÇÕES DO DIA ANTERIOR DA PLANILHA (PARA AS SETINHAS)
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// LER AS POSIÇÕES DO DIA ANTERIOR DA PLANILHA (PARA AS SETINHAS)
+// ------------------------------------------------------------------
 async function carregarPosicoesAnteriores() {
     try {
         const response = await fetch(GOOGLE_SHEETS_API_URL);
         const posicoesData = await response.json();
         
-        window.previousMusicChartData = posicoesData; 
-        window.previousAlbumChartData = posicoesData;
+        const musicChart = {};
+        const albumChart = {};
+
+        // Transforma o Array vindo da Planilha no formato Dicionário que o UI.js espera { id: rank }
+        if (Array.isArray(posicoesData)) {
+            posicoesData.forEach(item => {
+                if (item.type === 'song') musicChart[item.id] = item.rank;
+                if (item.type === 'album') albumChart[item.id] = item.rank;
+            });
+        }
+
+        window.previousMusicChartData = musicChart; 
+        window.previousAlbumChartData = albumChart;
         console.log("Posições do chart carregadas da Planilha Oficial com sucesso!");
     } catch (e) {
         console.error("Erro ao carregar histórico do Sheets", e);
