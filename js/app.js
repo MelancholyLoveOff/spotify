@@ -166,11 +166,14 @@ function initializeBodyClickListener() {
         if (artistCard) { openArtistDetail(artistCard.dataset.artistName); return; }
         if (artistLink) { event.preventDefault(); openArtistDetail(artistLink.dataset.artistName); return; }
         
+        // === CORREÇÃO DO BUG AQUI ===
+        // Agora o código ignora o clique se ele esbarrar na página '#albumDetail' inteira
         const albumCard = event.target.closest('[data-album-id]');
-        if (albumCard) { 
+        if (albumCard && albumCard.id !== 'albumDetail') { 
             if (event.target.closest('.action-buttons') || albumCard.closest('#editReleaseList')) return; 
             openAlbumDetail(albumCard.dataset.albumId); return; 
         }
+        // ============================
         
         const mainPlayBtn = event.target.closest('.main-play-btn');
         if (mainPlayBtn) {
@@ -198,17 +201,13 @@ function initializeBodyClickListener() {
             if(icon) icon.classList.add('fa-spin'); 
             refreshButton.disabled = true; 
 
-            // 1. Busca as posições oficiais da planilha do Admin ANTES de recarregar
             carregarPosicoesAnteriores().then(() => {
-                
-                // Salva localmente apenas o chart de RPG (pois ele não usa a planilha)
                 try {
                     if (typeof saveChartDataToLocalStorage === 'function') {
                         saveChartDataToLocalStorage('rpg');
                     }
                 } catch(e) { console.error("Erro a guardar histórico RPG:", e); }
 
-                // 2. Só agora faz o Refresh do Supabase para montar os charts novos
                 refreshAllData().finally(() => { 
                     if(icon) icon.classList.remove('fa-spin'); 
                     refreshButton.disabled = false; 
@@ -293,6 +292,7 @@ function setupDeluxeModalListeners() {
         });
     }
 }
+
 async function refreshAllData() {
     const data = await loadAllData();
     if (data && data.allArtists) { 
@@ -332,15 +332,14 @@ async function refreshAllData() {
             
             try { attachNavigationListeners(); } catch (e) {} 
             
-            // Atualiza globalmente para garantir que todos os botões de refresh e modais encontrem a função
             window.refreshAllData = refreshAllData; 
             return true; 
         } else { return false; }
     } else { return false; }
 }
 
-// Apenas para garantir que ficará global desde o início:
 window.refreshAllData = refreshAllData;
+
 async function main() {
     if (!initializeDOMElements()) return;
     
