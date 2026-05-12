@@ -2,22 +2,27 @@
 
 let ytPlayerReady = false;
 let ytPlayer;
+let isVideoMode = false; // Controla se estamos a ver a Capa ou o Vídeo
 
-// Função chamada automaticamente pelo script do YouTube quando a API carrega
 function onYouTubeIframeAPIReady() {
     ytPlayer = new YT.Player('ytplayer', {
-        height: '10',
-        width: '10',
-        playerVars: { 'controls': 0, 'playsinline': 1 },
+        height: '100%',
+        width: '100%',
+        playerVars: { 
+            'controls': 0, // Esconde os controlos do YouTube
+            'playsinline': 1,
+            'origin': window.location.origin,
+            'disablekb': 1,
+            'fs': 0,
+            'modestbranding': 1
+        },
         events: {
             'onReady': () => { ytPlayerReady = true; },
-            'onStateChange': onPlayerStateChange,
-            'origin': window.location.origin
+            'onStateChange': onPlayerStateChange
         }
     });
 }
 
-// Deteta quando a música acaba para passar para a próxima
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.ENDED) {
         if (repeatMode === 'one') {
@@ -48,12 +53,29 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
-    // --- LÓGICA DO YOUTUBE AQUI ---
+    const toggleBtn = document.getElementById('toggleVideoBtn');
+    
+    // Se a música tiver YouTube ID: Carrega o vídeo e MOSTRA o botão de vídeo
     if (ytPlayerReady && song.yt_id) {
         ytPlayer.loadVideoById(song.yt_id);
-        if (!isPlaying) {
-            ytPlayer.pauseVideo();
-        }
+        if (!isPlaying) ytPlayer.pauseVideo();
+        if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+    } else {
+        // Se não tiver YouTube, esconde o botão
+        if (toggleBtn) toggleBtn.style.display = 'none';
+    }
+
+    // Resetar o ecrã sempre para "Modo Áudio" (mostrar a Capa do Álbum) ao mudar de música
+    isVideoMode = false;
+    if (playerCoverArt) {
+        playerCoverArt.style.opacity = '1';
+        playerCoverArt.style.pointerEvents = 'auto'; // Impede de clicar no vídeo acidentalmente
+    }
+    if (toggleBtn) {
+        toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>';
+        toggleBtn.style.background = 'rgba(255,255,255,0.1)';
+        toggleBtn.style.color = 'white';
+        toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)';
     }
 
     const durationSeconds = song.durationSeconds || 180;
@@ -65,10 +87,7 @@ function playAudio() {
     if (!currentSong) return; 
     isPlaying = true; 
     
-    // Tocar música real no YouTube se existir
-    if (ytPlayerReady && currentSong.yt_id) {
-        ytPlayer.playVideo();
-    }
+    if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
@@ -77,10 +96,7 @@ function playAudio() {
 function pauseAudio() { 
     isPlaying = false; 
     
-    // Pausar YouTube
-    if (ytPlayerReady && currentSong.yt_id) {
-        ytPlayer.pauseVideo();
-    }
+    if (ytPlayerReady && currentSong.yt_id) ytPlayer.pauseVideo();
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
@@ -128,7 +144,7 @@ function startSimulationTimer() {
     simulationInterval = setInterval(() => {
         if (isPlaying && playerSeekBar && currentSong) {
             
-            // MODO 1: Música REAL a tocar via YouTube
+            // Lê do YouTube
             if (ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
                 const currentTime = ytPlayer.getCurrentTime();
                 const duration = ytPlayer.getDuration();
@@ -141,7 +157,7 @@ function startSimulationTimer() {
                     if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
                 }
             } 
-            // MODO 2: Fallback (Simulador antigo) caso a música não tenha ID do Youtube
+            // Simulador antigo (se não tiver yt_id)
             else if (!currentSong.yt_id) {
                 let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
                 if (currentValue < maxValue) {
@@ -164,7 +180,7 @@ function initializePlayerListeners() {
     playerShuffleBtn?.addEventListener('click', toggleShuffle);
     playerRepeatBtn?.addEventListener('click', toggleRepeat);
     
-    // Atualizado para controlar a barra de progresso no YouTube quando o utilizador arrasta
+    // Sincronizar o toque da barra
     playerSeekBar?.addEventListener('input', () => { 
         if (playerCurrentTime && playerSeekBar) playerCurrentTime.textContent = formatTime(playerSeekBar.value); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = `${(playerSeekBar.value / playerSeekBar.max) * 100}%`; 
@@ -178,5 +194,37 @@ function initializePlayerListeners() {
     
     miniPlayer?.addEventListener('click', maximizePlayer);
     miniPlayerPlayPauseBtn?.addEventListener('click', togglePlay);
+    
+    // NOVA FUNCIONALIDADE: LÓGICA DO BOTÃO VÍDEO / ÁUDIO
+    const toggleBtn = document.getElementById('toggleVideoBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            isVideoMode = !isVideoMode;
+            const coverArt = document.getElementById('playerCoverArt');
+            
+            if (isVideoMode) {
+                // Revela o vídeo (Esconde a capa)
+                if(coverArt) {
+                    coverArt.style.opacity = '0';
+                    coverArt.style.pointerEvents = 'none'; // Permite clicar no vídeo do YT se quiser
+                }
+                toggleBtn.innerHTML = '<i class="fas fa-music"></i> <span>Mudar para Áudio</span>';
+                toggleBtn.style.background = 'var(--spotify-green)';
+                toggleBtn.style.color = '#000';
+                toggleBtn.style.borderColor = 'var(--spotify-green)';
+            } else {
+                // Esconde o vídeo (Mostra a capa)
+                if(coverArt) {
+                    coverArt.style.opacity = '1';
+                    coverArt.style.pointerEvents = 'auto'; // Impede de clicar no YT por trás
+                }
+                toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>';
+                toggleBtn.style.background = 'rgba(255,255,255,0.1)';
+                toggleBtn.style.color = 'white';
+                toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+            }
+        });
+    }
+
     startSimulationTimer();
 }
