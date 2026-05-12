@@ -59,13 +59,11 @@
 
             <section id="chartsSection" class="content-section">
                 <h2 class="section-title">Charts Globais</h2>
-
                 <div class="chart-header">
                     <h3>Top 50 Músicas</h3>
                     <p>Atualiza em: <span id="musicChartTimer">--</span></p>
                 </div>
                 <div id="musicChartsList" class="chart-list"></div>
-
                 <div class="chart-header" style="margin-top: 40px;">
                     <h3>Top 50 Álbuns</h3>
                     <p>Atualiza em: <span id="albumChartTimer">--</span></p>
@@ -234,7 +232,6 @@
                 </div>
 
                 <div id="studioLaunchWrapper" class="hidden">
-                    
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--background-tertiary);">
                         <h3 id="currentStudioMenuLabel" style="margin: 0; font-size: 18px; color: var(--text-primary);">Novo Lançamento</h3>
                         <button id="openStudioMenuBtn" class="small-btn" style="border: none; background: rgba(255,255,255,0.1); width: 44px; height: 44px; border-radius: 8px; display: flex; justify-content: center; align-items: center; padding: 0;">
@@ -346,7 +343,6 @@
                                 
                                 <div style="position: relative; width: 140px; height: 140px; flex-shrink: 0; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border-radius: 50%; margin: 16px auto;" onclick="document.getElementById('editArtistImageFile').click()">
                                     <img id="editArtistPreviewCircleMain" src="https://i.imgur.com/AD3MbBi.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                    
                                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 1; transition: opacity 0.2s; border-radius: 50%;">
                                         <i class="fas fa-camera" style="font-size: 28px; margin-bottom: 8px; color: white;"></i>
                                         <span style="font-size: 11px; font-weight: 700; color: white; text-align: center; text-transform: uppercase;">Tocar para<br>Alterar</span>
@@ -390,14 +386,8 @@
             <h3 id="optionsModalReleaseTitle" style="text-align: center; font-size: 18px; margin-bottom: 24px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nome do Lançamento</h3>
             
             <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button id="optEditReleaseBtn" class="submit-btn" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
-                    <i class="fas fa-pencil-alt" style="margin-right: 12px;"></i> Editar Lançamento
-                </button>
-                
-                <button id="optDeleteReleaseBtn" class="submit-btn" style="margin: 0; background: rgba(226, 33, 52, 0.1); color: var(--trend-down-red); justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
-                    <i class="fas fa-trash-alt" style="margin-right: 12px;"></i> Apagar Lançamento
-                </button>
-                
+                <button id="optEditReleaseBtn" class="submit-btn" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;"><i class="fas fa-pencil-alt" style="margin-right: 12px;"></i> Editar Lançamento</button>
+                <button id="optDeleteReleaseBtn" class="submit-btn" style="margin: 0; background: rgba(226, 33, 52, 0.1); color: var(--trend-down-red); justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;"><i class="fas fa-trash-alt" style="margin-right: 12px;"></i> Apagar Lançamento</button>
                 <button id="optCancelBtn" class="cancel-btn" style="margin-top: 16px; width: 100%;">Cancelar</button>
             </div>
         </div>
@@ -406,24 +396,11 @@
     <div id="studioMenuModal" class="modal-overlay hidden">
         <div class="modal-content action-modal-content">
             <h3 style="text-align: center; font-size: 18px; margin-bottom: 24px; color: var(--text-primary);">Navegação do Estúdio</h3>
-            
             <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button class="submit-btn studio-menu-opt" data-form="release" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
-                    <i class="fas fa-compact-disc" style="margin-right: 12px; font-size: 18px;"></i> Novo Lançamento
-                </button>
-                
-                <button class="submit-btn studio-menu-opt" data-form="edit" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
-                    <i class="fas fa-pencil-alt" style="margin-right: 12px; font-size: 18px;"></i> Editar Lançamentos
-                </button>
-                
-                <button class="submit-btn studio-menu-opt" data-form="artist" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
-                    <i class="fas fa-user-plus" style="margin-right: 12px; font-size: 18px;"></i> Novo Artista
-                </button>
-                
-                <button class="submit-btn studio-menu-opt" data-form="editArtist" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;">
-                    <i class="fas fa-user-edit" style="margin-right: 12px; font-size: 18px;"></i> Editar Artista
-                </button>
-                
+                <button class="submit-btn studio-menu-opt" data-form="release" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;"><i class="fas fa-compact-disc" style="margin-right: 12px; font-size: 18px;"></i> Novo Lançamento</button>
+                <button class="submit-btn studio-menu-opt" data-form="edit" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;"><i class="fas fa-pencil-alt" style="margin-right: 12px; font-size: 18px;"></i> Editar Lançamentos</button>
+                <button class="submit-btn studio-menu-opt" data-form="artist" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;"><i class="fas fa-user-plus" style="margin-right: 12px; font-size: 18px;"></i> Novo Artista</button>
+                <button class="submit-btn studio-menu-opt" data-form="editArtist" style="margin: 0; background: rgba(255,255,255,0.1); color: white; justify-content: flex-start; padding: 16px 24px; width: 100%; border-radius: 8px;"><i class="fas fa-user-edit" style="margin-right: 12px; font-size: 18px;"></i> Editar Artista</button>
                 <button id="closeStudioMenuBtn" class="cancel-btn" style="margin-top: 16px; width: 100%;">Fechar</button>
             </div>
         </div>
@@ -446,12 +423,18 @@
             <h3 id="albumTrackModalTitle">Adicionar Faixa</h3>
             <input type="hidden" id="editingTrackItemId"><input type="hidden" id="editingTrackExistingId">
             <div class="studio-form-group"><label>Nome</label><input type="text" id="albumTrackNameInput"></div>
-            
             <div class="studio-form-group"><label>Duração</label><input type="text" id="albumTrackDurationInput" placeholder="0:00"></div>
             
-            <div class="studio-form-group">
-                <label>Link do YouTube (Opcional)</label>
-                <input type="url" id="albumTrackYoutubeInput" placeholder="Cole o link do vídeo aqui...">
+            <div class="studio-form-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid #ff0000; margin-bottom: 12px;">
+                <label><i class="fab fa-youtube" style="color:#ff0000;"></i> Link do MV (YouTube) <span style="font-size:10px; opacity:0.7;">Opcional</span></label>
+                <input type="url" id="albumTrackYoutubeInput" placeholder="Ex: https://youtu.be/..." style="margin-bottom: 0;">
+                <p style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Gera o botão "Mudar para Vídeo" no player.</p>
+            </div>
+            
+            <div class="studio-form-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid var(--spotify-green); margin-bottom: 16px;">
+                <label><i class="fas fa-music" style="color:var(--spotify-green);"></i> Link do Áudio (.mp3) <span style="font-size:10px; opacity:0.7;">Opcional</span></label>
+                <input type="url" id="albumTrackAudioInput" placeholder="Link direto .mp3 ou Dropbox" style="margin-bottom: 0;">
+                <p style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Toca a música de fundo com estabilidade total. Aceita links do Dropbox!</p>
             </div>
 
             <div class="studio-form-group">
