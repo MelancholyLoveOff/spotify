@@ -10,9 +10,6 @@ const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxBd7onVw
 // ------------------------------------------------------------------
 // LER AS POSIÇÕES DO DIA ANTERIOR DA PLANILHA (PARA AS SETINHAS)
 // ------------------------------------------------------------------
-// ------------------------------------------------------------------
-// LER AS POSIÇÕES DO DIA ANTERIOR DA PLANILHA (PARA AS SETINHAS)
-// ------------------------------------------------------------------
 async function carregarPosicoesAnteriores() {
     try {
         const response = await fetch(GOOGLE_SHEETS_API_URL);
@@ -77,7 +74,8 @@ async function loadAllData() {
             musicasMap.set(row.id, {
                 id: row.id, title: row.title || 'Faixa Desconhecida', duration: row.duration_seconds ? new Date(row.duration_seconds * 1000).toISOString().substr(14, 5) : "0:00",
                 trackNumber: row.track_number || 0, durationSeconds: row.duration_seconds || 0, artistIds: artistIds, collabType: row.collab_type,
-                albumId: parentReleaseId, albumIds: albumIds, singleIds: singleIds, streams: row.streams || 0, totalStreams: row.total_streams || 0, trackType: row.track_type || 'B-side'
+                albumId: parentReleaseId, albumIds: albumIds, singleIds: singleIds, streams: row.streams || 0, totalStreams: row.total_streams || 0, trackType: row.track_type || 'B-side',
+                yt_id: row.yt_id // <--- YOUTUBE ID ADICIONADO AQUI
             });
         });
 
