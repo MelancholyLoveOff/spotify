@@ -423,18 +423,18 @@
             <h3 id="albumTrackModalTitle">Adicionar Faixa</h3>
             <input type="hidden" id="editingTrackItemId"><input type="hidden" id="editingTrackExistingId">
             <div class="studio-form-group"><label>Nome</label><input type="text" id="albumTrackNameInput"></div>
-            <div class="studio-form-group"><label>Duração</label><input type="text" id="albumTrackDurationInput" placeholder="0:00"></div>
+            <div class="studio-form-group"><label>Duração Oficial</label><input type="text" id="albumTrackDurationInput" placeholder="0:00"></div>
             
-            <div class="studio-form-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid #ff0000; margin-bottom: 12px;">
-                <label><i class="fab fa-youtube" style="color:#ff0000;"></i> Link do MV (YouTube) <span style="font-size:10px; opacity:0.7;">Opcional</span></label>
-                <input type="url" id="albumTrackYoutubeInput" placeholder="Ex: https://youtu.be/..." style="margin-bottom: 0;">
-                <p style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Gera o botão "Mudar para Vídeo" no player.</p>
+            <div class="studio-form-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid var(--spotify-green); margin-bottom: 12px;">
+                <label><i class="fas fa-music" style="color:var(--spotify-green);"></i> Áudio Oficial (YouTube ou .mp3) <span style="font-size:10px; opacity:0.7;">Opcional</span></label>
+                <input type="url" id="albumTrackAudioInput" placeholder="Ex: Link do YouTube (Audio) ou DropBox..." style="margin-bottom: 0;">
+                <p style="font-size:11px; color:var(--text-secondary); margin-top:4px;">A versão de estúdio principal da música.</p>
             </div>
             
-            <div class="studio-form-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid var(--spotify-green); margin-bottom: 16px;">
-                <label><i class="fas fa-music" style="color:var(--spotify-green);"></i> Link do Áudio (.mp3) <span style="font-size:10px; opacity:0.7;">Opcional</span></label>
-                <input type="url" id="albumTrackAudioInput" placeholder="Link direto .mp3 ou Dropbox" style="margin-bottom: 0;">
-                <p style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Toca a música de fundo com estabilidade total. Aceita links do Dropbox!</p>
+            <div class="studio-form-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid #ff0000; margin-bottom: 16px;">
+                <label><i class="fab fa-youtube" style="color:#ff0000;"></i> MV / Videoclipe (YouTube) <span style="font-size:10px; opacity:0.7;">Opcional</span></label>
+                <input type="url" id="albumTrackYoutubeInput" placeholder="Ex: Link do MV Oficial..." style="margin-bottom: 0;">
+                <p style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Gera o botão "Mudar para Vídeo". Pode ter um tempo diferente!</p>
             </div>
 
             <div class="studio-form-group">
@@ -496,7 +496,7 @@
         <div class="player-body">
             
             <div class="player-media-container" style="position: relative; width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); background: #000;">
-                <div id="ytplayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
+                <div id="ytplayer_video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
                 <img id="playerCoverArt" src="https://i.imgur.com/AD3MbBi.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; transition: opacity 0.3s ease;">
             </div>
 
@@ -527,9 +527,9 @@
     </div>
 
     <audio id="audioElement"></audio>
+    <div id="ytplayer_audio" style="position: absolute; top: -9999px; left: -9999px; width: 10px; height: 10px; opacity: 0; pointer-events: none;"></div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
-
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
