@@ -436,15 +436,20 @@ async function handleUpdateRelease(event) {
     saveEditBtn.disabled = true; saveEditBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
     try {
-        const titleFieldName = (tableName === 'Álbuns') ? 'Nome do Álbum' : 'Nome do Single/EP'; const coverFieldName = (tableName === 'Álbuns') ? 'Capa do Álbum' : 'Capa';
+        const isAlbumTable = (tableName === 'albums' || tableName === 'Álbuns');
+        const titleFieldName = isAlbumTable ? 'Nome do Álbum' : 'Nome do Single/EP'; 
+        const coverFieldName = isAlbumTable ? 'Capa do Álbum' : 'Capa';
+        const linkField = isAlbumTable ? 'Álbuns' : 'Singles e EPs';
+
         const fieldsToUpdate = { [titleFieldName]: updatedTitle, [coverFieldName]: [{ "url": updatedCoverUrl }], "Data de Lançamento": updatedReleaseDateISO };
         const updateResult = await updateAirtableRecord(tableName, recordId, fieldsToUpdate);
         if (!updateResult || !updateResult.id) throw new Error("Falha ao atualizar o registro principal.");
 
-        if (tableName === 'Álbuns' || tableName === 'Singles e EPs') { 
+        if (tableName === 'albums' || tableName === 'singles' || tableName === 'Álbuns' || tableName === 'Singles e EPs') { 
             const trackItems = editAlbumTracklistEditor.querySelectorAll('.track-list-item-display');
             if (!editAlbumTracklistEditor.classList.contains('hidden')) { 
                 const musicRecordsToCreate = []; const musicRecordsToUpdate = []; const finalTrackIdsInEditor = new Set(); 
+                
                 for (let i = 0; i < trackItems.length; i++) {
                     const item = trackItems[i], existingSongId = item.dataset.existingSongId, name = item.dataset.trackName, durationStr = item.dataset.durationStr, type = item.dataset.trackType, durationSec = parseDurationToSeconds(durationStr);
                     const ytId = item.dataset.ytId || null; 
@@ -454,7 +459,6 @@ async function handleUpdateRelease(event) {
                     let feats = []; try { feats = JSON.parse(item.dataset.feats || '[]'); } catch (e) {}
                     if (!name || (durationSec === 0 && !existingSongId) ) throw new Error(`Dados inválidos na Faixa ${i + 1}.`);
 
-                    const linkField = tableName === 'Álbuns' ? 'Álbuns' : 'Singles e EPs';
                     let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
                     if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
                     
@@ -462,15 +466,17 @@ async function handleUpdateRelease(event) {
                     if(collaborationType) fieldsBase["Tipo de Colaboração"] = collaborationType;
 
                     if (existingSongId) {
-                        finalTrackIdsInEditor.add(existingSongId); const originalSong = db.songs.find(s => s.id === existingSongId); const existingLinks = (tableName === 'Álbuns' ? originalSong?.albumIds : originalSong?.singleIds) || []; const updatedLinks = [...new Set([...existingLinks, recordId])];
+                        finalTrackIdsInEditor.add(existingSongId); const originalSong = db.songs.find(s => s.id === existingSongId); 
+                        const existingLinks = (isAlbumTable ? originalSong?.albumIds : originalSong?.singleIds) || []; 
+                        const updatedLinks = [...new Set([...existingLinks, recordId])];
                         fieldsBase[linkField] = updatedLinks; musicRecordsToUpdate.push({ id: existingSongId, fields: fieldsBase });
                     } else { fieldsBase[linkField] = [recordId]; musicRecordsToCreate.push(fieldsBase); }
                 } 
                 if (musicRecordsToCreate.length > 0) { const createResult = await batchCreateAirtableRecords('Músicas', musicRecordsToCreate); if (!createResult || createResult.length !== musicRecordsToCreate.length) throw new Error("Falha ao criar faixas novas."); createResult.forEach(record => finalTrackIdsInEditor.add(record.id)); }
                 const tracksToUnlinkIds = [...originalTrackIds].filter(id => !finalTrackIdsInEditor.has(id));
                 if (tracksToUnlinkIds.length > 0) {
-                    const unlinkPayload = []; const linkField = tableName === 'Álbuns' ? 'Álbuns' : 'Singles e EPs';
-                    for (const trackId of tracksToUnlinkIds) { const originalSong = db.songs.find(s => s.id === trackId); const existingLinks = (tableName === 'Álbuns' ? originalSong?.albumIds : originalSong?.singleIds) || []; const updatedLinks = existingLinks.filter(linkId => linkId !== recordId);  unlinkPayload.push({ id: trackId, fields: { [linkField]: updatedLinks } }); }
+                    const unlinkPayload = []; 
+                    for (const trackId of tracksToUnlinkIds) { const originalSong = db.songs.find(s => s.id === trackId); const existingLinks = (isAlbumTable ? originalSong?.albumIds : originalSong?.singleIds) || []; const updatedLinks = existingLinks.filter(linkId => linkId !== recordId);  unlinkPayload.push({ id: trackId, fields: { [linkField]: updatedLinks } }); }
                     await batchUpdateAirtableRecords('Músicas', unlinkPayload);
                 }
                 if (musicRecordsToUpdate.length > 0) { const updateExistingResult = await batchUpdateAirtableRecords('Músicas', musicRecordsToUpdate); if (!updateExistingResult || updateExistingResult.length !== musicRecordsToUpdate.length) throw new Error("Falha ao atualizar faixas existentes."); }
@@ -495,7 +501,12 @@ async function handleDeleteRelease() {
             for (const trackId of associatedTrackIds) {
                 const song = db.songs.find(s => s.id === trackId); if (!song) continue;
                 const totalLinks = (song.albumIds || []).length + (song.singleIds || []).length;
-                if (totalLinks > 1) { const isAlbumTable = tableName === 'Álbuns'; const linkField = isAlbumTable ? 'Álbuns' : 'Singles e EPs'; const currentLinks = (isAlbumTable ? song.albumIds : song.singleIds) || []; updates.push({ id: trackId, fields: { [linkField]: currentLinks.filter(linkId => linkId !== recordId) } }); } 
+                if (totalLinks > 1) { 
+                    const isAlbumTable = (tableName === 'albums' || tableName === 'Álbuns');
+                    const linkField = isAlbumTable ? 'Álbuns' : 'Singles e EPs'; 
+                    const currentLinks = (isAlbumTable ? song.albumIds : song.singleIds) || []; 
+                    updates.push({ id: trackId, fields: { [linkField]: currentLinks.filter(linkId => linkId !== recordId) } }); 
+                } 
                 else { deletes.push(trackId); }
             }
             if (updates.length > 0) await batchUpdateAirtableRecords('Músicas', updates);
