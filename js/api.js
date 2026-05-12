@@ -4,38 +4,26 @@ if (window.supabase && SUPABASE_URL.startsWith('http')) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// 🔥 CONFIGURAÇÃO DO GOOGLE SHEETS
 const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxBd7onVw6zTqRStKsWdEvzrn3kOUjZ33nfJ6UjsW9TRE4S6au9XVVW1ngOgl8oAmdWeg/exec";
 
-// ------------------------------------------------------------------
-// LER AS POSIÇÕES DO DIA ANTERIOR DA PLANILHA (PARA AS SETINHAS)
-// ------------------------------------------------------------------
 async function carregarPosicoesAnteriores() {
     try {
         const response = await fetch(GOOGLE_SHEETS_API_URL);
         const posicoesData = await response.json();
-        
-        const musicChart = {};
-        const albumChart = {};
-
-        // Transforma o Array vindo da Planilha no formato Dicionário que o UI.js espera { id: rank }
+        const musicChart = {}; const albumChart = {};
         if (Array.isArray(posicoesData)) {
             posicoesData.forEach(item => {
                 if (item.type === 'song') musicChart[item.id] = item.rank;
                 if (item.type === 'album') albumChart[item.id] = item.rank;
             });
         }
-
-        window.previousMusicChartData = musicChart; 
-        window.previousAlbumChartData = albumChart;
+        window.previousMusicChartData = musicChart; window.previousAlbumChartData = albumChart;
         console.log("Posições do chart carregadas da Planilha Oficial com sucesso!");
     } catch (e) {
         console.error("Erro ao carregar histórico do Sheets", e);
-        window.previousMusicChartData = {}; 
-        window.previousAlbumChartData = {};
+        window.previousMusicChartData = {}; window.previousAlbumChartData = {};
     }
 }
-// Chamar imediatamente para ter as setinhas prontas quando a interface carregar
 carregarPosicoesAnteriores();
 
 async function uploadImageToImgbb(file) {
@@ -52,9 +40,7 @@ const parsePgArray = (arr) => {
 };
 
 async function loadAllData() {
-    if (!supabaseClient && window.supabase && SUPABASE_URL.startsWith('http')) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
+    if (!supabaseClient && window.supabase && SUPABASE_URL.startsWith('http')) { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
     if (!supabaseClient) { console.error("Supabase fail."); return null; }
 
     try {
@@ -75,7 +61,8 @@ async function loadAllData() {
                 id: row.id, title: row.title || 'Faixa Desconhecida', duration: row.duration_seconds ? new Date(row.duration_seconds * 1000).toISOString().substr(14, 5) : "0:00",
                 trackNumber: row.track_number || 0, durationSeconds: row.duration_seconds || 0, artistIds: artistIds, collabType: row.collab_type,
                 albumId: parentReleaseId, albumIds: albumIds, singleIds: singleIds, streams: row.streams || 0, totalStreams: row.total_streams || 0, trackType: row.track_type || 'B-side',
-                yt_id: row.yt_id // <--- YOUTUBE ID ADICIONADO AQUI
+                yt_id: row.yt_id, 
+                audio_url: row.audio_url
             });
         });
 
@@ -134,8 +121,8 @@ const mapFieldsToSupabase = (tableName, fields) => {
     if(fields['previous_rank'] !== undefined) payload.previous_rank = fields['previous_rank'];
     if(fields['peak_rank'] !== undefined) payload.peak_rank = fields['peak_rank'];
     
-    // <--- EXTRAÇÃO DO YOUTUBE ID PARA A BASE DE DADOS AQUI --->
     if(fields['YouTube ID'] !== undefined) payload.yt_id = fields['YouTube ID'];
+    if(fields['Audio URL'] !== undefined) payload.audio_url = fields['Audio URL'];
     
     return payload;
 };
@@ -200,5 +187,5 @@ const initializeData = (data) => {
             artist.careerTotalStreams = artistSongs.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
         });
         db.players = data.players || []; window.db = db; return true; 
-    } catch (error) { console.error("ERRO CRÍTICO durante initializeData:", error); return false; }
+    } catch (error) { console.error("ERRO CRÍTICO:", error); return false; }
 };
