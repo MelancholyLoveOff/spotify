@@ -4,32 +4,18 @@ let ytPlayerReady = false;
 let ytPlayer;
 let isVideoMode = false;
 
-// Função carregada pelo YouTube
 function onYouTubeIframeAPIReady() {
     ytPlayer = new YT.Player('ytplayer', {
         height: '100%',
         width: '100%',
-        host: 'https://www.youtube-nocookie.com', // Ajuda a evitar bloqueios de AdBlock!
-        playerVars: { 
-            'controls': 0, 
-            'playsinline': 1,
-            'origin': window.location.origin,
-            'disablekb': 1,
-            'fs': 0,
-            'modestbranding': 1,
-            'rel': 0,
-            'enablejsapi': 1
-        },
+        host: 'https://www.youtube-nocookie.com',
+        playerVars: { 'controls': 0, 'playsinline': 1, 'origin': window.location.origin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
         events: {
             'onReady': () => { 
                 ytPlayerReady = true; 
-                // CORREÇÃO: Se a API do YouTube carregar atrasada, ele verifica a música atual e arranca!
                 if (typeof currentSong !== 'undefined' && currentSong && currentSong.yt_id) {
-                    const toggleBtn = document.getElementById('toggleVideoBtn');
-                    if (toggleBtn) toggleBtn.style.display = 'inline-flex';
                     ytPlayer.loadVideoById(currentSong.yt_id);
-                    if (typeof isPlaying !== 'undefined' && isPlaying) ytPlayer.playVideo(); 
-                    else ytPlayer.pauseVideo();
+                    if (typeof isPlaying !== 'undefined' && isPlaying && isVideoMode) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
                 }
             },
             'onStateChange': onPlayerStateChange
@@ -37,15 +23,12 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
-// Passar de música quando o vídeo acaba
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.ENDED) {
         if (repeatMode === 'one') {
             ytPlayer.seekTo(0);
             ytPlayer.playVideo();
-        } else {
-            playNext();
-        }
+        } else { playNext(); }
     }
 }
 
@@ -68,36 +51,25 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
-    // --- LÓGICA DO BOTÃO VÍDEO CORRIGIDA ---
+    // CARREGA AUDIO REAL
+    const audioEl = document.getElementById('audioElement');
+    if (song.audio_url) { audioEl.src = song.audio_url; audioEl.load(); } 
+    else { audioEl.src = ''; }
+
+    // CARREGA YOUTUBE / LÓGICA DO BOTÃO
     const toggleBtn = document.getElementById('toggleVideoBtn');
-    
     if (song.yt_id) {
-        // Mostra o botão sempre que a música tiver ID, mesmo que o YT não esteja ready ainda
         if (toggleBtn) toggleBtn.style.display = 'inline-flex';
-        
-        if (ytPlayerReady) {
-            ytPlayer.loadVideoById(song.yt_id);
-            if (!isPlaying) ytPlayer.pauseVideo();
-        }
+        if (ytPlayerReady) { ytPlayer.loadVideoById(song.yt_id); ytPlayer.pauseVideo(); }
     } else {
-        // Esconde se não tiver ID no banco de dados
         if (toggleBtn) toggleBtn.style.display = 'none';
         if (ytPlayerReady) ytPlayer.stopVideo(); 
     }
 
-    // Resetar para Capa sempre que troca de música
     isVideoMode = false;
     const coverArt = document.getElementById('playerCoverArt');
-    if (coverArt) {
-        coverArt.style.opacity = '1';
-        coverArt.style.pointerEvents = 'auto'; // Deixa clicar na capa
-    }
-    if (toggleBtn) {
-        toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>';
-        toggleBtn.style.background = 'rgba(255,255,255,0.1)';
-        toggleBtn.style.color = 'white';
-        toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)';
-    }
+    if (coverArt) { coverArt.style.opacity = '1'; coverArt.style.pointerEvents = 'auto'; }
+    if (toggleBtn) { toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>'; toggleBtn.style.background = 'rgba(255,255,255,0.1)'; toggleBtn.style.color = 'white'; toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)'; }
 
     const durationSeconds = song.durationSeconds || 180;
     if (playerSeekBar) { playerSeekBar.value = 0; playerSeekBar.max = durationSeconds; } if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (playerTotalTime) playerTotalTime.textContent = formatTime(durationSeconds); if (miniPlayerProgress) { miniPlayerProgress.style.width = '0%'; miniPlayerProgress.dataset.max = durationSeconds; }
@@ -107,8 +79,15 @@ function loadSong(song) {
 function playAudio() { 
     if (!currentSong) return; 
     isPlaying = true; 
+    const audioEl = document.getElementById('audioElement');
     
-    if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
+    // TOCA APENAS O QUE ESTÁ SELECIONADO NA TELA
+    if (isVideoMode) {
+        if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
+    } else {
+        if (currentSong.audio_url) audioEl.play();
+        else if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); // Fallback se a pessoa só colocar o Youtube
+    }
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
@@ -116,8 +95,9 @@ function playAudio() {
 
 function pauseAudio() { 
     isPlaying = false; 
-    
-    if (ytPlayerReady && currentSong.yt_id) ytPlayer.pauseVideo();
+    const audioEl = document.getElementById('audioElement');
+    audioEl.pause();
+    if (ytPlayerReady) ytPlayer.pauseVideo(); // Pausa ambos por segurança
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
@@ -141,6 +121,7 @@ function playPrevious() {
         if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
         if(ytPlayerReady && currentSong.yt_id) ytPlayer.seekTo(0, true);
+        if(currentSong.audio_url) document.getElementById('audioElement').currentTime = 0;
         if(isPlaying) playAudio(); 
         return; 
     }
@@ -159,27 +140,37 @@ function toggleRepeat() {
     else { repeatMode = 'none'; playerRepeatBtn?.classList.remove('active'); playerRepeatBtn.innerHTML = '<i class="fas fa-repeat"></i>'; }
 }
 
+function updateProgressUI(currentTime, duration) {
+    if (duration > 0 && playerSeekBar) {
+        playerSeekBar.max = duration;
+        playerSeekBar.value = currentTime;
+        if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentTime);
+        if (playerTotalTime) playerTotalTime.textContent = formatTime(duration);
+        if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
+    }
+}
+
 let simulationInterval = null;
 function startSimulationTimer() {
     if (simulationInterval) clearInterval(simulationInterval);
     simulationInterval = setInterval(() => {
         if (isPlaying && playerSeekBar && currentSong) {
+            const audioEl = document.getElementById('audioElement');
             
-            // LER TEMPO DO YOUTUBE
-            if (ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-                const currentTime = ytPlayer.getCurrentTime();
-                const duration = ytPlayer.getDuration();
-                
-                if (duration > 0) {
-                    playerSeekBar.max = duration;
-                    playerSeekBar.value = currentTime;
-                    if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentTime);
-                    if (playerTotalTime) playerTotalTime.textContent = formatTime(duration);
-                    if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
-                }
+            // LER DO YOUTUBE SE ESTIVER NO MODO VÍDEO
+            if (isVideoMode && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
             } 
-            // SIMULADOR (Para músicas sem vídeo)
-            else if (!currentSong.yt_id) {
+            // LER DO AUDIO REAL SE EXISTIR
+            else if (!isVideoMode && currentSong.audio_url && !audioEl.paused) {
+                updateProgressUI(audioEl.currentTime, audioEl.duration || currentSong.durationSeconds || 180);
+            }
+            // LER DO YOUTUBE SE NÃO EXISTIR AUDIO MAS EXISTIR YOUTUBE
+            else if (!isVideoMode && !currentSong.audio_url && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
+            }
+            // SIMULADOR ANTIGO
+            else if (!currentSong.yt_id && !currentSong.audio_url) {
                 let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
                 if (currentValue < maxValue) {
                     currentValue += 1; playerSeekBar.value = currentValue;
@@ -201,44 +192,56 @@ function initializePlayerListeners() {
     playerShuffleBtn?.addEventListener('click', toggleShuffle);
     playerRepeatBtn?.addEventListener('click', toggleRepeat);
     
-    // Sincronizar o arrasto da barra
     playerSeekBar?.addEventListener('input', () => { 
         if (playerCurrentTime && playerSeekBar) playerCurrentTime.textContent = formatTime(playerSeekBar.value); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = `${(playerSeekBar.value / playerSeekBar.max) * 100}%`; 
     });
     playerSeekBar?.addEventListener('change', () => { 
-        if (ytPlayerReady && currentSong?.yt_id) ytPlayer.seekTo(playerSeekBar.value, true);
+        const newTime = playerSeekBar.value;
+        if (currentSong?.yt_id && ytPlayerReady) ytPlayer.seekTo(newTime, true);
+        if (currentSong?.audio_url) document.getElementById('audioElement').currentTime = newTime;
         if (isPlaying) playAudio(); 
     });
     
     miniPlayer?.addEventListener('click', maximizePlayer);
     miniPlayerPlayPauseBtn?.addEventListener('click', togglePlay);
 
-    // ADICIONAR LÓGICA DO BOTÃO VÍDEO
+    // MÁGICA DA SEPARAÇÃO VÍDEO/ÁUDIO ACONTECE AQUI
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             isVideoMode = !isVideoMode;
             const coverArt = document.getElementById('playerCoverArt');
+            const audioEl = document.getElementById('audioElement');
             
             if (isVideoMode) {
-                if(coverArt) {
-                    coverArt.style.opacity = '0'; // Esconde a capa
-                    coverArt.style.pointerEvents = 'none'; // Desabilita clique na capa para poder mexer no vídeo
-                }
+                if(coverArt) { coverArt.style.opacity = '0'; coverArt.style.pointerEvents = 'none'; }
                 toggleBtn.innerHTML = '<i class="fas fa-music"></i> <span>Mudar para Áudio</span>';
                 toggleBtn.style.background = 'var(--spotify-green)';
                 toggleBtn.style.color = '#000';
                 toggleBtn.style.borderColor = 'var(--spotify-green)';
-            } else {
-                if(coverArt) {
-                    coverArt.style.opacity = '1'; // Mostra a capa
-                    coverArt.style.pointerEvents = 'auto'; // Volta o clique pra capa
+                
+                // Muta a música e toca o vídeo
+                if (isPlaying) {
+                    audioEl.pause();
+                    if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
                 }
+            } else {
+                if(coverArt) { coverArt.style.opacity = '1'; coverArt.style.pointerEvents = 'auto'; }
                 toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>';
                 toggleBtn.style.background = 'rgba(255,255,255,0.1)';
                 toggleBtn.style.color = 'white';
                 toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+                
+                // Muta o vídeo e toca a música
+                if (isPlaying) {
+                    if (ytPlayerReady) ytPlayer.pauseVideo();
+                    if (currentSong.audio_url) {
+                        audioEl.play();
+                    } else if (ytPlayerReady && currentSong.yt_id) {
+                        ytPlayer.playVideo(); 
+                    }
+                }
             }
         });
     }
