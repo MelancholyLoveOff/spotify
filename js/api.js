@@ -62,6 +62,7 @@ async function loadAllData() {
                 trackNumber: row.track_number || 0, durationSeconds: row.duration_seconds || 0, artistIds: artistIds, collabType: row.collab_type,
                 albumId: parentReleaseId, albumIds: albumIds, singleIds: singleIds, streams: row.streams || 0, totalStreams: row.total_streams || 0, trackType: row.track_type || 'B-side',
                 yt_id: row.yt_id, 
+                yt_audio_id: row.yt_audio_id,
                 audio_url: row.audio_url
             });
         });
@@ -121,7 +122,9 @@ const mapFieldsToSupabase = (tableName, fields) => {
     if(fields['previous_rank'] !== undefined) payload.previous_rank = fields['previous_rank'];
     if(fields['peak_rank'] !== undefined) payload.peak_rank = fields['peak_rank'];
     
+    // Mapeamento correto das colunas de multimídia
     if(fields['YouTube ID'] !== undefined) payload.yt_id = fields['YouTube ID'];
+    if(fields['YouTube Audio ID'] !== undefined) payload.yt_audio_id = fields['YouTube Audio ID'];
     if(fields['Audio URL'] !== undefined) payload.audio_url = fields['Audio URL'];
     
     return payload;
