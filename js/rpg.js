@@ -68,7 +68,13 @@ const saveChartDataToLocalStorage = (chartType) => {
         currentChartData = dataList.reduce((acc, item, index) => { acc[item.id] = index + 1; return acc; }, {}); previousMusicChartData = currentChartData; 
     } else if (chartType === 'album') {
         storageKey = PREVIOUS_ALBUM_CHART_KEY;
-        dataList = [...db.albums, ...db.singles].map(item => {
+        dataList = [...db.albums, ...db.singles].filter(item => {
+            // Permite se for um álbum completo OU se for single com 4 ou mais faixas (EP)
+            const isAlbum = item.type === 'album';
+            const numTracks = item.tracks ? item.tracks.length : 0;
+            const isEP = item.type === 'single' && numTracks >= 4;
+            return isAlbum || isEP;
+        }).map(item => {
             const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
             const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
             return { ...item, calculatedStreams: currentStreams };
