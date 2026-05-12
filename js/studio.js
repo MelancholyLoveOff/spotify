@@ -162,8 +162,7 @@ function updateActionLimitInfo() {
 }
 
 function populateTracklistEditor(editorElement, tracks) {
-    if (!editorElement) return;
-    editorElement.innerHTML = ''; 
+    if (!editorElement) return; editorElement.innerHTML = ''; 
     if (!tracks || tracks.length === 0) { editorElement.innerHTML = '<p class="empty-state-small">Nenhuma faixa adicionada.</p>'; return; }
     const sortedTracks = [...tracks].sort((a, b) => (a.trackNumber || 99) - (b.trackNumber || 99));
 
@@ -174,14 +173,15 @@ function populateTracklistEditor(editorElement, tracks) {
         newItem.dataset.itemId = `existing_${fullSong.id}`; newItem.dataset.existingSongId = fullSong.id; newItem.dataset.trackName = fullSong.title.replace(/ \(feat\. .+\)$/i, ''); newItem.dataset.durationStr = fullSong.duration; newItem.dataset.trackType = fullSong.trackType; newItem.dataset.feats = JSON.stringify(featsData);
         
         newItem.dataset.ytId = fullSong.yt_id || ''; 
+        newItem.dataset.ytAudioId = fullSong.yt_audio_id || ''; 
         newItem.dataset.audioUrl = fullSong.audio_url || '';
 
         let artistText = "Desconhecido"; const mainArtist = db.artists.find(a => a.id === fullSong.artistIds[0]);
         if (mainArtist) { if (featsData.length > 0) { artistText = featsData[0].type === "Dueto/Grupo" ? `${mainArtist.name} & ${featsData.map(f=>f.name).join(', ')}` : `${mainArtist.name} (feat. ${featsData.map(f=>f.name).join(', ')})`; } else { artistText = mainArtist.name; } }
 
         const titleDisplay = (fullSong.id) ? `<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;" title="Faixa Existente"></i>${fullSong.title}` : fullSong.title;
-        const ytIcon = fullSong.yt_id ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com Vídeo"></i>' : '';
-        const auIcon = fullSong.audio_url ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
+        const ytIcon = fullSong.yt_id ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com MV"></i>' : '';
+        const auIcon = (fullSong.yt_audio_id || fullSong.audio_url) ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
 
         newItem.innerHTML = `
             <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
@@ -240,7 +240,14 @@ function openAlbumTrackModal(itemToEdit = null) {
         const matchedOption = Array.from(albumTrackTypeSelect.options).find(opt => opt.value.toLowerCase() === (itemToEdit.dataset.trackType || 'B-Side').toLowerCase()); albumTrackTypeSelect.value = matchedOption ? matchedOption.value : 'B-Side';
         
         if (ytInput && itemToEdit.dataset.ytId && itemToEdit.dataset.ytId !== 'undefined' && itemToEdit.dataset.ytId !== 'null') ytInput.value = `https://youtube.com/watch?v=${itemToEdit.dataset.ytId}`;
-        if (audioInput && itemToEdit.dataset.audioUrl && itemToEdit.dataset.audioUrl !== 'undefined' && itemToEdit.dataset.audioUrl !== 'null') audioInput.value = itemToEdit.dataset.audioUrl;
+        
+        if (audioInput) {
+            if (itemToEdit.dataset.ytAudioId && itemToEdit.dataset.ytAudioId !== 'undefined' && itemToEdit.dataset.ytAudioId !== 'null') {
+                audioInput.value = `https://youtube.com/watch?v=${itemToEdit.dataset.ytAudioId}`;
+            } else if (itemToEdit.dataset.audioUrl && itemToEdit.dataset.audioUrl !== 'undefined' && itemToEdit.dataset.audioUrl !== 'null') {
+                audioInput.value = itemToEdit.dataset.audioUrl;
+            }
+        }
 
         const existingSongId = itemToEdit.dataset.existingSongId; const featsToPopulate = JSON.parse(itemToEdit.dataset.feats || '[]');
         if (!existingSongId) { albumTrackModalTitle.textContent = 'Editar Faixa (Nova)'; } else { albumTrackModalTitle.textContent = 'Editar Faixa (Existente)'; editingTrackExistingId.value = existingSongId; }
@@ -260,11 +267,13 @@ function saveAlbumTrack() {
     const ytRaw = document.getElementById('albumTrackYoutubeInput')?.value || '';
     const ytId = (typeof extractYouTubeID === 'function') ? extractYouTubeID(ytRaw) : null;
     
+    // NOVO PROCESSAMENTO DE AUDIO (LÊ SE É YT OU MP3)
     const audioRaw = document.getElementById('albumTrackAudioInput')?.value || '';
-    const audioUrl = (typeof convertToDirectAudioLink === 'function') ? convertToDirectAudioLink(audioRaw) : audioRaw;
+    const ytAudioId = (typeof extractYouTubeID === 'function') ? extractYouTubeID(audioRaw) : null;
+    const audioUrl = (!ytAudioId && audioRaw) ? ((typeof convertToDirectAudioLink === 'function') ? convertToDirectAudioLink(audioRaw) : audioRaw) : '';
 
-    const ytIcon = ytId ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com Vídeo"></i>' : '';
-    const auIcon = audioUrl ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
+    const ytIcon = ytId ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com MV"></i>' : '';
+    const auIcon = (ytAudioId || audioUrl) ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
 
     let targetElement = editingTrackItem || activeTracklistEditor.querySelector(`[data-item-id="${itemId}"]`);
     let mainArtistName = "Desconhecido";
@@ -276,7 +285,7 @@ function saveAlbumTrack() {
     
     if (targetElement) {
         targetElement.dataset.trackName = name; targetElement.dataset.durationStr = durationStr; targetElement.dataset.feats = featsJSON; targetElement.dataset.trackType = type;
-        targetElement.dataset.ytId = ytId || ''; targetElement.dataset.audioUrl = audioUrl || ''; 
+        targetElement.dataset.ytId = ytId || ''; targetElement.dataset.ytAudioId = ytAudioId || ''; targetElement.dataset.audioUrl = audioUrl || ''; 
         
         targetElement.innerHTML = `
             <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
@@ -286,7 +295,7 @@ function saveAlbumTrack() {
     } else {
         const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px; border: 1px solid transparent;';
         newItem.dataset.itemId = itemId; newItem.dataset.trackName = name; newItem.dataset.durationStr = durationStr; newItem.dataset.trackType = type; newItem.dataset.feats = featsJSON;
-        newItem.dataset.ytId = ytId || ''; newItem.dataset.audioUrl = audioUrl || ''; 
+        newItem.dataset.ytId = ytId || ''; newItem.dataset.ytAudioId = ytAudioId || ''; newItem.dataset.audioUrl = audioUrl || ''; 
         newItem.innerHTML = `
             <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
             <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:var(--text-primary);">${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
@@ -349,6 +358,7 @@ async function handleWysiwygSubmit(event) {
          for (let i = 0; i < trackItems.length; i++) {
              const item = trackItems[i]; const existingSongId = item.dataset.existingSongId; const name = item.dataset.trackName; const durationStr = item.dataset.durationStr; const type = item.dataset.trackType;
              const ytId = item.dataset.ytId || null; 
+             const ytAudioId = item.dataset.ytAudioId || null; 
              const audioUrl = item.dataset.audioUrl || null; 
              
              let feats = []; if (!existingSongId) { try { feats = JSON.parse(item.dataset.feats || '[]'); } catch (e) {} }
@@ -359,7 +369,7 @@ async function handleWysiwygSubmit(event) {
              let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
              if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
 
-             let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "Audio URL": audioUrl };
+             let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "YouTube Audio ID": ytAudioId, "Audio URL": audioUrl };
              if(collaborationType) fieldsBase["Tipo de Colaboração"] = collaborationType;
 
              if (existingSongId) { musicRecordsToUpdate.push({ id: existingSongId, fields: fieldsBase }); } else { musicRecordsToCreate.push(fieldsBase); }
@@ -439,6 +449,7 @@ async function handleUpdateRelease(event) {
                 for (let i = 0; i < trackItems.length; i++) {
                     const item = trackItems[i], existingSongId = item.dataset.existingSongId, name = item.dataset.trackName, durationStr = item.dataset.durationStr, type = item.dataset.trackType, durationSec = parseDurationToSeconds(durationStr);
                     const ytId = item.dataset.ytId || null; 
+                    const ytAudioId = item.dataset.ytAudioId || null; 
                     const audioUrl = item.dataset.audioUrl || null; 
 
                     let feats = []; try { feats = JSON.parse(item.dataset.feats || '[]'); } catch (e) {}
@@ -448,7 +459,7 @@ async function handleUpdateRelease(event) {
                     let finalTrackName = name; let finalArtistIds = [artistId]; let collaborationType = null;
                     if (feats.length > 0) { collaborationType = feats[0].type; finalArtistIds = [artistId, ...feats.map(f => f.id)]; if (collaborationType === "Feat.") finalTrackName = `${name} (feat. ${feats.map(f => f.name).join(', ')})`; }
                     
-                    let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "Audio URL": audioUrl };
+                    let fieldsBase = { "Nome da Faixa": finalTrackName, "Artista": finalArtistIds, "Duração": durationSec, "Nº da Faixa": i + 1, "Tipo de Faixa": type, "YouTube ID": ytId, "YouTube Audio ID": ytAudioId, "Audio URL": audioUrl };
                     if(collaborationType) fieldsBase["Tipo de Colaboração"] = collaborationType;
 
                     if (existingSongId) {
