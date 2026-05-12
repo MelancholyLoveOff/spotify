@@ -1,21 +1,36 @@
 // js/player.js
 
-let ytPlayerReady = false;
-let ytPlayer;
+let ytPlayerVideoReady = false;
+let ytPlayerVideo;
+let ytPlayerAudioReady = false;
+let ytPlayerAudio;
 let isVideoMode = false;
 
 function onYouTubeIframeAPIReady() {
-    ytPlayer = new YT.Player('ytplayer', {
-        height: '100%',
-        width: '100%',
-        host: 'https://www.youtube-nocookie.com',
+    ytPlayerVideo = new YT.Player('ytplayer_video', {
+        height: '100%', width: '100%', host: 'https://www.youtube-nocookie.com',
         playerVars: { 'controls': 0, 'playsinline': 1, 'origin': window.location.origin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
         events: {
             'onReady': () => { 
-                ytPlayerReady = true; 
+                ytPlayerVideoReady = true; 
                 if (typeof currentSong !== 'undefined' && currentSong && currentSong.yt_id) {
-                    ytPlayer.loadVideoById(currentSong.yt_id);
-                    if (typeof isPlaying !== 'undefined' && isPlaying && isVideoMode) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+                    ytPlayerVideo.loadVideoById(currentSong.yt_id);
+                    if (typeof isPlaying !== 'undefined' && isPlaying && isVideoMode) ytPlayerVideo.playVideo(); else ytPlayerVideo.pauseVideo();
+                }
+            },
+            'onStateChange': onPlayerStateChange
+        }
+    });
+
+    ytPlayerAudio = new YT.Player('ytplayer_audio', {
+        height: '100%', width: '100%', host: 'https://www.youtube-nocookie.com',
+        playerVars: { 'controls': 0, 'playsinline': 1, 'origin': window.location.origin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
+        events: {
+            'onReady': () => { 
+                ytPlayerAudioReady = true; 
+                if (typeof currentSong !== 'undefined' && currentSong && currentSong.yt_audio_id) {
+                    ytPlayerAudio.loadVideoById(currentSong.yt_audio_id);
+                    if (typeof isPlaying !== 'undefined' && isPlaying && !isVideoMode) ytPlayerAudio.playVideo(); else ytPlayerAudio.pauseVideo();
                 }
             },
             'onStateChange': onPlayerStateChange
@@ -26,8 +41,8 @@ function onYouTubeIframeAPIReady() {
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.ENDED) {
         if (repeatMode === 'one') {
-            ytPlayer.seekTo(0);
-            ytPlayer.playVideo();
+            if (isVideoMode && ytPlayerVideoReady) { ytPlayerVideo.seekTo(0); ytPlayerVideo.playVideo(); }
+            else if (!isVideoMode && ytPlayerAudioReady && currentSong.yt_audio_id) { ytPlayerAudio.seekTo(0); ytPlayerAudio.playVideo(); }
         } else { playNext(); }
     }
 }
@@ -51,24 +66,25 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
-    // CARREGA AUDIO REAL
+    // CARREGA AUDIO MP3
     const audioEl = document.getElementById('audioElement');
-    if (song.audio_url) { 
-        audioEl.src = song.audio_url; 
-        audioEl.load(); 
-    } else { 
-        audioEl.removeAttribute('src');
-        audioEl.load(); 
+    if (song.audio_url) { audioEl.src = song.audio_url; audioEl.load(); } else { audioEl.removeAttribute('src'); audioEl.load(); }
+
+    // CARREGA YOUTUBE AUDIO
+    if (song.yt_audio_id) {
+        if (ytPlayerAudioReady) { ytPlayerAudio.loadVideoById(song.yt_audio_id); ytPlayerAudio.pauseVideo(); }
+    } else {
+        if (ytPlayerAudioReady) ytPlayerAudio.stopVideo();
     }
 
-    // CARREGA YOUTUBE / LÓGICA DO BOTÃO
+    // CARREGA YOUTUBE VÍDEO
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (song.yt_id) {
         if (toggleBtn) toggleBtn.style.display = 'inline-flex';
-        if (ytPlayerReady) { ytPlayer.loadVideoById(song.yt_id); ytPlayer.pauseVideo(); }
+        if (ytPlayerVideoReady) { ytPlayerVideo.loadVideoById(song.yt_id); ytPlayerVideo.pauseVideo(); }
     } else {
         if (toggleBtn) toggleBtn.style.display = 'none';
-        if (ytPlayerReady) ytPlayer.stopVideo(); 
+        if (ytPlayerVideoReady) ytPlayerVideo.stopVideo(); 
     }
 
     isVideoMode = false;
@@ -87,24 +103,20 @@ function playAudio() {
     const audioEl = document.getElementById('audioElement');
     
     if (isVideoMode) {
-        if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
+        if (ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.playVideo();
     } else {
-        if (currentSong.audio_url) {
-            // Se o elemento de áudio já detetou erro (ex: link 404), vai direto para o Youtube!
-            if (audioEl.error) {
-                if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
-            } else {
+        if (currentSong.yt_audio_id && ytPlayerAudioReady) {
+            ytPlayerAudio.playVideo();
+        } else if (currentSong.audio_url) {
+            if (!audioEl.error) {
                 const playPromise = audioEl.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log("Erro de reprodução ou link quebrado:", error);
-                        // Fallback Imediato: Se o áudio falhar ao arrancar, toca o YouTube
-                        if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
-                    });
-                }
+                if (playPromise !== undefined) playPromise.catch(() => { if (ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.playVideo(); });
+            } else if (ytPlayerVideoReady && currentSong.yt_id) {
+                ytPlayerVideo.playVideo();
             }
+        } else if (ytPlayerVideoReady && currentSong.yt_id) {
+            ytPlayerVideo.playVideo(); 
         }
-        else if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); 
     }
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
@@ -115,7 +127,8 @@ function pauseAudio() {
     isPlaying = false; 
     const audioEl = document.getElementById('audioElement');
     audioEl.pause();
-    if (ytPlayerReady) ytPlayer.pauseVideo();
+    if (ytPlayerVideoReady) ytPlayerVideo.pauseVideo();
+    if (ytPlayerAudioReady) ytPlayerAudio.pauseVideo();
 
     if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
@@ -138,8 +151,12 @@ function playPrevious() {
         if (playerSeekBar) playerSeekBar.value = 0; 
         if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
-        if(ytPlayerReady && currentSong.yt_id) ytPlayer.seekTo(0, true);
-        if(currentSong.audio_url) document.getElementById('audioElement').currentTime = 0;
+        
+        if(isVideoMode && ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.seekTo(0, true);
+        else if(!isVideoMode && ytPlayerAudioReady && currentSong.yt_audio_id) ytPlayerAudio.seekTo(0, true);
+        else if(!isVideoMode && currentSong.audio_url) document.getElementById('audioElement').currentTime = 0;
+        else if(!isVideoMode && ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.seekTo(0, true);
+        
         if(isPlaying) playAudio(); 
         return; 
     }
@@ -175,20 +192,19 @@ function startSimulationTimer() {
         if (isPlaying && playerSeekBar && currentSong) {
             const audioEl = document.getElementById('audioElement');
             
-            if (isVideoMode && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
+            if (isVideoMode && ytPlayerVideoReady && currentSong.yt_id && ytPlayerVideo.getPlayerState && ytPlayerVideo.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateProgressUI(ytPlayerVideo.getCurrentTime(), ytPlayerVideo.getDuration());
             } 
-            else if (!isVideoMode && currentSong.audio_url && !audioEl.paused) {
+            else if (!isVideoMode && ytPlayerAudioReady && currentSong.yt_audio_id && ytPlayerAudio.getPlayerState && ytPlayerAudio.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateProgressUI(ytPlayerAudio.getCurrentTime(), ytPlayerAudio.getDuration());
+            }
+            else if (!isVideoMode && !currentSong.yt_audio_id && currentSong.audio_url && !audioEl.paused) {
                 updateProgressUI(audioEl.currentTime, audioEl.duration || currentSong.durationSeconds || 180);
             }
-            else if (!isVideoMode && !currentSong.audio_url && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
+            else if (!isVideoMode && !currentSong.yt_audio_id && !currentSong.audio_url && ytPlayerVideoReady && currentSong.yt_id && ytPlayerVideo.getPlayerState && ytPlayerVideo.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateProgressUI(ytPlayerVideo.getCurrentTime(), ytPlayerVideo.getDuration());
             }
-            // Se tudo falhar e o YouTube assumir como fallback no modo Áudio
-            else if (!isVideoMode && currentSong.audio_url && audioEl.paused && ytPlayerReady && currentSong.yt_id && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-                updateProgressUI(ytPlayer.getCurrentTime(), ytPlayer.getDuration());
-            }
-            else if (!currentSong.yt_id && !currentSong.audio_url) {
+            else if (!currentSong.yt_id && !currentSong.yt_audio_id && !currentSong.audio_url) {
                 let currentValue = parseFloat(playerSeekBar.value); const maxValue = parseFloat(playerSeekBar.max);
                 if (currentValue < maxValue) {
                     currentValue += 1; playerSeekBar.value = currentValue;
@@ -216,33 +232,22 @@ function initializePlayerListeners() {
     });
     playerSeekBar?.addEventListener('change', () => { 
         const newTime = playerSeekBar.value;
-        if (currentSong?.yt_id && ytPlayerReady) ytPlayer.seekTo(newTime, true);
-        if (currentSong?.audio_url) document.getElementById('audioElement').currentTime = newTime;
+        if (isVideoMode && currentSong?.yt_id && ytPlayerVideoReady) ytPlayerVideo.seekTo(newTime, true);
+        else if (!isVideoMode && currentSong?.yt_audio_id && ytPlayerAudioReady) ytPlayerAudio.seekTo(newTime, true);
+        else if (!isVideoMode && currentSong?.audio_url) document.getElementById('audioElement').currentTime = newTime;
+        else if (!isVideoMode && currentSong?.yt_id && ytPlayerVideoReady) ytPlayerVideo.seekTo(newTime, true);
         if (isPlaying) playAudio(); 
     });
     
     miniPlayer?.addEventListener('click', maximizePlayer);
     miniPlayerPlayPauseBtn?.addEventListener('click', togglePlay);
 
-    const audioEl = document.getElementById('audioElement');
-    
-    // OUVINTE DE ERRO CRÍTICO: Se o áudio der erro profundo (ex: 404 Not Found)
-    audioEl.addEventListener('error', () => {
-        if (isPlaying && !isVideoMode) {
-            if (ytPlayerReady && currentSong?.yt_id) {
-                if(typeof showToast === 'function') showToast("Link de áudio falhou. Usando o vídeo do YouTube...", "info");
-                ytPlayer.playVideo();
-            } else {
-                pauseAudio();
-            }
-        }
-    });
-
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             isVideoMode = !isVideoMode;
             const coverArt = document.getElementById('playerCoverArt');
+            const audioEl = document.getElementById('audioElement');
             
             if (isVideoMode) {
                 if(coverArt) { coverArt.style.opacity = '0'; coverArt.style.pointerEvents = 'none'; }
@@ -253,7 +258,8 @@ function initializePlayerListeners() {
                 
                 if (isPlaying) {
                     audioEl.pause();
-                    if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo();
+                    if (ytPlayerAudioReady) ytPlayerAudio.pauseVideo();
+                    if (ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.playVideo();
                 }
             } else {
                 if(coverArt) { coverArt.style.opacity = '1'; coverArt.style.pointerEvents = 'auto'; }
@@ -263,14 +269,15 @@ function initializePlayerListeners() {
                 toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)';
                 
                 if (isPlaying) {
-                    if (ytPlayerReady) ytPlayer.pauseVideo();
+                    if (ytPlayerVideoReady) ytPlayerVideo.pauseVideo();
                     
-                    // Retoma a música (ou o YouTube se o áudio estava quebrado)
-                    if (currentSong.audio_url && !audioEl.error) {
+                    if (currentSong.yt_audio_id && ytPlayerAudioReady) {
+                        ytPlayerAudio.playVideo();
+                    } else if (currentSong.audio_url && !audioEl.error) {
                         const playPromise = audioEl.play();
-                        if (playPromise !== undefined) playPromise.catch(() => { if (ytPlayerReady && currentSong.yt_id) ytPlayer.playVideo(); });
-                    } else if (ytPlayerReady && currentSong.yt_id) {
-                        ytPlayer.playVideo(); 
+                        if (playPromise !== undefined) playPromise.catch(() => { if (ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.playVideo(); });
+                    } else if (ytPlayerVideoReady && currentSong.yt_id) {
+                        ytPlayerVideo.playVideo(); 
                     }
                 }
             }
