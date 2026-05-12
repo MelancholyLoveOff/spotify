@@ -219,6 +219,12 @@ function startSimulationTimer() {
 }
 
 function initializePlayerListeners() {
+    document.getElementById('playerShareBtn')?.addEventListener('click', () => {
+        if (currentSong && typeof shareLink === 'function') {
+            shareLink('song', currentSong.id);
+        }
+    });
+
     playerCloseBtn?.addEventListener('click', closePlayer);
     playerPlayPauseBtn?.addEventListener('click', togglePlay);
     playerNextBtn?.addEventListener('click', playNext);
