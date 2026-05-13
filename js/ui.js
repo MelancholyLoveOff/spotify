@@ -89,7 +89,6 @@ const renderChart = (type) => {
    } else if (type === 'album') {
         containerId = 'albumChartsList';
         dataList = [...db.albums, ...db.singles].filter(item => {
-            // Permite se for um álbum completo OU se for single com 4 ou mais faixas (EP)
             const isAlbum = item.type === 'album';
             const numTracks = item.tracks ? item.tracks.length : 0;
             const isEP = item.type === 'single' && numTracks >= 4;
@@ -216,7 +215,6 @@ const openAlbumDetail = (albumId) => {
         const releaseDateStr = releaseDate.toLocaleString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         document.getElementById('albumCountdownReleaseDate').textContent = releaseDateStr; startAlbumCountdown(album.releaseDate, 'albumCountdownTimer');
         
-        // FIX: Usamos "index + 1" para contar sempre de 1 para cima!
         tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
             const fullSong = db.songs.find(s => s.id === track.id); let isAvailable = false; const preReleaseAvailableTypes = ['Title Track', 'Pre-release Single'];
             if (fullSong) { const hasSongReleased = fullSong.parentReleaseDate && new Date(fullSong.parentReleaseDate) <= now; const isDesignatedPreRelease = preReleaseAvailableTypes.includes(fullSong.trackType); isAvailable = hasSongReleased || isDesignatedPreRelease; }
@@ -230,7 +228,6 @@ const openAlbumDetail = (albumId) => {
         const releaseYear = releaseDate.getFullYear(), totalAlbumStreamsFormatted = (album.totalStreams || 0).toLocaleString('pt-BR');
         document.getElementById('albumDetailInfo').innerHTML = `Por <strong class="artist-link" data-artist-name="${artistObj ? artistObj.name : ''}">${album.artist}</strong> • ${releaseYear} • ${totalAlbumStreamsFormatted} streams totais`;
         
-        // FIX: O mesmo aqui para lançamentos já lançados!
         tracklistContainer.innerHTML = (album.tracks || []).map((song, index) => {
             const artistName = formatArtistString(song.artistIds, song.collabType), streams = (song.totalStreams || 0);
             const trackNumDisplay = index + 1; 
@@ -257,11 +254,75 @@ const openDiscographyDetail = (type) => {
     switchView('discographyDetail');
 };
 
+const renderSearchDefault = () => {
+    const upcomingContainer = document.getElementById('upcomingReleasesGrid');
+    const highlightedContainer = document.getElementById('highlightedReleasesGrid');
+    if (!upcomingContainer || !highlightedContainer) return;
+
+    const now = new Date();
+    const allReleases = [...db.albums, ...db.singles];
+
+    // 1. Pré-lançamentos (Lançamentos com data no futuro)
+    const upcoming = allReleases.filter(r => new Date(r.releaseDate) > now)
+        .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
+    
+    if (upcoming.length > 0) {
+        upcomingContainer.innerHTML = upcoming.map(item => `
+            <div class="scroll-item" data-album-id="${item.id}">
+                <img src="${item.imageUrl}" alt="${item.title}">
+                <p>${item.title}</p>
+                <span>${new Date(item.releaseDate).toLocaleDateString('pt-BR')}</span>
+            </div>
+        `).join('');
+        upcomingContainer.previousElementSibling.style.display = 'block'; 
+        upcomingContainer.style.display = 'flex';
+    } else {
+        upcomingContainer.previousElementSibling.style.display = 'none'; 
+        upcomingContainer.style.display = 'none';
+    }
+
+    // 2. Destaques (Álbuns já lançados, pegando os 12 com mais streams)
+    const released = allReleases.filter(r => new Date(r.releaseDate) <= now)
+        .sort((a, b) => (b.totalStreams || 0) - (a.totalStreams || 0))
+        .slice(0, 12);
+
+    if (released.length > 0) {
+        highlightedContainer.innerHTML = released.map(item => `
+            <div class="artist-card" data-album-id="${item.id}">
+                <img src="${item.imageUrl}" alt="${item.title}" class="artist-card-img" style="border-radius:4px;">
+                <p class="artist-card-name">${item.title}</p>
+                <span class="artist-card-type">${item.artist}</span>
+            </div>
+        `).join('');
+    } else {
+        highlightedContainer.innerHTML = '<p class="empty-state-small">Nenhum álbum em destaque no momento.</p>';
+    }
+};
+
 const handleSearch = () => {
-    const query = searchInput.value.toLowerCase().trim(); if (!query) { switchTab(null, 'homeSection'); return; }
-    const resultsContainer = document.getElementById('searchResults'), noResultsElement = document.getElementById('noResults'); if (!resultsContainer || !noResultsElement) return;
-    const filteredArtists = db.artists.filter(a => a.name.toLowerCase().includes(query)), filteredAlbums = [...db.albums, ...db.singles].filter(a => a.title.toLowerCase().includes(query));
-    let html = '', resultCount = 0;
+    const query = searchInput.value.toLowerCase().trim(); 
+    
+    const defaultState = document.getElementById('searchDefaultState');
+    const resultsContainer = document.getElementById('searchResults');
+    const noResultsElement = document.getElementById('noResults'); 
+    if (!resultsContainer || !noResultsElement) return;
+
+    // Se o input estiver vazio, mostramos os destaques/pré-lançamentos e escondemos resultados
+    if (!query) { 
+        if (defaultState) defaultState.classList.remove('hidden');
+        resultsContainer.classList.add('hidden');
+        noResultsElement.classList.add('hidden');
+        switchTab(null, 'searchSection');
+        return; 
+    }
+
+    // Se a pessoa digitou algo, escondemos os destaques
+    if (defaultState) defaultState.classList.add('hidden');
+
+    const filteredArtists = db.artists.filter(a => a.name.toLowerCase().includes(query));
+    const filteredAlbums = [...db.albums, ...db.singles].filter(a => a.title.toLowerCase().includes(query));
+    
+    let html = ''; let resultCount = 0;
     if (filteredArtists.length > 0) {
         html += '<h3 class="section-title" style="grid-column: 1/-1;">Artistas</h3>';
         html += filteredArtists.map(a => { resultCount++; return `<div class="artist-card" data-artist-name="${a.name}"><img src="${a.img}" alt="${a.name}" class="artist-card-img" style="object-position: center ${a.bgPos};"><p class="artist-card-name">${a.name}</p><span class="artist-card-type">Artista</span></div>`; }).join('');
@@ -270,7 +331,15 @@ const handleSearch = () => {
         html += '<h3 class="section-title" style="grid-column: 1/-1; margin-top:24px;">Álbuns & Singles</h3>';
         html += filteredAlbums.map(al => { resultCount++; return `<div class="artist-card" data-album-id="${al.id}"><img src="${al.imageUrl}" alt="${al.title}" class="artist-card-img" style="border-radius:4px;"><p class="artist-card-name">${al.title}</p><span class="artist-card-type">${al.artist}</span></div>`; }).join('');
     }
+    
     resultsContainer.innerHTML = html;
-    if (resultCount > 0) { noResultsElement.classList.add('hidden'); resultsContainer.classList.remove('hidden'); } else { noResultsElement.classList.remove('hidden'); resultsContainer.classList.add('hidden'); }
+    
+    if (resultCount > 0) { 
+        noResultsElement.classList.add('hidden'); 
+        resultsContainer.classList.remove('hidden'); 
+    } else { 
+        noResultsElement.classList.remove('hidden'); 
+        resultsContainer.classList.add('hidden'); 
+    }
     switchTab(null, 'searchSection');
 };
