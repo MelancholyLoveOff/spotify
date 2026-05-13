@@ -482,7 +482,14 @@ async function handleUpdateRelease(event) {
                 if (musicRecordsToUpdate.length > 0) { const updateExistingResult = await batchUpdateAirtableRecords('Músicas', musicRecordsToUpdate); if (!updateExistingResult || updateExistingResult.length !== musicRecordsToUpdate.length) throw new Error("Falha ao atualizar faixas existentes."); }
             } 
         } 
-        showToast("Atualizado com sucesso!", 'success'); editReleaseForm.classList.add('hidden'); editReleaseListContainer?.classList.remove('hidden'); await refreshAllData();
+        
+        // CORREÇÃO: Força o recarregamento visual da lista após salvar.
+        showToast("Atualizado com sucesso!", 'success'); 
+        editReleaseForm.classList.add('hidden'); 
+        editReleaseListContainer?.classList.remove('hidden'); 
+        await refreshAllData(); 
+        populateEditableReleases(); // <---- ADICIONADO AQUI
+        
     } catch (error) { showToast(`Erro: ${error.message}`, 'error'); } finally { saveEditBtn.disabled = false; saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Salvar'; }
 }
 
@@ -513,7 +520,16 @@ async function handleDeleteRelease() {
             if (deletes.length > 0) await batchDeleteAirtableRecords('Músicas', deletes);
         }
         const releaseDeleteResult = await deleteAirtableRecord(tableName, recordId);
-        if (releaseDeleteResult && releaseDeleteResult.deleted) { showToast("Lançamento apagado!", 'success'); closeDeleteConfirmModal(); await refreshAllData(); } else { throw new Error("Falha na exclusão."); }
+        
+        // CORREÇÃO: Força o recarregamento visual da lista após apagar.
+        if (releaseDeleteResult && releaseDeleteResult.deleted) { 
+            showToast("Lançamento apagado!", 'success'); 
+            closeDeleteConfirmModal(); 
+            await refreshAllData(); 
+            populateEditableReleases(); // <---- ADICIONADO AQUI
+        } else { 
+            throw new Error("Falha na exclusão."); 
+        }
     } catch (error) { showToast(`Erro: ${error.message}`, 'error'); closeDeleteConfirmModal(); } finally { confirmDeleteBtn.disabled = false; confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Sim, Apagar'; }
 }
 
