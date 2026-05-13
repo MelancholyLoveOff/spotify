@@ -92,7 +92,7 @@ const setupCountdown = (timerId, chartType) => {
     const timerElement = document.getElementById(timerId); 
     if (!timerElement) return;
     
-    timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Manual (Botão <i class="fas fa-sync-alt"></i> no topo)</span>`;
+    timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Ao vivo (Atualização Instantânea)</span>`;
 };
 
 async function handleConfirmAction() {
@@ -105,6 +105,12 @@ async function handleImageAction(actionType) {
     if (!artist || !config) { showToast("Erro: Artista ou configuração não encontrados.", 'error'); return; }
     confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
+    // --- NOVO: Tira a foto do chart RPG antes de mudar os pontos ---
+    if (typeof saveChartDataToLocalStorage === 'function') {
+        saveChartDataToLocalStorage('rpg');
+    }
+    // -------------------------------------------------------------
+
     let pointsChange = 0; let message = ""; const actionName = actionTypeSelect.options[actionTypeSelect.selectedIndex].text;
     if (Math.random() < 0.7) { pointsChange = getRandomInt(config.gain.min, config.gain.max); message = `📈 Sucesso! Sua imagem melhorou! Você ganhou +${pointsChange} pontos pessoais.`; } 
     else { pointsChange = -getRandomInt(config.loss.min, config.loss.max); message = `📉 Fracasso... Sua imagem foi manchada! Você perdeu ${Math.abs(pointsChange)} pontos pessoais.`; }
@@ -115,7 +121,6 @@ async function handleImageAction(actionType) {
         if (error) throw error;
         artist.personalPoints = newPoints; displayArtistActions(); 
         
-        // MOSTRA O TOAST MAS MANTÉM A JANELA ABERTA PARA O FLOOD
         showToast(`Ação de Imagem Concluída!\n${message}`, 'success'); 
     } catch (err) { console.error('Erro ao salvar pontos pessoais:', err); showToast(`Erro ao salvar ação: ${err.message}`, 'error'); } 
     finally { confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; }
@@ -132,6 +137,14 @@ async function handlePromotionAction(actionType) {
 
     if (currentCount >= limit) { showToast("Limite de uso atingido.", 'error'); return; }
     confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
+
+    // --- NOVO: Tira a "foto" da posição atual antes de dar os streams ---
+    if (typeof saveChartDataToLocalStorage === 'function') {
+        saveChartDataToLocalStorage('music');
+        saveChartDataToLocalStorage('album');
+        saveChartDataToLocalStorage('rpg');
+    }
+    // ---------------------------------------------------------------------
 
     let streamsToAdd = 0; let eventMessage = null; const bonusLocalKey = config.bonusLocalKey; const hasClaimedBonus = artist[bonusLocalKey] || false;
     const jackpotCheck = Math.random(); const eventCheck = Math.random();  const newCount = currentCount + 1;
@@ -182,7 +195,6 @@ async function handlePromotionAction(actionType) {
         if (totalDistributedGain > 0) { alertMessage += `✨ +${totalDistributedGain.toLocaleString('pt-BR')} streams distribuídos para outras faixas:\n`; alertMessage += distributionDetails.join('\n'); alertMessage += "\n\n"; }
         alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`; if (!isMain && config.limit !== 5) { alertMessage += ` (Limite de 5 usos para participações "Feat.")`; }
 
-        // MOSTRA O TOAST MAS MANTÉM A JANELA ABERTA PARA O FLOOD
         showToast(alertMessage, 'success'); 
     } catch (err) { console.error('Erro ao tentar persistir ação de streams no Supabase:', err); showToast(`Erro ao salvar ação: ${err.message}`, 'error'); } 
     finally { confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; updateActionLimitInfo(); }
