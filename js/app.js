@@ -298,6 +298,7 @@ async function refreshAllData() {
             try { renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); } catch(e){}
             try { renderChart('music'); } catch(e){}
             try { renderChart('album'); } catch(e){}
+            try { if (typeof renderSearchDefault === 'function') renderSearchDefault(); } catch(e){} // <--- INCLUÍDO AQUI
             
             if (currentPlayer) {
                 currentPlayer = db.players.find(p => p.id === currentPlayer.id) || currentPlayer;
@@ -367,6 +368,7 @@ async function main() {
         renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); 
         renderChart('music'); 
         renderChart('album'); 
+        if (typeof renderSearchDefault === 'function') renderSearchDefault(); // <--- INCLUÍDO AQUI TAMBÉM
     } catch (renderError) { console.error("Erro na renderização inicial", renderError); }
     
     try { 
