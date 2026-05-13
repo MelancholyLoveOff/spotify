@@ -347,48 +347,57 @@ async function main() {
 
     // --- INÍCIO: CONFIGURAÇÃO DO REALTIME SUPABASE ---
     if (supabaseClient) {
-        // Escuta mudanças na tabela de Músicas (streams, ranks, etc)
+        // Escuta mudanças na tabela de Músicas
         supabaseClient
           .channel('realtime-musicas')
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'songs' },
             (payload) => {
-                console.log('Músicas atualizadas em tempo real!', payload);
-                refreshAllData(); // Recarrega os dados para mostrar ao vivo
+                // Tira foto do chart ANTES de puxar os dados novos
+                if (typeof saveChartDataToLocalStorage === 'function') saveChartDataToLocalStorage('music');
+                refreshAllData(); 
             }
           )
           .subscribe();
 
-        // Escuta mudanças na tabela de Artistas (RPG points, Imagem, etc)
+        // Escuta mudanças na tabela de Artistas
         supabaseClient
           .channel('realtime-artistas')
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'artists' },
             (payload) => {
-                console.log('Artistas atualizados em tempo real!', payload);
+                // Tira foto do chart RPG
+                if (typeof saveChartDataToLocalStorage === 'function') saveChartDataToLocalStorage('rpg');
                 refreshAllData();
             }
           )
           .subscribe();
 
-        // Escuta mudanças na tabela de Álbuns e Singles
+        // Escuta mudanças na tabela de Álbuns
         supabaseClient
           .channel('realtime-albuns')
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'albums' },
-            () => refreshAllData()
+            () => {
+                if (typeof saveChartDataToLocalStorage === 'function') saveChartDataToLocalStorage('album');
+                refreshAllData();
+            }
           )
           .subscribe();
           
+        // Escuta mudanças na tabela de Singles
         supabaseClient
           .channel('realtime-singles')
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'singles' },
-            () => refreshAllData()
+            () => {
+                if (typeof saveChartDataToLocalStorage === 'function') saveChartDataToLocalStorage('album');
+                refreshAllData();
+            }
           )
           .subscribe();
     }
