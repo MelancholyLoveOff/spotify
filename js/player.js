@@ -6,16 +6,25 @@ let ytPlayerAudioReady = false;
 let ytPlayerAudio;
 let isVideoMode = false;
 
-function onYouTubeIframeAPIReady() {
+// 1. Injetar a API dinamicamente para evitar a Race Condition
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+// 2. Definir a função globalmente no window
+window.onYouTubeIframeAPIReady = function() {
+    // Evita o erro de CORS se o origin for "null" (quando abre o arquivo HTML com dois cliques)
+    const safeOrigin = window.location.origin !== "null" ? window.location.origin : "*";
+
     ytPlayerVideo = new YT.Player('ytplayer_video', {
-        height: '100%', width: '100%', host: 'https://www.youtube-nocookie.com',
-        playerVars: { 'controls': 0, 'playsinline': 1, 'origin': window.location.origin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
+        height: '100%', width: '100%',
+        playerVars: { 'controls': 0, 'playsinline': 1, 'origin': safeOrigin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
         events: {
             'onReady': () => { 
                 ytPlayerVideoReady = true; 
                 if (typeof currentSong !== 'undefined' && currentSong && currentSong.yt_id) {
-                    ytPlayerVideo.loadVideoById(currentSong.yt_id);
-                    if (typeof isPlaying !== 'undefined' && isPlaying && isVideoMode) ytPlayerVideo.playVideo(); else ytPlayerVideo.pauseVideo();
+                    ytPlayerVideo.cueVideoById(currentSong.yt_id);
                 }
             },
             'onStateChange': onPlayerStateChange
@@ -23,14 +32,13 @@ function onYouTubeIframeAPIReady() {
     });
 
     ytPlayerAudio = new YT.Player('ytplayer_audio', {
-        height: '100%', width: '100%', host: 'https://www.youtube-nocookie.com',
-        playerVars: { 'controls': 0, 'playsinline': 1, 'origin': window.location.origin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
+        height: '100%', width: '100%',
+        playerVars: { 'controls': 0, 'playsinline': 1, 'origin': safeOrigin, 'disablekb': 1, 'fs': 0, 'modestbranding': 1, 'rel': 0, 'enablejsapi': 1 },
         events: {
             'onReady': () => { 
                 ytPlayerAudioReady = true; 
                 if (typeof currentSong !== 'undefined' && currentSong && currentSong.yt_audio_id) {
-                    ytPlayerAudio.loadVideoById(currentSong.yt_audio_id);
-                    if (typeof isPlaying !== 'undefined' && isPlaying && !isVideoMode) ytPlayerAudio.playVideo(); else ytPlayerAudio.pauseVideo();
+                    ytPlayerAudio.cueVideoById(currentSong.yt_audio_id);
                 }
             },
             'onStateChange': onPlayerStateChange
@@ -72,7 +80,7 @@ function loadSong(song) {
 
     // CARREGA YOUTUBE AUDIO
     if (song.yt_audio_id) {
-        if (ytPlayerAudioReady) { ytPlayerAudio.loadVideoById(song.yt_audio_id); ytPlayerAudio.pauseVideo(); }
+        if (ytPlayerAudioReady) { ytPlayerAudio.cueVideoById(song.yt_audio_id); ytPlayerAudio.pauseVideo(); }
     } else {
         if (ytPlayerAudioReady) ytPlayerAudio.stopVideo();
     }
@@ -81,7 +89,7 @@ function loadSong(song) {
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (song.yt_id) {
         if (toggleBtn) toggleBtn.style.display = 'inline-flex';
-        if (ytPlayerVideoReady) { ytPlayerVideo.loadVideoById(song.yt_id); ytPlayerVideo.pauseVideo(); }
+        if (ytPlayerVideoReady) { ytPlayerVideo.cueVideoById(song.yt_id); ytPlayerVideo.pauseVideo(); }
     } else {
         if (toggleBtn) toggleBtn.style.display = 'none';
         if (ytPlayerVideoReady) ytPlayerVideo.stopVideo(); 
