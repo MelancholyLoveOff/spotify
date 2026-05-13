@@ -80,13 +80,21 @@
             </section>
 
             <section id="searchSection" class="content-section">
-                <div id="searchResults" class="artists-grid full-page-grid hidden"></div>
-                <div id="noResults" class="no-results hidden">
-                    <i class="fas fa-search"></i>
-                    <h3>Nenhum resultado</h3>
-                    <p>Tente buscar por outro artista ou álbum.</p>
-                </div>
-            </section>
+    <div id="searchDefaultState">
+        <h3 class="section-title">Próximos Lançamentos</h3>
+        <div id="upcomingReleasesGrid" class="horizontal-scroll-list" style="margin-bottom: 40px;"></div>
+        
+        <h3 class="section-title">Álbuns em Destaque</h3>
+        <div id="highlightedReleasesGrid" class="artists-grid"></div>
+    </div>
+
+    <div id="searchResults" class="artists-grid full-page-grid hidden"></div>
+    <div id="noResults" class="no-results hidden">
+        <i class="fas fa-search"></i>
+        <h3>Nenhum resultado</h3>
+        <p>Tente buscar por outro artista ou álbum.</p>
+    </div>
+</section>
 
             <section id="actionsSection" class="content-section">
                 <div class="section-header"><h3 class="section-title">⚡ Batalha de Charts - Ações</h3></div>
