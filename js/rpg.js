@@ -3,7 +3,6 @@
 const computeChartData = (artistsArray) => {
     if (!artistsArray) return [];
     const artistsWithPopularity = artistsArray.map(artist => {
-        // SOMA DINÂMICA: Pega todas as músicas desse artista e soma os streams totais
         const artistSongs = db.songs.filter(s => s.artistIds && s.artistIds.includes(artist.id));
         const totalStreams = artistSongs.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
         
@@ -13,7 +12,6 @@ const computeChartData = (artistsArray) => {
         const finalScore = Math.floor(basePoints * pointsModifier); 
         return { id: artist.id, name: artist.name, img: artist.img, bgPos: artist.bgPos, popularity: finalScore };
     });
-    // Filtra para remover quem tem 0 pontos e organiza:
     return artistsWithPopularity.filter(a => a.popularity > 0).sort((a, b) => b.popularity - a.popularity).slice(0, 20);
 };
 
@@ -22,7 +20,6 @@ function renderRPGChart() {
     const container = document.getElementById('artistsGrid'); 
     let previousData = previousRpgChartData;
     
-    // Se o chart anterior estiver vazio (primeira vez jogando), cria o Marco Zero
     if (Object.keys(previousData).length === 0 && chartData.length > 0) { 
         saveChartDataToLocalStorage('rpg'); 
         previousData = previousRpgChartData; 
@@ -35,7 +32,6 @@ function renderRPGChart() {
             const currentRank = index + 1; const previousRank = previousData[artist.id];
             let indicatorHtml = '';
 
-            // Formata os ícones (NEW escrito, Seta Cima, Seta Baixo, Traço)
             if (previousRank === undefined) { 
                 indicatorHtml = `<span class="chart-rank-indicator rpg-indicator trend-new" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); width: 26px; height: 26px; border-radius:50%; font-size: 9px; display:flex; align-items:center; justify-content:center; font-weight: bold; letter-spacing: -0.5px; color: var(--text-secondary);">NEW</span>`; 
             } 
@@ -69,7 +65,6 @@ const saveChartDataToLocalStorage = (chartType) => {
     } else if (chartType === 'album') {
         storageKey = PREVIOUS_ALBUM_CHART_KEY;
         dataList = [...db.albums, ...db.singles].filter(item => {
-            // Permite se for um álbum completo OU se for single com 4 ou mais faixas (EP)
             const isAlbum = item.type === 'album';
             const numTracks = item.tracks ? item.tracks.length : 0;
             const isEP = item.type === 'single' && numTracks >= 4;
@@ -91,7 +86,6 @@ const saveChartDataToLocalStorage = (chartType) => {
 const setupCountdown = (timerId, chartType) => {
     const timerElement = document.getElementById(timerId); 
     if (!timerElement) return;
-    
     timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Ao vivo (Atualização Instantânea)</span>`;
 };
 
@@ -104,12 +98,6 @@ async function handleImageAction(actionType) {
     const artistId = modalArtistId.value, artist = db.artists.find(a => a.id === artistId), config = IMAGE_ACTION_CONFIG[actionType];
     if (!artist || !config) { showToast("Erro: Artista ou configuração não encontrados.", 'error'); return; }
     confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
-
-    // --- NOVO: Tira a foto do chart RPG antes de mudar os pontos ---
-    if (typeof saveChartDataToLocalStorage === 'function') {
-        saveChartDataToLocalStorage('rpg');
-    }
-    // -------------------------------------------------------------
 
     let pointsChange = 0; let message = ""; const actionName = actionTypeSelect.options[actionTypeSelect.selectedIndex].text;
     if (Math.random() < 0.7) { pointsChange = getRandomInt(config.gain.min, config.gain.max); message = `📈 Sucesso! Sua imagem melhorou! Você ganhou +${pointsChange} pontos pessoais.`; } 
@@ -137,14 +125,6 @@ async function handlePromotionAction(actionType) {
 
     if (currentCount >= limit) { showToast("Limite de uso atingido.", 'error'); return; }
     confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
-
-    // --- NOVO: Tira a "foto" da posição atual antes de dar os streams ---
-    if (typeof saveChartDataToLocalStorage === 'function') {
-        saveChartDataToLocalStorage('music');
-        saveChartDataToLocalStorage('album');
-        saveChartDataToLocalStorage('rpg');
-    }
-    // ---------------------------------------------------------------------
 
     let streamsToAdd = 0; let eventMessage = null; const bonusLocalKey = config.bonusLocalKey; const hasClaimedBonus = artist[bonusLocalKey] || false;
     const jackpotCheck = Math.random(); const eventCheck = Math.random();  const newCount = currentCount + 1;
