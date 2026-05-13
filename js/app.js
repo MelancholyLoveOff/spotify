@@ -192,25 +192,29 @@ function initializeBodyClickListener() {
         const discogLink = event.target.closest('.discography-link[data-discog-type]'); 
         if (discogLink) { event.preventDefault(); openDiscographyDetail(discogLink.dataset.discogType); return; }
         
-        const refreshButton = event.target.closest('[data-action="refresh"]');
+       const refreshButton = event.target.closest('[data-action="refresh"]');
         if(refreshButton){
             const icon = refreshButton.querySelector('i'); 
             if(icon) icon.classList.add('fa-spin'); 
             refreshButton.disabled = true; 
 
-            carregarPosicoesAnteriores().then(() => {
-                try {
-                    if (typeof saveChartDataToLocalStorage === 'function') {
-                        saveChartDataToLocalStorage('rpg');
-                    }
-                } catch(e) { console.error("Erro a guardar histórico RPG:", e); }
+            // 1. Tira uma "foto" de TODOS os charts agora para criar o novo marco zero
+            try {
+                if (typeof saveChartDataToLocalStorage === 'function') {
+                    saveChartDataToLocalStorage('music');
+                    saveChartDataToLocalStorage('album');
+                    saveChartDataToLocalStorage('rpg');
+                }
+            } catch(e) { console.error("Erro ao salvar histórico:", e); }
 
-                refreshAllData().finally(() => { 
-                    if(icon) icon.classList.remove('fa-spin'); 
-                    refreshButton.disabled = false; 
-                    showToast('Dados e Posições atualizados com sucesso!', 'success'); 
-                }); 
+            // 2. Recarrega a tela. Como a foto acabou de ser tirada, as posições 
+            // vão ser exatamente iguais, fazendo as setinhas virarem '-'
+            refreshAllData().finally(() => { 
+                if(icon) icon.classList.remove('fa-spin'); 
+                refreshButton.disabled = false; 
+                showToast('Painel sincronizado! Posições consolidadas.', 'success'); 
             });
+            
             return; 
         }
     });
