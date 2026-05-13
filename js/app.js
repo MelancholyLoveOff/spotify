@@ -298,7 +298,7 @@ async function refreshAllData() {
             try { renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); } catch(e){}
             try { renderChart('music'); } catch(e){}
             try { renderChart('album'); } catch(e){}
-            try { if (typeof renderSearchDefault === 'function') renderSearchDefault(); } catch(e){} // <--- INCLUÍDO AQUI
+            try { if (typeof renderSearchDefault === 'function') renderSearchDefault(); } catch(e){}
             
             if (currentPlayer) {
                 currentPlayer = db.players.find(p => p.id === currentPlayer.id) || currentPlayer;
@@ -344,6 +344,55 @@ async function main() {
     const data = await loadAllData(); 
     if (!data) return;
     if (!initializeData(data)) return;
+
+    // --- INÍCIO: CONFIGURAÇÃO DO REALTIME SUPABASE ---
+    if (supabaseClient) {
+        // Escuta mudanças na tabela de Músicas (streams, ranks, etc)
+        supabaseClient
+          .channel('realtime-musicas')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'songs' },
+            (payload) => {
+                console.log('Músicas atualizadas em tempo real!', payload);
+                refreshAllData(); // Recarrega os dados para mostrar ao vivo
+            }
+          )
+          .subscribe();
+
+        // Escuta mudanças na tabela de Artistas (RPG points, Imagem, etc)
+        supabaseClient
+          .channel('realtime-artistas')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'artists' },
+            (payload) => {
+                console.log('Artistas atualizados em tempo real!', payload);
+                refreshAllData();
+            }
+          )
+          .subscribe();
+
+        // Escuta mudanças na tabela de Álbuns e Singles
+        supabaseClient
+          .channel('realtime-albuns')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'albums' },
+            () => refreshAllData()
+          )
+          .subscribe();
+          
+        supabaseClient
+          .channel('realtime-singles')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'singles' },
+            () => refreshAllData()
+          )
+          .subscribe();
+    }
+    // --- FIM: CONFIGURAÇÃO DO REALTIME SUPABASE ---
     
     const savedPlayerId = localStorage.getItem('spotifyRpg_loggedInPlayerId');
     if (savedPlayerId) {
@@ -368,7 +417,7 @@ async function main() {
         renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); 
         renderChart('music'); 
         renderChart('album'); 
-        if (typeof renderSearchDefault === 'function') renderSearchDefault(); // <--- INCLUÍDO AQUI TAMBÉM
+        if (typeof renderSearchDefault === 'function') renderSearchDefault();
     } catch (renderError) { console.error("Erro na renderização inicial", renderError); }
     
     try { 
@@ -388,7 +437,7 @@ async function main() {
     switchView('mainView'); 
     activateMainViewSection('homeSection');
 
-    // --- NOVO: LER O LINK COMPARTILHADO ---
+    // --- LER O LINK COMPARTILHADO ---
     const urlParams = new URLSearchParams(window.location.search);
     
     // Verifica se tem link de música
@@ -402,7 +451,7 @@ async function main() {
         }
     }
 
-    // Verifica se tem link de álbum (Bônus!)
+    // Verifica se tem link de álbum
     const albumToOpen = urlParams.get('album');
     if (albumToOpen) {
         const album = [...db.albums, ...db.singles].find(a => a.id === albumToOpen);
@@ -410,7 +459,6 @@ async function main() {
             setTimeout(() => openAlbumDetail(albumToOpen), 300);
         }
     }
-    // ---------------------------------------
 }
 
 document.addEventListener('DOMContentLoaded', () => {
