@@ -103,17 +103,60 @@ async function handleEditArtistSubmit(event) {
 }
 
 function populateArtistSelector(playerId) {
-    const player = db.players.find(p => p.id === playerId); if (!player) return;
+    const player = db.players.find(p => p.id === playerId); 
+    if (!player) return;
+    
     const playerArtistIds = player.artists || [];
-    const optionsHtml = playerArtistIds.map(id => { const artist = db.artists.find(a => a.id === id); return artist ? `<option value="${artist.id}">${artist.name}</option>` : ''; }).join('');
+    const optionsHtml = playerArtistIds.map(id => { 
+        const artist = db.artists.find(a => a.id === id); 
+        return artist ? `<option value="${artist.id}">${artist.name}</option>` : ''; 
+    }).join('');
+    
+    // Atualiza o Select do Lançamento (Novo Álbum/Single)
     if (wysiwygArtistSelect) {
-        if (playerArtistIds.length === 0) { wysiwygArtistSelect.innerHTML = `<option value="">Nenhum artista</option>`; } 
-        else { wysiwygArtistSelect.innerHTML = `<option value="" disabled selected>Selecione...</option>${optionsHtml}`; if (playerArtistIds.length === 1) { wysiwygArtistSelect.value = playerArtistIds[0]; const artist = db.artists.find(a => a.id === playerArtistIds[0]); if(artist && wysiwygArtistImg) wysiwygArtistImg.src = artist.img; } }
+        const currentWysiwygValue = wysiwygArtistSelect.value; // Memoriza a seleção atual
+        
+        if (playerArtistIds.length === 0) { 
+            wysiwygArtistSelect.innerHTML = `<option value="">Nenhum artista</option>`; 
+        } else { 
+            wysiwygArtistSelect.innerHTML = `<option value="" disabled ${!currentWysiwygValue ? 'selected' : ''}>Selecione...</option>${optionsHtml}`; 
+            
+            if (playerArtistIds.length === 1) { 
+                wysiwygArtistSelect.value = playerArtistIds[0]; 
+                const artist = db.artists.find(a => a.id === playerArtistIds[0]); 
+                if(artist && wysiwygArtistImg) wysiwygArtistImg.src = artist.img; 
+            } 
+            // Se o usuário já tinha selecionado alguém, devolve a seleção para ele
+            else if (currentWysiwygValue && playerArtistIds.includes(currentWysiwygValue)) {
+                wysiwygArtistSelect.value = currentWysiwygValue; 
+            }
+        }
     }
-    if (editArtistFilterSelect) { editArtistFilterSelect.innerHTML = `<option value="all">Todos os Artistas</option>${optionsHtml}`; }
+    
+    // Atualiza o Select do Filtro de Edição de Lançamento
+    if (editArtistFilterSelect) { 
+        const currentFilterValue = editArtistFilterSelect.value; // Memoriza a seleção
+        editArtistFilterSelect.innerHTML = `<option value="all">Todos os Artistas</option>${optionsHtml}`; 
+        
+        if (currentFilterValue) {
+            editArtistFilterSelect.value = currentFilterValue;
+        }
+    }
+    
+    // Atualiza o Select de Edição de Artista
     if (editArtistSelect) {
-        if (playerArtistIds.length === 0) { editArtistSelect.innerHTML = `<option value="">Nenhum artista</option>`; editArtistFields?.classList.add('hidden'); } 
-        else { editArtistSelect.innerHTML = `<option value="" disabled selected>Selecione...</option>${optionsHtml}`; }
+        const currentEditValue = editArtistSelect.value; // Memoriza a seleção
+        
+        if (playerArtistIds.length === 0) { 
+            editArtistSelect.innerHTML = `<option value="">Nenhum artista</option>`; 
+            editArtistFields?.classList.add('hidden'); 
+        } else { 
+            editArtistSelect.innerHTML = `<option value="" disabled ${!currentEditValue ? 'selected' : ''}>Selecione...</option>${optionsHtml}`; 
+            
+            if (currentEditValue && playerArtistIds.includes(currentEditValue)) {
+                editArtistSelect.value = currentEditValue;
+            }
+        }
     }
 }
 
