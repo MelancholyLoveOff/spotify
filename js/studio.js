@@ -1,6 +1,6 @@
 // js/studio.js
 
-// Lógica nova: Modal de Promover Faixa e comunicação segura com Airtable
+// Lógica nova: Modal de Promover Faixa e comunicação segura com Supabase
 window.openPromoteModal = function(trackId, albumId) {
     const track = db.songs.find(s => s.id === trackId);
     if (!track) return;
@@ -639,7 +639,7 @@ function initializeStudio() {
     trackSelect?.addEventListener('change', updateActionLimitInfo); cancelActionButton?.addEventListener('click', () => { actionModal.classList.add('hidden'); }); confirmActionButton?.addEventListener('click', handleConfirmAction);
 
     // ==========================================
-    // Escutadores do Novo Modal de Promoção
+    // Escutadores do Novo Modal de Promoção (Supabase)
     // ==========================================
     document.getElementById('promoteSingleType')?.addEventListener('change', (e) => {
         if (e.target.value === 'independent') {
@@ -669,37 +669,47 @@ function initializeStudio() {
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
 
         try {
-            let fieldsToUpdate = { "Tipo de Faixa": "Pre-release Single" };
+            // 1. Desbloqueia a faixa manualmente mudando o tipo para Pre-release Single no Supabase
+            const { error: songUpdateError } = await supabaseClient.from('songs')
+                .update({ track_type: 'Pre-release Single' })
+                .eq('id', trackId);
+                
+            if (songUpdateError) throw songUpdateError;
 
-            // Se for independente cria um NOVO registro no Airtable
+            // 2. Se for independente, cria o novo Release do Single no Supabase
             if (type === 'independent') {
                 if (!coverUrl) throw new Error("Insira a URL da capa para o Single Independente.");
                 
-                const releaseRecordFields = {
-                    "Nome do Single/EP": track.title,
-                    "Artista": [album.artistId], 
-                    "Capa": [{ "url": coverUrl }],
-                    "Data de Lançamento": new Date().toISOString().split('T')[0]
-                };
+                const releaseDateISO = new Date().toISOString();
                 
-                const singleResponse = await createAirtableRecord('Singles e EPs', releaseRecordFields);
-                if (!singleResponse || !singleResponse.id) throw new Error("Falha ao criar o Single.");
-
-                const existingSingleIds = track.singleIds || [];
-                fieldsToUpdate["Singles e EPs"] = [...new Set([...existingSingleIds, singleResponse.id])];
+                const { data: newSingleData, error: singleError } = await supabaseClient.from('singles')
+                    .insert([{
+                        title: track.title,
+                        artist_id: album.artistId,
+                        image_url: coverUrl,
+                        release_date: releaseDateISO
+                    }]).select();
+                    
+                if (singleError) throw singleError;
+                
+                if (newSingleData && newSingleData.length > 0) {
+                    const newSingleId = newSingleData[0].id;
+                    const existingSingleIds = track.singleIds || [];
+                    
+                    // Vincula a música ao novo Single recém criado no array de single_ids
+                    await supabaseClient.from('songs')
+                        .update({ single_ids: [...new Set([...existingSingleIds, newSingleId])] })
+                        .eq('id', trackId);
+                }
             }
 
-            // Atualiza a música no Airtable
-            const updateResult = await updateAirtableRecord('Músicas', trackId, fieldsToUpdate);
-            if (!updateResult) throw new Error("Falha ao atualizar a faixa.");
-
-            showToast("Faixa promovida com sucesso!", "success");
+            showToast("Faixa promovida e desbloqueada com sucesso!", "success");
             document.getElementById('promoteSingleModal').classList.add('hidden');
             
-            // Recarrega o app e abre o álbum com a música agora desbloqueada
+            // Recarrega os dados para a tela atualizar e remover o cadeado da música instantaneamente
             if (typeof window.refreshAllData === 'function') {
                 await window.refreshAllData();
-                openAlbumDetail(albumId);
+                if (typeof openAlbumDetail === 'function') openAlbumDetail(albumId);
             }
 
         } catch (err) {
