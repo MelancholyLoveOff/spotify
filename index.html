@@ -126,13 +126,13 @@
                         <option value="promo_commercial">Comercial da Música</option>
                         <option value="promo_internet">Divulgação na Internet</option> 
                     </optgroup>
-                    <optgroup label="Divulgações Especiais (Ganha Streams)">
+                    <optgroup label="Divulgação Especial (Ganha Streams)">
                         <option value="mv">Lançar MV</option>
                         <option value="capas_alternativas">Lançar capas alternativas</option>
                         <option value="remix">Lançar remix</option>
                         <option value="parceria_marcas">Lançar parceria com marcas famosas</option>
                     </optgroup>
-                    <optgroup label="Divulgação da Imagem (Aumenta Status/Bonus de Streams)">
+                    <optgroup label="Divulgação da Imagem (Aumenta Status)">
                         <option value="img_serie">Participar de Série</option>
                         <option value="img_novela">Participar de Novela</option>
                         <option value="img_filme">Participar de Filme</option>
@@ -503,6 +503,35 @@
             <div style="display:flex; gap:16px; margin-top:32px;">
                 <button class="small-btn" id="cancelImportBtn" style="flex:1; justify-content:center;">Cancelar</button>
                 <button class="submit-btn" id="confirmImportBtn" style="flex:1; margin:0;">Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="promoteSingleModal" class="modal-overlay hidden">
+        <div class="modal-content action-modal-content">
+            <h3 style="text-align: center; margin-bottom: 15px;">Promover Faixa</h3>
+            <p id="promoteSingleTrackName" style="text-align: center; color: var(--spotify-green); margin-bottom: 20px; font-weight: bold;"></p>
+            
+            <input type="hidden" id="promoteSingleTrackId">
+            <input type="hidden" id="promoteSingleAlbumId">
+
+            <div class="studio-form-group">
+                <label>Tipo de Lançamento</label>
+                <select id="promoteSingleType" class="wysiwyg-select" style="width: 100%; border: 1px dashed rgba(255,255,255,0.3); padding: 14px; border-radius: 4px;">
+                    <option value="promotional">Single Promocional (Na mesma capa do álbum)</option>
+                    <option value="independent">Single Independente (Capa Exclusiva e Novo Release)</option>
+                </select>
+            </div>
+
+            <div id="promoteSingleCoverGroup" class="studio-form-group hidden" style="margin-top: 15px;">
+                <label>Capa do Single Independente</label>
+                <input type="file" id="promoteSingleCoverFile" accept="image/*" class="file-upload-input" style="margin-bottom: 8px; width: 100%;">
+                <input type="url" id="promoteSingleCoverUrl" class="wysiwyg-input" placeholder="Ou cole a URL da imagem aqui" style="border-bottom: 1px dashed rgba(255,255,255,0.3); padding: 8px; width: 100%;">
+            </div>
+
+            <div class="modal-actions" style="margin-top: 25px; display: flex; gap: 16px;">
+                <button id="cancelPromoteBtn" class="cancel-btn" style="flex: 1;">Cancelar</button>
+                <button id="confirmPromoteBtn" class="submit-btn" style="flex: 1; margin: 0;">Promover</button>
             </div>
         </div>
     </div>
