@@ -1,5 +1,22 @@
 // js/studio.js
 
+// Lógica nova: Modal de Promover Faixa e comunicação segura com Airtable
+window.openPromoteModal = function(trackId, albumId) {
+    const track = db.songs.find(s => s.id === trackId);
+    if (!track) return;
+
+    document.getElementById('promoteSingleTrackName').textContent = `Promovendo: ${track.title}`;
+    document.getElementById('promoteSingleTrackId').value = trackId;
+    document.getElementById('promoteSingleAlbumId').value = albumId;
+    
+    document.getElementById('promoteSingleType').value = 'promotional';
+    document.getElementById('promoteSingleCoverGroup').classList.add('hidden');
+    document.getElementById('promoteSingleCoverUrl').value = '';
+
+    document.getElementById('promoteSingleModal').classList.remove('hidden');
+}
+
+
 function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgElementId, onCompleteCb) {
     const fileInput = document.getElementById(fileInputId); const urlInput = document.getElementById(urlInputId);
     const imgElement = document.getElementById(imgElementId); const bgElement = document.getElementById(bgElementId);
@@ -483,12 +500,11 @@ async function handleUpdateRelease(event) {
             } 
         } 
         
-        // CORREÇÃO: Força o recarregamento visual da lista após salvar.
         showToast("Atualizado com sucesso!", 'success'); 
         editReleaseForm.classList.add('hidden'); 
         editReleaseListContainer?.classList.remove('hidden'); 
         await refreshAllData(); 
-        populateEditableReleases(); // <---- ADICIONADO AQUI
+        populateEditableReleases();
         
     } catch (error) { showToast(`Erro: ${error.message}`, 'error'); } finally { saveEditBtn.disabled = false; saveEditBtn.innerHTML = '<i class="fas fa-save"></i> Salvar'; }
 }
@@ -521,12 +537,11 @@ async function handleDeleteRelease() {
         }
         const releaseDeleteResult = await deleteAirtableRecord(tableName, recordId);
         
-        // CORREÇÃO: Força o recarregamento visual da lista após apagar.
         if (releaseDeleteResult && releaseDeleteResult.deleted) { 
             showToast("Lançamento apagado!", 'success'); 
             closeDeleteConfirmModal(); 
             await refreshAllData(); 
-            populateEditableReleases(); // <---- ADICIONADO AQUI
+            populateEditableReleases();
         } else { 
             throw new Error("Falha na exclusão."); 
         }
@@ -534,7 +549,14 @@ async function handleDeleteRelease() {
 }
 
 function initializeStudio() {
-    setupImageUploadWithPreview('wysiwygCoverFile', 'wysiwygCoverUrl', 'wysiwygCoverImg', 'wysiwygBg'); setupImageUploadWithPreview('editReleaseCoverFile', 'editReleaseCoverUrl', 'editWysiwygCoverImg', 'editWysiwygBg'); setupImageUploadWithPreview('newArtistImageFile', 'newArtistImageUrl'); setupImageUploadWithPreview('editArtistImageFile', 'editArtistImageUrl', null, null, (url) => { updateArtistEditPreviews(); });
+    setupImageUploadWithPreview('wysiwygCoverFile', 'wysiwygCoverUrl', 'wysiwygCoverImg', 'wysiwygBg'); 
+    setupImageUploadWithPreview('editReleaseCoverFile', 'editReleaseCoverUrl', 'editWysiwygCoverImg', 'editWysiwygBg'); 
+    setupImageUploadWithPreview('newArtistImageFile', 'newArtistImageUrl'); 
+    setupImageUploadWithPreview('editArtistImageFile', 'editArtistImageUrl', null, null, (url) => { updateArtistEditPreviews(); });
+    
+    // Novo preview para capa de Single promovido
+    setupImageUploadWithPreview('promoteSingleCoverFile', 'promoteSingleCoverUrl');
+
     wysiwygArtistSelect?.addEventListener('change', (e) => { const artist = db.artists.find(a => a.id === e.target.value); if(artist && wysiwygArtistImg) wysiwygArtistImg.src = artist.img; });
 
     const releaseNatureSelect = document.getElementById('wysiwygReleaseNature'), originalAlbumSelectInline = document.getElementById('wysiwygOriginalAlbumSelect'), btnImportDeluxe = document.getElementById('btnImportDeluxe');
@@ -615,7 +637,82 @@ function initializeStudio() {
 
     releaseSelect?.addEventListener('change', () => { const artistId = modalArtistId.value; if (releaseSelect.value && artistId) { populateTrackSelectForActions(releaseSelect.value, artistId); } else { trackSelectWrapper.classList.add('hidden'); } });
     trackSelect?.addEventListener('change', updateActionLimitInfo); cancelActionButton?.addEventListener('click', () => { actionModal.classList.add('hidden'); }); confirmActionButton?.addEventListener('click', handleConfirmAction);
+
+    // ==========================================
+    // Escutadores do Novo Modal de Promoção
+    // ==========================================
+    document.getElementById('promoteSingleType')?.addEventListener('change', (e) => {
+        if (e.target.value === 'independent') {
+            document.getElementById('promoteSingleCoverGroup').classList.remove('hidden');
+        } else {
+            document.getElementById('promoteSingleCoverGroup').classList.add('hidden');
+        }
+    });
+
+    document.getElementById('cancelPromoteBtn')?.addEventListener('click', () => {
+        document.getElementById('promoteSingleModal').classList.add('hidden');
+    });
+
+    document.getElementById('confirmPromoteBtn')?.addEventListener('click', async () => {
+        const trackId = document.getElementById('promoteSingleTrackId').value;
+        const albumId = document.getElementById('promoteSingleAlbumId').value;
+        const type = document.getElementById('promoteSingleType').value;
+        const coverUrl = document.getElementById('promoteSingleCoverUrl').value;
+
+        const track = db.songs.find(s => s.id === trackId);
+        const album = [...db.albums, ...db.singles].find(a => a.id === albumId);
+
+        if (!track || !album) return;
+
+        const confirmBtn = document.getElementById('confirmPromoteBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+
+        try {
+            let fieldsToUpdate = { "Tipo de Faixa": "Pre-release Single" };
+
+            // Se for independente cria um NOVO registro no Airtable
+            if (type === 'independent') {
+                if (!coverUrl) throw new Error("Insira a URL da capa para o Single Independente.");
+                
+                const releaseRecordFields = {
+                    "Nome do Single/EP": track.title,
+                    "Artista": [album.artistId], 
+                    "Capa": [{ "url": coverUrl }],
+                    "Data de Lançamento": new Date().toISOString().split('T')[0]
+                };
+                
+                const singleResponse = await createAirtableRecord('Singles e EPs', releaseRecordFields);
+                if (!singleResponse || !singleResponse.id) throw new Error("Falha ao criar o Single.");
+
+                const existingSingleIds = track.singleIds || [];
+                fieldsToUpdate["Singles e EPs"] = [...new Set([...existingSingleIds, singleResponse.id])];
+            }
+
+            // Atualiza a música no Airtable
+            const updateResult = await updateAirtableRecord('Músicas', trackId, fieldsToUpdate);
+            if (!updateResult) throw new Error("Falha ao atualizar a faixa.");
+
+            showToast("Faixa promovida com sucesso!", "success");
+            document.getElementById('promoteSingleModal').classList.add('hidden');
+            
+            // Recarrega o app e abre o álbum com a música agora desbloqueada
+            if (typeof window.refreshAllData === 'function') {
+                await window.refreshAllData();
+                openAlbumDetail(albumId);
+            }
+
+        } catch (err) {
+            console.error(err);
+            showToast("Erro ao promover: " + err.message, "error");
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Promover";
+        }
+    });
+
 }
+
 // Função para lidar com a exclusão do artista
 async function handleDeleteArtistConfirm() {
     const artistId = editArtistSelect?.value;
@@ -632,15 +729,11 @@ async function handleDeleteArtistConfirm() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
 
     try {
-        // 1. Filtrar os IDs de Álbuns e Singles do artista
         const releases = [...db.albums, ...db.singles].filter(r => r.artistId === artistId);
         const albumIds = releases.filter(r => r.type === 'album').map(r => r.id);
         const singleIds = releases.filter(r => r.type === 'single').map(r => r.id);
-
-        // 2. Filtrar as músicas onde o artista é o dono (main artist)
         const songsToDelete = db.songs.filter(s => s.artistIds && s.artistIds[0] === artistId).map(s => s.id);
 
-        // 3. Deletar os lançamentos do banco de dados (Supabase)
         if (albumIds.length > 0) await supabaseClient.from('albums').delete().in('artist_id', [artistId]);
         if (singleIds.length > 0) await supabaseClient.from('singles').delete().in('artist_id', [artistId]);
         
@@ -648,18 +741,15 @@ async function handleDeleteArtistConfirm() {
             await supabaseClient.from('songs').delete().in('id', songsToDelete);
         }
 
-        // 4. Apagar o próprio artista
         const { error: artistError } = await supabaseClient.from('artists').delete().eq('id', artistId);
         if (artistError) throw artistError;
 
-        // 5. Atualizar a array de artistas do jogador atual, removendo o ID excluído
         const updatedArtistIds = currentPlayer.artists.filter(id => id !== artistId);
         await supabaseClient.from('players').update({ artist_ids: updatedArtistIds }).eq('id', currentPlayer.id);
         currentPlayer.artists = updatedArtistIds;
 
         showToast(`O artista "${artist.name}" e todo o seu catálogo foram excluídos com sucesso.`, 'success');
 
-        // 6. Atualizar a interface
         editArtistSelect.value = '';
         editArtistSelect.dispatchEvent(new Event('change'));
         await refreshAllData();
