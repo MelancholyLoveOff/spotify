@@ -559,8 +559,8 @@ function initializeStudio() {
     });
 
     loginButton?.addEventListener('click', () => { const username = document.getElementById('usernameInput')?.value, password = document.getElementById('passwordInput')?.value; loginPlayer(username, password); });
-    logoutButton?.addEventListener('click', logoutPlayer); showRegisterBtn?.addEventListener('click', (e) => { e.preventDefault(); loginPrompt?.classList.add('hidden'); registerPrompt?.classList.remove('hidden'); }); showLoginBtn?.addEventListener('click', (e) => { e.preventDefault(); registerPrompt?.classList.add('hidden'); loginPrompt?.classList.remove('hidden'); }); registerButton?.addEventListener('click', () => { registerPlayer(regUsernameInput?.value, regPasswordInput?.value); }); newArtistForm?.addEventListener('submit', handleArtistSubmit); editArtistForm?.addEventListener('submit', handleEditArtistSubmit);
-
+    logoutButton?.addEventListener('click', logoutPlayer); showRegisterBtn?.addEventListener('click', (e) => { e.preventDefault(); loginPrompt?.classList.add('hidden'); registerPrompt?.classList.remove('hidden'); }); showLoginBtn?.addEventListener('click', (e) => { e.preventDefault(); registerPrompt?.classList.add('hidden'); loginPrompt?.classList.remove('hidden'); }); registerButton?.addEventListener('click', () => { registerPlayer(regUsernameInput?.value, regPasswordInput?.value); }); newArtistForm?.addEventListener('submit', handleArtistSubmit); editArtistForm?.addEventListener('submit', handleEditArtistSubmit); document.getElementById('btnOpenDeleteArtist')?.addEventListener('click', handleDeleteArtistConfirm);
+    
     editArtistSelect?.addEventListener('change', (e) => {
         const artistId = e.target.value; if (!artistId) { editArtistFields?.classList.add('hidden'); return; }
         const artist = db.artists.find(a => a.id === artistId);
@@ -615,4 +615,60 @@ function initializeStudio() {
 
     releaseSelect?.addEventListener('change', () => { const artistId = modalArtistId.value; if (releaseSelect.value && artistId) { populateTrackSelectForActions(releaseSelect.value, artistId); } else { trackSelectWrapper.classList.add('hidden'); } });
     trackSelect?.addEventListener('change', updateActionLimitInfo); cancelActionButton?.addEventListener('click', () => { actionModal.classList.add('hidden'); }); confirmActionButton?.addEventListener('click', handleConfirmAction);
+}
+// Função para lidar com a exclusão do artista
+async function handleDeleteArtistConfirm() {
+    const artistId = editArtistSelect?.value;
+    if (!artistId) return;
+    
+    const artist = db.artists.find(a => a.id === artistId);
+    if (!artist) return;
+
+    const confirmDelete = confirm(`⚠️ ATENÇÃO! Tem certeza que deseja excluir o artista "${artist.name}" e TODO o seu catálogo (álbuns, singles e músicas)?\n\nEsta ação é irreversível.`);
+    if (!confirmDelete) return;
+
+    const btn = document.getElementById('btnOpenDeleteArtist');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+
+    try {
+        // 1. Filtrar os IDs de Álbuns e Singles do artista
+        const releases = [...db.albums, ...db.singles].filter(r => r.artistId === artistId);
+        const albumIds = releases.filter(r => r.type === 'album').map(r => r.id);
+        const singleIds = releases.filter(r => r.type === 'single').map(r => r.id);
+
+        // 2. Filtrar as músicas onde o artista é o dono (main artist)
+        const songsToDelete = db.songs.filter(s => s.artistIds && s.artistIds[0] === artistId).map(s => s.id);
+
+        // 3. Deletar os lançamentos do banco de dados (Supabase)
+        if (albumIds.length > 0) await supabaseClient.from('albums').delete().in('artist_id', [artistId]);
+        if (singleIds.length > 0) await supabaseClient.from('singles').delete().in('artist_id', [artistId]);
+        
+        if (songsToDelete.length > 0) {
+            await supabaseClient.from('songs').delete().in('id', songsToDelete);
+        }
+
+        // 4. Apagar o próprio artista
+        const { error: artistError } = await supabaseClient.from('artists').delete().eq('id', artistId);
+        if (artistError) throw artistError;
+
+        // 5. Atualizar a array de artistas do jogador atual, removendo o ID excluído
+        const updatedArtistIds = currentPlayer.artists.filter(id => id !== artistId);
+        await supabaseClient.from('players').update({ artist_ids: updatedArtistIds }).eq('id', currentPlayer.id);
+        currentPlayer.artists = updatedArtistIds;
+
+        showToast(`O artista "${artist.name}" e todo o seu catálogo foram excluídos com sucesso.`, 'success');
+
+        // 6. Atualizar a interface
+        editArtistSelect.value = '';
+        editArtistSelect.dispatchEvent(new Event('change'));
+        await refreshAllData();
+
+    } catch (err) {
+        showToast(`Erro ao excluir: ${err.message}`, 'error');
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir Artista e Catálogo';
+    }
 }
