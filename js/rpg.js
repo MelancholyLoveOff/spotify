@@ -1,12 +1,15 @@
 // js/rpg.js
 
+// Trava global para evitar duplo clique ou sobreposição de ações (Race Condition)
+let isProcessingAction = false;
+
 const computeChartData = (artistsArray) => {
     if (!artistsArray) return [];
     const artistsWithPopularity = artistsArray.map(artist => {
         const artistSongs = db.songs.filter(s => s.artistIds && s.artistIds.includes(artist.id));
-        const totalStreams = artistSongs.reduce((sum, song) => sum + (song.totalStreams || 0), 0);
+        const totalStreams = artistSongs.reduce((sum, song) => sum + (parseInt(song.totalStreams) || 0), 0);
         
-        const personalPoints = artist.personalPoints || 150; 
+        const personalPoints = parseInt(artist.personalPoints) || 150; 
         const basePoints = totalStreams / 1000000; 
         const pointsModifier = personalPoints / 100; 
         const finalScore = Math.floor(basePoints * pointsModifier); 
@@ -60,7 +63,7 @@ const saveChartDataToLocalStorage = (chartType) => {
     let currentChartData, storageKey, dataList; const now = new Date(); 
     if (chartType === 'music') {
         storageKey = PREVIOUS_MUSIC_CHART_KEY;
-        dataList = [...db.songs].filter(song => (song.streams || 0) > 0 && song.parentReleaseDate && new Date(song.parentReleaseDate) <= now).sort((a, b) => (b.streams || 0) - (a.streams || 0)).slice(0, 50);
+        dataList = [...db.songs].filter(song => (parseInt(song.streams) || 0) > 0 && song.parentReleaseDate && new Date(song.parentReleaseDate) <= now).sort((a, b) => (parseInt(b.streams) || 0) - (parseInt(a.streams) || 0)).slice(0, 50);
         currentChartData = dataList.reduce((acc, item, index) => { acc[item.id] = index + 1; return acc; }, {}); previousMusicChartData = currentChartData; 
     } else if (chartType === 'album') {
         storageKey = PREVIOUS_ALBUM_CHART_KEY;
@@ -71,7 +74,7 @@ const saveChartDataToLocalStorage = (chartType) => {
             return isAlbum || isEP;
         }).map(item => {
             const albumTracks = db.songs.filter(s => (s.albumIds && s.albumIds.includes(item.id)) || (s.singleIds && s.singleIds.includes(item.id)));
-            const currentStreams = albumTracks.reduce((sum, song) => sum + (song.streams || 0), 0);
+            const currentStreams = albumTracks.reduce((sum, song) => sum + (parseInt(song.streams) || 0), 0);
             return { ...item, calculatedStreams: currentStreams };
         }).filter(item => item.calculatedStreams > 0 && item.releaseDate && new Date(item.releaseDate) <= now).sort((a, b) => b.calculatedStreams - a.calculatedStreams).slice(0, 50);
         
@@ -89,9 +92,49 @@ const setupCountdown = (timerId, chartType) => {
     timerElement.innerHTML = `<span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">Ao vivo (Atualização Instantânea)</span>`;
 };
 
+// ==========================================
+// FUNÇÃO QUE CONTROLA OS LIMITES NA UI DO ESTÚDIO
+// ==========================================
+function updateActionLimitInfo() {
+    const artistId = modalArtistId.value, actionType = actionTypeSelect.value, trackId = trackSelect.value, artist = db.artists.find(a => a.id === artistId);
+    if (!artist || !actionType || !ACTION_CONFIG[actionType] || !trackId) { actionLimitInfo.classList.add('hidden'); confirmActionButton.disabled = true; return; }
+    const track = db.songs.find(t => t.id === trackId); if (!track) return;
+    
+    const config = ACTION_CONFIG[actionType];
+    const isMain = track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo';
+    
+    // NOVO LIMITE: Especiais (MV, Capas, etc = 10), Normais = 30 (Principal) ou 10 (Feats)
+    const limit = (config.limit === 5) ? 10 : (isMain ? 30 : 10); 
+    
+    const currentCount = parseInt(artist[config.localCountKey]) || 0;
+    
+    currentActionCount.textContent = currentCount; maxActionCount.textContent = limit; actionLimitInfo.classList.remove('hidden');
+    if (currentCount >= limit) { currentActionCount.style.color = 'var(--trend-down-red)'; confirmActionButton.disabled = true; confirmActionButton.textContent = 'Limite Atingido'; } 
+    else { currentActionCount.style.color = 'var(--text-primary)'; confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; }
+}
+
+
 async function handleConfirmAction() {
-    const actionType = actionTypeSelect.value; if (!actionType) { showToast("Selecione um tipo de ação.", 'error'); return; }
-    if (IMAGE_ACTION_CONFIG[actionType]) { await handleImageAction(actionType); } else if (ACTION_CONFIG[actionType]) { await handlePromotionAction(actionType); } else { showToast("Tipo de ação desconhecido.", 'error'); }
+    if (isProcessingAction) {
+        showToast("Aguarde a ação anterior terminar...", 'info');
+        return;
+    }
+    
+    const actionType = actionTypeSelect.value; 
+    if (!actionType) { showToast("Selecione um tipo de ação.", 'error'); return; }
+    
+    isProcessingAction = true;
+    try {
+        if (IMAGE_ACTION_CONFIG[actionType]) { 
+            await handleImageAction(actionType); 
+        } else if (ACTION_CONFIG[actionType]) { 
+            await handlePromotionAction(actionType); 
+        } else { 
+            showToast("Tipo de ação desconhecido.", 'error'); 
+        }
+    } finally {
+        isProcessingAction = false;
+    }
 }
 
 async function handleImageAction(actionType) {
@@ -103,7 +146,9 @@ async function handleImageAction(actionType) {
     if (Math.random() < 0.7) { pointsChange = getRandomInt(config.gain.min, config.gain.max); message = `📈 Sucesso! Sua imagem melhorou! Você ganhou +${pointsChange} pontos pessoais.`; } 
     else { pointsChange = -getRandomInt(config.loss.min, config.loss.max); message = `📉 Fracasso... Sua imagem foi manchada! Você perdeu ${Math.abs(pointsChange)} pontos pessoais.`; }
 
-    const currentPoints = artist.personalPoints || 150; const newPoints = Math.max(0, currentPoints + pointsChange);
+    const currentPoints = parseInt(artist.personalPoints) || 150; 
+    const newPoints = Math.max(0, currentPoints + pointsChange);
+    
     try {
         const { error } = await supabaseClient.from('artists').update({ personal_points: newPoints }).eq('id', artistId);
         if (error) throw error;
@@ -121,25 +166,45 @@ async function handlePromotionAction(actionType) {
     const artist = db.artists.find(a => a.id === artistId), selectedTrack = db.songs.find(t => t.id === trackId), config = ACTION_CONFIG[actionType];
     if (!artist || !selectedTrack || !config) { showToast("Erro: Dados inválidos (artista, faixa ou config).", 'error'); return; }
 
-    const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo'; let limit = (config.limit === 5) ? 5 : (isMain ? config.limit : 5); const currentCount = artist[config.localCountKey] || 0;
+    const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo'; 
+    
+    // NOVO LIMITE: Especiais = 10, Normais = 30 (Principal) ou 10 (Feats)
+    const limit = (config.limit === 5) ? 10 : (isMain ? 30 : 10); 
+    
+    // Força inteiros para evitar falhas de concatenação
+    const currentCount = parseInt(artist[config.localCountKey]) || 0;
 
     if (currentCount >= limit) { showToast("Limite de uso atingido.", 'error'); return; }
     confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
     let streamsToAdd = 0; let eventMessage = null; const bonusLocalKey = config.bonusLocalKey; const hasClaimedBonus = artist[bonusLocalKey] || false;
-    const jackpotCheck = Math.random(); const eventCheck = Math.random();  const newCount = currentCount + 1;
+    const jackpotCheck = Math.random(); const eventCheck = Math.random();  
+    
+    const newCount = currentCount + 1;
     const artistUpdates = {}; artistUpdates[config.localCountKey] = newCount;
 
-    if (!hasClaimedBonus && jackpotCheck < 0.01) { streamsToAdd = 200000; eventMessage = "🎉 JACKPOT! Você viralizou inesperadamente e ganhou +200k streams! (Bônus de categoria único)"; artistUpdates[bonusLocalKey] = true; artist[bonusLocalKey] = true; } 
+    // ==========================================
+    // MEGA BÔNUS (0.5% DE CHANCE, DE 3M A 4M)
+    // ==========================================
+    if (!hasClaimedBonus && jackpotCheck < 0.005) { 
+        streamsToAdd = Math.floor(Math.random() * (4000000 - 3000000 + 1)) + 3000000; 
+        eventMessage = `🎉 MEGA VIRAL! Você explodiu na internet e ganhou +${streamsToAdd.toLocaleString('pt-BR')} streams! (Bônus Único)`; 
+        if (bonusLocalKey) { 
+            artistUpdates[bonusLocalKey] = true; 
+            artist[bonusLocalKey] = true; // Atualiza no cache local
+        }
+    } 
     else if (eventCheck < 0.05) { const bonus = getRandomBonus(); streamsToAdd = bonus.value; eventMessage = `✨ BÔNUS! ${bonus.message}`; } 
     else if (eventCheck >= 0.05 && eventCheck < 0.10) { const punishment = getRandomPunishment(); streamsToAdd = punishment.value; eventMessage = `📉 PUNIÇÃO! ${punishment.message}`; } 
     else { streamsToAdd = getRandomInt(config.minStreams, config.maxStreams); }
     
-    const personalPoints = artist.personalPoints || 150; let pointsMultiplier = 1.0; let pointsMessage = "";
+    const personalPoints = parseInt(artist.personalPoints) || 150; let pointsMultiplier = 1.0; let pointsMessage = "";
     if (personalPoints <= 50) { pointsMultiplier = 0.70; pointsMessage = ` (Status: Cancelado 70%)`; } else if (personalPoints <= 99) { pointsMultiplier = 0.90; pointsMessage = ` (Status: Flop 90%)`; } else if (personalPoints >= 500) { pointsMultiplier = 1.15; pointsMessage = ` (Status: Em Alta +15%)`; }
     if (streamsToAdd > 0) { streamsToAdd = Math.floor(streamsToAdd * pointsMultiplier); }
 
-    const trackUpdatesLocal = []; const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd); const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
+    const trackUpdatesLocal = []; 
+    const newASideStreams = Math.max(0, parseInt(selectedTrack.streams || 0) + streamsToAdd); 
+    const newASideTotalStreams = Math.max(0, parseInt(selectedTrack.totalStreams || 0) + streamsToAdd);
     trackUpdatesLocal.push({ id: selectedTrack.id, newStreams: newASideStreams, newTotalStreams: newASideTotalStreams });
 
     let totalDistributedGain = 0; let distributionDetails = [];
@@ -153,7 +218,9 @@ async function handlePromotionAction(actionType) {
             if (otherTrack.isBonusTrack) { } else if (bSideTypes.includes(otherTrack.trackType)) { maxPercentage = 0.30; if (isLargeAlbum) maxPercentage = 0.15; } else if (minorTypes.includes(otherTrack.trackType)) { maxPercentage = 0.10; } else if (preReleaseTypes.includes(otherTrack.trackType)) { maxPercentage = 0.95; }
             if (maxPercentage > 0) { percentageUsed = getRandomFloat(0, maxPercentage); gain = Math.floor(streamsToAdd * percentageUsed); }
             if (gain > 0) {
-                totalDistributedGain += gain; const newOtherStreams = (otherTrack.streams || 0) + gain; const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
+                totalDistributedGain += gain; 
+                const newOtherStreams = parseInt(otherTrack.streams || 0) + gain; 
+                const newOtherTotalStreams = parseInt(otherTrack.totalStreams || 0) + gain;
                 trackUpdatesLocal.push({ id: otherTrack.id, newStreams: newOtherStreams, newTotalStreams: newOtherTotalStreams, });
                 let detailMsg = `   +${gain.toLocaleString('pt-BR')} para "${otherTrack.title}" (${(percentageUsed * 100).toFixed(1)}%)`; if (isLargeAlbum && bSideTypes.includes(otherTrack.trackType)) { detailMsg += " (Nerf Álbum Grande)"; }
                 distributionDetails.push(detailMsg);
@@ -162,20 +229,36 @@ async function handlePromotionAction(actionType) {
     }
 
     try {
-        const { error: artistError } = await supabaseClient.from('artists').update(artistUpdates).eq('id', artistId); if (artistError) throw artistError;
+        const { error: artistError } = await supabaseClient.from('artists').update(artistUpdates).eq('id', artistId); 
+        if (artistError) throw artistError;
+        
         const updatePromises = trackUpdatesLocal.map(u => supabaseClient.from('songs').update({ streams: u.newStreams, total_streams: u.newTotalStreams }).eq('id', u.id) );
         await Promise.all(updatePromises);
 
+        // Atualização segura do estado local
         artist[config.localCountKey] = newCount;
-        trackUpdatesLocal.forEach(update => { const trackInDb = db.songs.find(t => t.id === update.id); if (trackInDb) { trackInDb.streams = update.newStreams; trackInDb.totalStreams = update.newTotalStreams; } });
+
+        trackUpdatesLocal.forEach(update => { 
+            const trackInDb = db.songs.find(t => t.id === update.id); 
+            if (trackInDb) { 
+                trackInDb.streams = update.newStreams; 
+                trackInDb.totalStreams = update.newTotalStreams; 
+            } 
+        });
 
         let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n`;
         if (eventMessage) alertMessage += `${eventMessage}\n\n`;
         if (streamsToAdd >= 0) { alertMessage += `📈 Ganho Principal: +${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.title}"${pointsMessage}.\n\n`; } else { alertMessage += `📉 Perda Principal: ${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.title}".\n\n`; }
         if (totalDistributedGain > 0) { alertMessage += `✨ +${totalDistributedGain.toLocaleString('pt-BR')} streams distribuídos para outras faixas:\n`; alertMessage += distributionDetails.join('\n'); alertMessage += "\n\n"; }
-        alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`; if (!isMain && config.limit !== 5) { alertMessage += ` (Limite de 5 usos para participações "Feat.")`; }
+        alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`; if (!isMain) { alertMessage += ` (Limite de 10 usos para participações "Feat.")`; }
 
         showToast(alertMessage, 'success'); 
-    } catch (err) { console.error('Erro ao tentar persistir ação de streams no Supabase:', err); showToast(`Erro ao salvar ação: ${err.message}`, 'error'); } 
-    finally { confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; updateActionLimitInfo(); }
+    } catch (err) { 
+        console.error('Erro ao tentar persistir ação de streams no Supabase:', err); 
+        showToast(`Erro ao salvar ação: ${err.message}`, 'error'); 
+    } finally { 
+        confirmActionButton.disabled = false; 
+        confirmActionButton.textContent = 'Confirmar Ação'; 
+        updateActionLimitInfo(); 
+    }
 }
