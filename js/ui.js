@@ -216,21 +216,18 @@ const openAlbumDetail = (albumId) => {
         document.getElementById('albumCountdownReleaseDate').textContent = releaseDateStr; startAlbumCountdown(album.releaseDate, 'albumCountdownTimer');
         
         tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
-            const fullSong = db.songs.find(s => s.id === track.id); let isAvailable = false; 
+            const fullSong = db.songs.find(s => s.id === track.id); 
             
-            // CORREÇÃO: Apenas Singles de pré-lançamento furam o bloqueio!
+            // LÓGICA BLINDADA: Se o álbum é pré-lançamento, a música só fica disponível se for 'Pre-release Single'
             const preReleaseAvailableTypes = ['Pre-release Single', 'Pre-Release Single'];
+            const isDesignatedPreRelease = fullSong && preReleaseAvailableTypes.includes(fullSong.trackType); 
             
-            if (fullSong) { 
-                const hasSongReleased = fullSong.parentReleaseDate && new Date(fullSong.parentReleaseDate) <= now; 
-                const isDesignatedPreRelease = preReleaseAvailableTypes.includes(fullSong.trackType); 
-                isAvailable = hasSongReleased || isDesignatedPreRelease; 
-            }
+            // A música está disponível APENAS se for um Pre-release Single. Caso contrário, fica bloqueada até o álbum sair.
+            let isAvailable = isDesignatedPreRelease;
             
             const artistName = formatArtistString(track.artistIds, track.collabType);
             const trackNumDisplay = index + 1; 
 
-            // Permissão: Só quem controla o artista dono do álbum pode promover
             const isOwner = currentPlayer && (album.artistId === currentPlayer.id || (currentPlayer.artists && currentPlayer.artists.includes(album.artistId)));
             let promoteBtnHtml = '';
             
@@ -245,10 +242,9 @@ const openAlbumDetail = (albumId) => {
             }
         }).join('') || '<p class="empty-state-small">Tracklist ainda não revelada.</p>';
 
-        // Adiciona o evento de clique dos botões novos gerados
         document.querySelectorAll('.promote-track-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Impede o card de tentar tocar a música
+                e.stopPropagation(); 
                 if (typeof openPromoteModal === 'function') {
                     openPromoteModal(e.target.dataset.trackId, e.target.dataset.albumId);
                 }
@@ -271,7 +267,7 @@ const openAlbumDetail = (albumId) => {
 
 const openDiscographyDetail = (type) => {
     if (!activeArtist) { handleBack(); return; }
-    const nowSort = new Date(), customSort = (a, b) => { const dateA = new Date(a.releaseDate), dateB = new Date(b.releaseDate), isAFuture = dateA > nowSort, isBFuture = dateB > nowSort; if (isAFuture && isBFuture) { return dateA - dateB; } else if (isAFuture) { return -1; } else if (isBFuture) { return 1; } else { return dateB - dateA; } };
+    const nowSort = new Date(), customSort = (a, b) => { const dateA = new Date(a.releaseDate), dateB = new Date(b.releaseDate), isAFuture = dateA > nowSort, isBFuture = dateB > nowSort; if (isAFuture && isBFuture) { return dateA - dateB; } else if (isAFuture) { return -1; } else if (isBFuture) return 1; else { return dateB - dateA; } };
     const data = (type === 'albums') ? (activeArtist.albums || []).sort(customSort) : (activeArtist.singles || []).sort(customSort);
     const title = (type === 'albums') ? `Álbuns de ${activeArtist.name}` : `Singles & EPs de ${activeArtist.name}`;
     document.getElementById('discographyTypeTitle').textContent = title;
@@ -294,7 +290,6 @@ const renderSearchDefault = () => {
     const now = new Date();
     const allReleases = [...db.albums, ...db.singles];
 
-    // 1. Pré-lançamentos (Lançamentos com data no futuro)
     const upcoming = allReleases.filter(r => new Date(r.releaseDate) > now)
         .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
     
@@ -313,7 +308,6 @@ const renderSearchDefault = () => {
         upcomingContainer.style.display = 'none';
     }
 
-    // 2. Destaques (Álbuns já lançados, pegando os 12 com mais streams)
     const released = allReleases.filter(r => new Date(r.releaseDate) <= now)
         .sort((a, b) => (b.totalStreams || 0) - (a.totalStreams || 0))
         .slice(0, 12);
@@ -339,7 +333,6 @@ const handleSearch = () => {
     const noResultsElement = document.getElementById('noResults'); 
     if (!resultsContainer || !noResultsElement) return;
 
-    // Se o input estiver vazio, mostramos os destaques/pré-lançamentos e escondemos resultados
     if (!query) { 
         if (defaultState) defaultState.classList.remove('hidden');
         resultsContainer.classList.add('hidden');
@@ -348,7 +341,6 @@ const handleSearch = () => {
         return; 
     }
 
-    // Se a pessoa digitou algo, escondemos os destaques
     if (defaultState) defaultState.classList.add('hidden');
 
     const filteredArtists = db.artists.filter(a => a.name.toLowerCase().includes(query));
