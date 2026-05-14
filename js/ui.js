@@ -216,13 +216,43 @@ const openAlbumDetail = (albumId) => {
         document.getElementById('albumCountdownReleaseDate').textContent = releaseDateStr; startAlbumCountdown(album.releaseDate, 'albumCountdownTimer');
         
         tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
-            const fullSong = db.songs.find(s => s.id === track.id); let isAvailable = false; const preReleaseAvailableTypes = ['Title Track', 'Pre-release Single'];
-            if (fullSong) { const hasSongReleased = fullSong.parentReleaseDate && new Date(fullSong.parentReleaseDate) <= now; const isDesignatedPreRelease = preReleaseAvailableTypes.includes(fullSong.trackType); isAvailable = hasSongReleased || isDesignatedPreRelease; }
+            const fullSong = db.songs.find(s => s.id === track.id); let isAvailable = false; 
+            const preReleaseAvailableTypes = ['Title Track', 'Pre-release Single', 'Pre-Release Single'];
+            
+            if (fullSong) { 
+                const hasSongReleased = fullSong.parentReleaseDate && new Date(fullSong.parentReleaseDate) <= now; 
+                const isDesignatedPreRelease = preReleaseAvailableTypes.includes(fullSong.trackType); 
+                isAvailable = hasSongReleased || isDesignatedPreRelease; 
+            }
+            
             const artistName = formatArtistString(track.artistIds, track.collabType);
             const trackNumDisplay = index + 1; 
-            if (isAvailable) { return `<div class="track-row available" data-song-id="${track.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${track.duration}</span></div>`; } 
-            else { return `<div class="track-row unavailable"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration"><i class="fas fa-lock"></i></span></div>`; }
+
+            // Permissão: Só quem controla o artista dono do álbum pode promover
+            const isOwner = currentPlayer && (album.artistId === currentPlayer.id || (currentPlayer.artists && currentPlayer.artists.includes(album.artistId)));
+            let promoteBtnHtml = '';
+            
+            if (!isAvailable && isOwner) {
+                promoteBtnHtml = `<button class="btn btn-sm promote-track-btn" data-track-id="${track.id}" data-album-id="${album.id}" style="font-size: 10px; padding: 4px 8px; margin-left: 10px; border-radius: 4px; background-color: var(--spotify-green); color: black; pointer-events: auto; border: none; font-weight: bold; cursor: pointer;">Promover a Single</button>`;
+            }
+
+            if (isAvailable) { 
+                return `<div class="track-row available" data-song-id="${track.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${track.duration}</span></div>`; 
+            } else { 
+                return `<div class="track-row unavailable" style="opacity: 0.5;"><span class="track-number">${trackNumDisplay}</span><div class="track-info" style="display:flex; align-items:center;"><span class="track-title">${track.title}${promoteBtnHtml}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration"><i class="fas fa-lock"></i></span></div>`; 
+            }
         }).join('') || '<p class="empty-state-small">Tracklist ainda não revelada.</p>';
+
+        // Adiciona o evento de clique dos botões novos gerados
+        document.querySelectorAll('.promote-track-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Impede o card de tentar tocar a música
+                if (typeof openPromoteModal === 'function') {
+                    openPromoteModal(e.target.dataset.trackId, e.target.dataset.albumId);
+                }
+            });
+        });
+
     } else {
         normalInfoContainer?.classList.remove('hidden'); countdownContainer?.classList.add('hidden');
         const releaseYear = releaseDate.getFullYear(), totalAlbumStreamsFormatted = (album.totalStreams || 0).toLocaleString('pt-BR');
