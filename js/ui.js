@@ -210,15 +210,33 @@ const openAlbumDetail = (albumId) => {
     if (typeLabelEl) typeLabelEl.textContent = displayType;
 
     const releaseDate = new Date(album.releaseDate), now = new Date(), isPreRelease = releaseDate > now, artistObj = db.artists.find(a => a.id === album.artistId);
+    
+    // Cria a área do botão de Lançamento Antecipado
+    let btnWrapper = document.getElementById('earlyReleaseWrapper');
+    if (!btnWrapper) {
+        btnWrapper = document.createElement('div');
+        btnWrapper.id = 'earlyReleaseWrapper';
+        btnWrapper.style.textAlign = 'center';
+        countdownContainer.appendChild(btnWrapper);
+    }
+
     if (isPreRelease) {
         normalInfoContainer?.classList.add('hidden'); countdownContainer?.classList.remove('hidden');
         const releaseDateStr = releaseDate.toLocaleString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         document.getElementById('albumCountdownReleaseDate').textContent = releaseDateStr; startAlbumCountdown(album.releaseDate, 'albumCountdownTimer');
         
+        // Exibe o botão de Lançar Agora se for o dono do álbum (Usa a variável displayType)
+        const isOwner = currentPlayer && (album.artistId === currentPlayer.id || (currentPlayer.artists && currentPlayer.artists.includes(album.artistId)));
+        if (isOwner) {
+            btnWrapper.innerHTML = `<button onclick="forceReleaseAlbum('${album.id}', '${album.tableName}')" class="submit-btn" style="margin: 16px auto 0; font-size: 13px; padding: 8px 16px; background: rgba(30,215,96,0.2); color: var(--spotify-green); border: 1px solid var(--spotify-green); border-radius: 20px; width: fit-content; cursor: pointer;"><i class="fas fa-unlock-alt"></i> Lançar ${displayType} Agora (Desbloquear Tudo)</button>`;
+        } else {
+            btnWrapper.innerHTML = '';
+        }
+
         tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
             const fullSong = db.songs.find(s => s.id === track.id); 
             
-            // LÓGICA BLINDADA: Se o álbum é pré-lançamento, a música só fica disponível se for 'Pre-release Single'
+            // LÓGICA BLINDADA: Se o álbum é pré-lançamento (isPreRelease é true aqui), a música só fica disponível se for 'Pre-release Single'
             const preReleaseAvailableTypes = ['Pre-release Single', 'Pre-Release Single'];
             const isDesignatedPreRelease = fullSong && preReleaseAvailableTypes.includes(fullSong.trackType); 
             
@@ -228,7 +246,6 @@ const openAlbumDetail = (albumId) => {
             const artistName = formatArtistString(track.artistIds, track.collabType);
             const trackNumDisplay = index + 1; 
 
-            const isOwner = currentPlayer && (album.artistId === currentPlayer.id || (currentPlayer.artists && currentPlayer.artists.includes(album.artistId)));
             let promoteBtnHtml = '';
             
             if (!isAvailable && isOwner) {
@@ -253,6 +270,8 @@ const openAlbumDetail = (albumId) => {
 
     } else {
         normalInfoContainer?.classList.remove('hidden'); countdownContainer?.classList.add('hidden');
+        btnWrapper.innerHTML = ''; // Limpa o botão se o álbum já foi lançado
+
         const releaseYear = releaseDate.getFullYear(), totalAlbumStreamsFormatted = (album.totalStreams || 0).toLocaleString('pt-BR');
         document.getElementById('albumDetailInfo').innerHTML = `Por <strong class="artist-link" data-artist-name="${artistObj ? artistObj.name : ''}">${album.artist}</strong> • ${releaseYear} • ${totalAlbumStreamsFormatted} streams totais`;
         
@@ -290,6 +309,7 @@ const renderSearchDefault = () => {
     const now = new Date();
     const allReleases = [...db.albums, ...db.singles];
 
+    // 1. Pré-lançamentos (Lançamentos com data no futuro)
     const upcoming = allReleases.filter(r => new Date(r.releaseDate) > now)
         .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
     
@@ -308,6 +328,7 @@ const renderSearchDefault = () => {
         upcomingContainer.style.display = 'none';
     }
 
+    // 2. Destaques (Álbuns já lançados, pegando os 12 com mais streams)
     const released = allReleases.filter(r => new Date(r.releaseDate) <= now)
         .sort((a, b) => (b.totalStreams || 0) - (a.totalStreams || 0))
         .slice(0, 12);
@@ -333,6 +354,7 @@ const handleSearch = () => {
     const noResultsElement = document.getElementById('noResults'); 
     if (!resultsContainer || !noResultsElement) return;
 
+    // Se o input estiver vazio, mostramos os destaques/pré-lançamentos e escondemos resultados
     if (!query) { 
         if (defaultState) defaultState.classList.remove('hidden');
         resultsContainer.classList.add('hidden');
@@ -341,6 +363,7 @@ const handleSearch = () => {
         return; 
     }
 
+    // Se a pessoa digitou algo, escondemos os destaques
     if (defaultState) defaultState.classList.add('hidden');
 
     const filteredArtists = db.artists.filter(a => a.name.toLowerCase().includes(query));
