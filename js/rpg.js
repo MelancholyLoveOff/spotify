@@ -152,11 +152,28 @@ async function handleImageAction(actionType) {
     try {
         const { error } = await supabaseClient.from('artists').update({ personal_points: newPoints }).eq('id', artistId);
         if (error) throw error;
-        artist.personalPoints = newPoints; displayArtistActions(); 
         
+        // Atualiza a referência velha e a nova no cache
+        artist.personalPoints = newPoints; 
+        const artistInDb = db.artists.find(a => a.id === artistId);
+        if (artistInDb) {
+            artistInDb.personalPoints = newPoints;
+        }
+        
+        displayArtistActions(); 
         showToast(`Ação de Imagem Concluída!\n${message}`, 'success'); 
-    } catch (err) { console.error('Erro ao salvar pontos pessoais:', err); showToast(`Erro ao salvar ação: ${err.message}`, 'error'); } 
-    finally { confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; }
+        
+        // Sincroniza para evitar sobrescrita de dados antigos
+        if (typeof window.refreshAllData === 'function') {
+            await window.refreshAllData();
+        }
+    } catch (err) { 
+        console.error('Erro ao salvar pontos pessoais:', err); 
+        showToast(`Erro ao salvar ação: ${err.message}`, 'error'); 
+    } finally { 
+        confirmActionButton.disabled = false; 
+        confirmActionButton.textContent = 'Confirmar Ação'; 
+    }
 }
 
 async function handlePromotionAction(actionType) {
@@ -235,8 +252,12 @@ async function handlePromotionAction(actionType) {
         const updatePromises = trackUpdatesLocal.map(u => supabaseClient.from('songs').update({ streams: u.newStreams, total_streams: u.newTotalStreams }).eq('id', u.id) );
         await Promise.all(updatePromises);
 
-        // Atualização segura do estado local
+        // Atualização segura do estado local (Referência antiga e nova)
         artist[config.localCountKey] = newCount;
+        const artistInDb = db.artists.find(a => a.id === artistId);
+        if (artistInDb) {
+            artistInDb[config.localCountKey] = newCount;
+        }
 
         trackUpdatesLocal.forEach(update => { 
             const trackInDb = db.songs.find(t => t.id === update.id); 
@@ -253,6 +274,12 @@ async function handlePromotionAction(actionType) {
         alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`; if (!isMain) { alertMessage += ` (Limite de 10 usos para participações "Feat.")`; }
 
         showToast(alertMessage, 'success'); 
+        
+        // Força sincronização após toda a transação estar concluída para evitar que o Realtime quebre o cache
+        if (typeof window.refreshAllData === 'function') {
+            await window.refreshAllData();
+        }
+
     } catch (err) { 
         console.error('Erro ao tentar persistir ação de streams no Supabase:', err); 
         showToast(`Erro ao salvar ação: ${err.message}`, 'error'); 
