@@ -103,8 +103,8 @@ function updateActionLimitInfo() {
     const config = ACTION_CONFIG[actionType];
     const isMain = track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo';
     
-    // NOVO LIMITE: Especiais (MV, Capas, etc = 10), Normais = 30 (Principal) ou 10 (Feats)
-    const limit = (config.limit === 5) ? 10 : (isMain ? 30 : 10); 
+    // Lê o limite real configurado no seu state.js. Se for Feat e for promo normal, cai para 10.
+    const limit = isMain ? config.limit : Math.min(config.limit, 10);
     
     const currentCount = parseInt(artist[config.localCountKey]) || 0;
     
@@ -168,10 +168,10 @@ async function handlePromotionAction(actionType) {
 
     const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo'; 
     
-    // NOVO LIMITE: Especiais = 10, Normais = 30 (Principal) ou 10 (Feats)
-    const limit = (config.limit === 5) ? 10 : (isMain ? 30 : 10); 
+    // Lê o limite do state.js e aplica a regra de "Feat" limitando a 10 no máximo
+    const limit = isMain ? config.limit : Math.min(config.limit, 10); 
     
-    // Força inteiros para evitar falhas de concatenação
+    // Força inteiros para evitar falhas de concatenação (o bug do contador preso)
     const currentCount = parseInt(artist[config.localCountKey]) || 0;
 
     if (currentCount >= limit) { showToast("Limite de uso atingido.", 'error'); return; }
