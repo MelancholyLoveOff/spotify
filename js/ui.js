@@ -217,7 +217,9 @@ const openAlbumDetail = (albumId) => {
         
         tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
             const fullSong = db.songs.find(s => s.id === track.id); let isAvailable = false; 
-            const preReleaseAvailableTypes = ['Title Track', 'Pre-release Single', 'Pre-Release Single'];
+            
+            // CORREÇÃO: Apenas Singles de pré-lançamento furam o bloqueio!
+            const preReleaseAvailableTypes = ['Pre-release Single', 'Pre-Release Single'];
             
             if (fullSong) { 
                 const hasSongReleased = fullSong.parentReleaseDate && new Date(fullSong.parentReleaseDate) <= now; 
