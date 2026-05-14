@@ -5,14 +5,14 @@ const SUPABASE_ANON_KEY = 'sb_publishable_9uhuy6fpFduf-qsEXYf5wA_BDBB1OIZ';
 const IMGBB_API_KEY = '81f7ca81cf22d739de576bd1dac7dcc2';
 
 const ACTION_CONFIG = {
-    'promo_tv': { limit: 20, localCountKey: 'promo_tv_count', minStreams: 35000, maxStreams: 350000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed' },
-    'promo_radio': { limit: 20, localCountKey: 'promo_radio_count', minStreams: 20000, maxStreams: 50000, isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed' },
-    'promo_commercial': { limit: 10, localCountKey: 'promo_commercial_count', minStreams: 60000, maxStreams: 180000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed' },
+    'promo_tv': { limit: 30, localCountKey: 'promo_tv_count', minStreams: 35000, maxStreams: 350000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed' },
+    'promo_radio': { limit: 30, localCountKey: 'promo_radio_count', minStreams: 20000, maxStreams: 50000, isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed' },
+    'promo_commercial': { limit: 30, localCountKey: 'promo_commercial_count', minStreams: 60000, maxStreams: 180000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed' },
     'promo_internet': { limit: 30, localCountKey: 'promo_internet_count', minStreams: 10000, maxStreams: 210000, isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed' },
-    'remix': { limit: 5, localCountKey: 'remix_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'remix_bonus_claimed' },
-    'mv': { limit: 5, localCountKey: 'mv_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed' },
-    'capas_alternativas': { limit: 5, localCountKey: 'capas_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'capas_bonus_claimed' },
-    'parceria_marcas': { limit: 5, localCountKey: 'parceria_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'parceria_bonus_claimed' }
+    'remix': { limit: 10, localCountKey: 'remix_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'remix_bonus_claimed' },
+    'mv': { limit: 10, localCountKey: 'mv_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed' },
+    'capas_alternativas': { limit: 10, localCountKey: 'capas_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'capas_bonus_claimed' },
+    'parceria_marcas': { limit: 10, localCountKey: 'parceria_count', minStreams: 60000, maxStreams: 450000, isPromotion: false, bonusLocalKey: 'parceria_bonus_claimed' }
 };
 
 const IMAGE_ACTION_CONFIG = {
