@@ -389,12 +389,55 @@ function addExistingTrackToAlbum(songId) {
     const song = db.songs.find(s => s.id === songId); if (!song || !activeTracklistEditor) return;
     if (activeTracklistEditor.querySelector(`[data-existing-song-id="${song.id}"]`)) { showToast("Esta música já foi adicionada.", 'error'); return; }
     const featsData = (song.artistIds || []).slice(1).map(artistId => { const artist = db.artists.find(a => a.id === artistId); return { id: artistId, type: song.collabType || 'Feat.', name: artist ? artist.name : '?' }; });
-    const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px;';
-    newItem.dataset.itemId = `existing_${song.id}`; newItem.dataset.existingSongId = song.id; newItem.dataset.trackName = song.title.replace(/ \(feat\. .+\)$/i, ''); newItem.dataset.durationStr = song.duration; newItem.dataset.trackType = song.trackType; newItem.dataset.feats = JSON.stringify(featsData);
+    
+    const newItem = document.createElement('div'); 
+    newItem.className = 'track-list-item-display track-row'; 
+    newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px;';
+    
+    // Injetando dados básicos
+    newItem.dataset.itemId = `existing_${song.id}`; 
+    newItem.dataset.existingSongId = song.id; 
+    newItem.dataset.trackName = song.title.replace(/ \(feat\. .+\)$/i, ''); 
+    newItem.dataset.durationStr = song.duration; 
+    newItem.dataset.trackType = song.trackType; 
+    newItem.dataset.feats = JSON.stringify(featsData);
 
-    let artistText = "Existente"; if (featsData.length > 0) { artistText = featsData[0].type === "Dueto/Grupo" ? `Dueto com ${featsData.map(f=>f.name).join(', ')}` : `feat. ${featsData.map(f=>f.name).join(', ')}`; }
-    newItem.innerHTML = `<i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span><div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:var(--spotify-green);"><i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>${song.title}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${song.trackType}</span></span></div><span class="track-duration" style="margin-right: 16px;">${song.duration}</span><div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
-    const emptyState = activeTracklistEditor.querySelector('p'); if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) emptyState.remove(); activeTracklistEditor.appendChild(newItem); updateTrackNumbers(activeTracklistEditor); closeExistingTrackModal();
+    // CORREÇÃO: Puxando e injetando os dados de mídia para não serem apagados
+    newItem.dataset.ytId = song.yt_id || '';
+    newItem.dataset.ytAudioId = song.yt_audio_id || '';
+    newItem.dataset.audioUrl = song.audio_url || '';
+
+    // Criando os ícones para mostrar que a mídia está vinculada
+    const ytIcon = song.yt_id ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com MV"></i>' : '';
+    const auIcon = (song.yt_audio_id || song.audio_url) ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
+
+    let artistText = "Existente"; 
+    if (featsData.length > 0) { 
+        artistText = featsData[0].type === "Dueto/Grupo" ? `Dueto com ${featsData.map(f=>f.name).join(', ')}` : `feat. ${featsData.map(f=>f.name).join(', ')}`; 
+    }
+    
+    newItem.innerHTML = `
+        <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
+        <span class="track-number track-number-display"></span>
+        <div class="track-info" style="flex-grow:1;">
+            <span class="track-title" style="color:var(--spotify-green);">
+                <i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>${song.title} ${ytIcon} ${auIcon}
+            </span>
+            <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${song.trackType}</span></span>
+        </div>
+        <span class="track-duration" style="margin-right: 16px;">${song.duration}</span>
+        <div class="track-actions" style="display:flex; gap:12px;">
+            <button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button>
+            <button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    
+    const emptyState = activeTracklistEditor.querySelector('p'); 
+    if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) emptyState.remove(); 
+    
+    activeTracklistEditor.appendChild(newItem); 
+    updateTrackNumbers(activeTracklistEditor); 
+    closeExistingTrackModal();
 }
 
 function initAlbumForm() {
