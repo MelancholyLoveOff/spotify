@@ -14,11 +14,24 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--background-primary);
   color: var(--text-primary);
-  overflow-x: hidden;
+}
+
+/* Impede o zoom por "toque duplo" na interface */
+button, a, select, input, .nav-tab, .track-row, .artist-card, .scroll-item {
+    touch-action: manipulation;
+}
+
+input, select, textarea {
+    max-width: 100%;
 }
 
 .hidden { display: none !important; }
@@ -499,6 +512,14 @@ body.player-open { overflow: hidden; }
 .player-btn#playerShuffleBtn.active, .player-btn#playerRepeatBtn.active { color: var(--spotify-green); position: relative;}
 .player-btn#playerShuffleBtn.active::after, .player-btn#playerRepeatBtn.active::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--spotify-green); }
 
+/* --- APLICATIVO E ZOOM DE CELULAR (MODIFICAÇÃO) --- */
+@media (max-width: 767px) {
+    /* Força 16px nos campos para evitar o zoom automático do teclado no celular */
+    input, select, textarea, .wysiwyg-input, .wysiwyg-select {
+        font-size: 16px !important;
+    }
+}
+
 @media (min-width: 768px) {
   body { display: grid; grid-template-columns: 260px 1fr; grid-template-rows: auto 1fr; height: 100vh; overflow: hidden; }
   .page-view { grid-column: 2 / 3; grid-row: 1 / span 2; overflow-y: auto; position: relative; background: linear-gradient(180deg, #222 0%, var(--background-primary) 300px);}
@@ -560,7 +581,6 @@ body.player-open { overflow: hidden; }
 .studio-form-group select, 
 .studio-form-group input {
     padding: 16px !important; 
-    font-size: 15px !important;
 }
 
 /* 3. Transformar o Modal de Ações em um Bottom Sheet no Mobile */
