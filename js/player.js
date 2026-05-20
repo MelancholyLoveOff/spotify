@@ -58,8 +58,27 @@ function openPlayer(songId, clickedElement) {
     loadSong(song); maximizePlayer(); playAudio();
 }
 
-function closePlayer() { musicPlayerView?.classList.add('hidden'); document.body.classList.remove('player-open'); if (currentSong) { miniPlayer?.classList.remove('hidden'); } }
-function maximizePlayer() { miniPlayer?.classList.add('hidden'); musicPlayerView?.classList.remove('hidden'); document.body.classList.add('player-open'); }
+function closePlayer() { 
+    if (musicPlayerView) {
+        musicPlayerView.classList.remove('player-slide-up');
+        musicPlayerView.classList.add('player-slide-down');
+        setTimeout(() => {
+            musicPlayerView.classList.add('hidden');
+            musicPlayerView.classList.remove('player-slide-down');
+        }, 300); // 300ms de animação do css
+    }
+    document.body.classList.remove('player-open'); 
+    if (currentSong) { miniPlayer?.classList.remove('hidden'); } 
+}
+
+function maximizePlayer() { 
+    miniPlayer?.classList.add('hidden'); 
+    if (musicPlayerView) {
+        musicPlayerView.classList.remove('hidden', 'player-slide-down');
+        musicPlayerView.classList.add('player-slide-up');
+    }
+    document.body.classList.add('player-open'); 
+}
 
 function loadSong(song) {
     if (!song) return; currentSong = song;
@@ -69,18 +88,15 @@ function loadSong(song) {
     const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
     if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
-    // CARREGA AUDIO MP3
     const audioEl = document.getElementById('audioElement');
     if (song.audio_url) { audioEl.src = song.audio_url; audioEl.load(); } else { audioEl.removeAttribute('src'); audioEl.load(); }
 
-    // CARREGA YOUTUBE AUDIO
     if (song.yt_audio_id) {
         if (ytPlayerAudioReady) { ytPlayerAudio.cueVideoById(song.yt_audio_id); ytPlayerAudio.pauseVideo(); }
     } else {
         if (ytPlayerAudioReady) ytPlayerAudio.stopVideo();
     }
 
-    // CARREGA YOUTUBE VÍDEO
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (song.yt_id) {
         if (toggleBtn) toggleBtn.style.display = 'inline-flex';
@@ -199,7 +215,6 @@ function updateProgressUI(currentTime, duration) {
         
         if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
 
-        // Lógica visual do NOVO PLAYER
         const progressFill = document.getElementById('progress-fill');
         const progressThumb = document.getElementById('progress-thumb');
         const percentage = (currentTime / duration) * 100;
