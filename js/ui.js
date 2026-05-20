@@ -165,7 +165,6 @@ const openArtistDetail = (artistName) => {
     document.getElementById('detailBg').style.backgroundPosition = `center ${artist.bgPos}`; 
     document.getElementById('detailName').textContent = artist.name;
     
-    // --- NOVO: Atualização dos Ouvintes Mensais ---
     const listenersDisplay = document.getElementById('monthlyListenersDisplay');
     if (listenersDisplay) {
         listenersDisplay.textContent = `${(artist.monthlyListeners || 0).toLocaleString('pt-BR')} ouvintes mensais`;
@@ -203,67 +202,133 @@ const openArtistDetail = (artistName) => {
     renderArtistsGrid('recommendedGrid', recommended); switchView('artistDetail');
 };
 
+/* =========================================================================
+   NOVA FUNÇÃO DE DETALHE DE ÁLBUM COM LÓGICA DO DESIGN DE PRE-SAVE
+   ========================================================================= */
 const openAlbumDetail = (albumId) => {
-    const album = [...db.albums, ...db.singles].find(a => a.id === albumId); if (!album) { handleBack(); return; }
-    const albumDetailView = document.getElementById('albumDetail'); if (albumDetailView) albumDetailView.dataset.albumId = albumId;
+    const album = [...db.albums, ...db.singles].find(a => a.id === albumId); 
+    if (!album) { handleBack(); return; }
+    
+    const albumDetailView = document.getElementById('albumDetail'); 
+    if (albumDetailView) albumDetailView.dataset.albumId = albumId;
+    
     if (albumCountdownInterval) { clearInterval(albumCountdownInterval); albumCountdownInterval = null; }
 
-    const countdownContainer = document.getElementById('albumCountdownContainer'), normalInfoContainer = document.getElementById('albumNormalInfoContainer'), tracklistContainer = document.getElementById('albumTracklist');
-    document.getElementById('albumDetailBg').style.backgroundImage = `url(${album.imageUrl})`; document.getElementById('albumDetailCover').src = album.imageUrl; document.getElementById('albumDetailTitle').textContent = album.title;
+    const countdownContainer = document.getElementById('albumCountdownContainer');
+    const tracklistContainer = document.getElementById('albumTracklist');
+    const preSaveBtn = document.getElementById('preSaveBtn');
+    const albumPlayBtn = document.getElementById('albumPlayBtn');
+    const canvasIconImg = document.getElementById('canvasIconImg');
 
-    let displayType = 'Álbum';
+    // Headers & Imagens
+    document.getElementById('albumDetailBg').style.backgroundImage = `url(${album.imageUrl})`; 
+    document.getElementById('albumDetailCover').src = album.imageUrl; 
+    document.getElementById('albumDetailTitle').textContent = album.title;
+    if(canvasIconImg) canvasIconImg.src = album.imageUrl;
+
+    // Lógica do Rótulo de Tipo (EP, Álbum, Single)
+    let displayType = 'ÁLBUM';
     if (album.type === 'single' || album.tableName === 'singles') {
         const numTracks = album.tracks ? album.tracks.length : 0;
-        displayType = (numTracks >= 4) ? 'EP' : 'Single';
+        displayType = (numTracks >= 4) ? 'EP' : 'SINGLE';
     }
-    const typeLabelEl = document.querySelector('#albumDetail .album-type-label');
+    const typeLabelEl = document.getElementById('albumDetailTypeLabel');
     if (typeLabelEl) typeLabelEl.textContent = displayType;
 
-    const releaseDate = new Date(album.releaseDate), now = new Date(), isPreRelease = releaseDate > now, artistObj = db.artists.find(a => a.id === album.artistId);
+    // Atualização de Informação do Artista (Círculo + Nome)
+    const artistObj = db.artists.find(a => a.id === album.artistId);
+    const artistNameStr = artistObj ? artistObj.name : album.artist;
+    document.getElementById('albumArtistName').textContent = artistNameStr;
     
-    // Cria a área do botão de Lançamento Antecipado
+    const avatarEl = document.getElementById('albumArtistAvatar');
+    if(avatarEl) avatarEl.src = artistObj ? artistObj.img : 'https://i.imgur.com/AD3MbBi.png';
+    
+    // Capa pequena do bloco Countdown
+    const countdownMiniCover = document.getElementById('countdownMiniCover');
+    if (countdownMiniCover) countdownMiniCover.src = album.imageUrl;
+
+    const releaseDate = new Date(album.releaseDate);
+    const now = new Date();
+    const isPreRelease = releaseDate > now;
+    
+    // Lógica de "Lançar Agora" (Para Admins)
     let btnWrapper = document.getElementById('earlyReleaseWrapper');
     if (!btnWrapper) {
         btnWrapper = document.createElement('div');
         btnWrapper.id = 'earlyReleaseWrapper';
         btnWrapper.style.textAlign = 'center';
-        countdownContainer.appendChild(btnWrapper);
+        btnWrapper.style.marginTop = '16px';
+        btnWrapper.style.width = '100%';
+        
+        const actionsRow = document.querySelector('.release-actions-row');
+        if(actionsRow && actionsRow.parentNode) {
+            actionsRow.parentNode.insertBefore(btnWrapper, actionsRow.nextSibling);
+        }
     }
+    
+    const isOwner = currentPlayer && (album.artistId === currentPlayer.id || (currentPlayer.artists && currentPlayer.artists.includes(album.artistId)));
 
     if (isPreRelease) {
-        normalInfoContainer?.classList.add('hidden'); countdownContainer?.classList.remove('hidden');
-        const releaseDateStr = releaseDate.toLocaleString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        document.getElementById('albumCountdownReleaseDate').textContent = releaseDateStr; startAlbumCountdown(album.releaseDate, 'albumCountdownTimer');
+        // MODO PRÉ-SAVE ACTIVO
+        countdownContainer?.classList.remove('hidden');
+        preSaveBtn?.classList.remove('hidden');
+        albumPlayBtn?.classList.add('hidden');
         
-        // Exibe o botão de Lançar Agora se for o dono do álbum
-        const isOwner = currentPlayer && (album.artistId === currentPlayer.id || (currentPlayer.artists && currentPlayer.artists.includes(album.artistId)));
+        // Texto de Lançamento
+        const releaseDateStr = releaseDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        document.getElementById('albumDetailInfo').textContent = `${displayType} • Lançamento em ${releaseDateStr}`;
+        
+        // Animação e Lógica da Contagem Decrescente
+        const targetDate = releaseDate.getTime();
+        const updateTimer = () => {
+            const nowMs = new Date().getTime();
+            const distance = targetDate - nowMs;
+            if(distance < 0) {
+                document.getElementById('cd-days').textContent = '0';
+                document.getElementById('cd-hours').textContent = '00';
+                document.getElementById('cd-minutes').textContent = '00';
+                document.getElementById('cd-seconds').textContent = '00';
+                clearInterval(albumCountdownInterval);
+                return;
+            }
+            
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            document.getElementById('cd-days').textContent = d;
+            document.getElementById('cd-hours').textContent = h.toString().padStart(2, '0');
+            document.getElementById('cd-minutes').textContent = m.toString().padStart(2, '0');
+            document.getElementById('cd-seconds').textContent = s.toString().padStart(2, '0');
+        };
+        updateTimer();
+        albumCountdownInterval = setInterval(updateTimer, 1000);
+        
+        // Botão Admin:
         if (isOwner) {
-            btnWrapper.innerHTML = `<button onclick="forceReleaseAlbum('${album.id}', '${album.tableName}')" class="submit-btn" style="margin: 16px auto 0; font-size: 13px; padding: 8px 16px; background: rgba(30,215,96,0.2); color: var(--spotify-green); border: 1px solid var(--spotify-green); border-radius: 20px; width: fit-content; cursor: pointer;"><i class="fas fa-unlock-alt"></i> Lançar ${displayType} Agora (Desbloquear Tudo)</button>`;
+            btnWrapper.innerHTML = `<button onclick="forceReleaseAlbum('${album.id}', '${album.tableName}')" class="submit-btn" style="margin: 16px auto 0; font-size: 13px; padding: 8px 16px; background: rgba(30,215,96,0.2); color: var(--spotify-green); border: 1px solid var(--spotify-green); border-radius: 20px; width: fit-content; cursor: pointer;"><i class="fas fa-unlock-alt"></i> Lançar ${displayType} Agora</button>`;
         } else {
             btnWrapper.innerHTML = '';
         }
 
+        // Renderizar a Tracklist escondida (exeto Pre-releases)
         tracklistContainer.innerHTML = (album.tracks || []).map((track, index) => {
             const fullSong = db.songs.find(s => s.id === track.id); 
-            
-            // LÓGICA BLINDADA: Se o álbum é pré-lançamento (isPreRelease é true aqui), a música só fica disponível se for 'Pre-release Single'
             const preReleaseAvailableTypes = ['Pre-release Single', 'Pre-Release Single'];
             const isDesignatedPreRelease = fullSong && preReleaseAvailableTypes.includes(fullSong.trackType); 
             
-            // A música está disponível APENAS se for um Pre-release Single.
             let isAvailable = isDesignatedPreRelease;
-            
             const artistName = formatArtistString(track.artistIds, track.collabType);
             const trackNumDisplay = index + 1; 
 
             let promoteBtnHtml = '';
-            
             if (!isAvailable && isOwner) {
                 promoteBtnHtml = `<button class="btn btn-sm promote-track-btn" data-track-id="${track.id}" data-album-id="${album.id}" style="font-size: 10px; padding: 4px 8px; margin-left: 10px; border-radius: 4px; background-color: var(--spotify-green); color: black; pointer-events: auto; border: none; font-weight: bold; cursor: pointer;">Promover a Single</button>`;
             }
 
             if (isAvailable) { 
-                return `<div class="track-row available" data-song-id="${track.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${track.duration}</span></div>`; 
+                return `<div class="track-row available" data-song-id="${track.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${track.duration || '0:00'}</span></div>`; 
             } else { 
                 return `<div class="track-row unavailable" style="opacity: 0.5;"><span class="track-number">${trackNumDisplay}</span><div class="track-info" style="display:flex; align-items:center;"><span class="track-title">${track.title}${promoteBtnHtml}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration"><i class="fas fa-lock"></i></span></div>`; 
             }
@@ -279,18 +344,47 @@ const openAlbumDetail = (albumId) => {
         });
 
     } else {
-        normalInfoContainer?.classList.remove('hidden'); countdownContainer?.classList.add('hidden');
-        btnWrapper.innerHTML = ''; // Limpa o botão se o álbum já foi lançado
-
-        const releaseYear = releaseDate.getFullYear(), totalAlbumStreamsFormatted = (album.totalStreams || 0).toLocaleString('pt-BR');
-        document.getElementById('albumDetailInfo').innerHTML = `Por <strong class="artist-link" data-artist-name="${artistObj ? artistObj.name : ''}">${album.artist}</strong> • ${releaseYear} • ${totalAlbumStreamsFormatted} streams totais`;
+        // MODO LANÇADO ACTIVO
+        countdownContainer?.classList.add('hidden');
+        preSaveBtn?.classList.add('hidden');
+        albumPlayBtn?.classList.remove('hidden');
+        btnWrapper.innerHTML = ''; 
         
+        const numTracks = album.tracks ? album.tracks.length : 0;
+        const releaseYear = releaseDate.getFullYear();
+        
+        // Texto de Meta
+        document.getElementById('albumDetailInfo').textContent = `${displayType.charAt(0).toUpperCase() + displayType.slice(1).toLowerCase()} • ${releaseYear} • ${numTracks} ${numTracks === 1 ? 'música' : 'músicas'}`;
+        
+        // Tracklist Desbloqueada
         tracklistContainer.innerHTML = (album.tracks || []).map((song, index) => {
-            const artistName = formatArtistString(song.artistIds, song.collabType), streams = (song.totalStreams || 0);
+            const artistName = formatArtistString(song.artistIds, song.collabType);
+            const streams = (song.totalStreams || 0);
             const trackNumDisplay = index + 1; 
             return `<div class="track-row available" data-song-id="${song.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${song.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${streams.toLocaleString('pt-BR')}</span></div>`;
         }).join('') || '<p class="empty-state-small">Nenhuma faixa encontrada para este lançamento.</p>'; 
     }
+    
+    // Gerar Secção "Mais de {Artista}"
+    const moreFromArtistSection = document.getElementById('moreFromArtistSection');
+    if(moreFromArtistSection) {
+        moreFromArtistSection.classList.remove('hidden');
+        document.getElementById('moreFromArtistNameDisplay').textContent = artistNameStr;
+        
+        const otherAlbums = [...db.albums, ...db.singles].filter(a => a.artistId === album.artistId && a.id !== album.id).slice(0, 8);
+        if(otherAlbums.length > 0) {
+            document.getElementById('moreFromArtistList').innerHTML = otherAlbums.map(a => `
+                <div class="scroll-item" data-album-id="${a.id}">
+                    <img src="${a.imageUrl}" alt="${a.title}">
+                    <p>${a.title}</p>
+                    <span>${new Date(a.releaseDate).getFullYear()}</span>
+                </div>
+            `).join('');
+        } else {
+            moreFromArtistSection.classList.add('hidden');
+        }
+    }
+
     switchView('albumDetail');
 };
 
