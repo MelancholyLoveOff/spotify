@@ -258,7 +258,6 @@ input, select, textarea {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5); flex-shrink: 0; margin: 0 auto;
 }
 .album-text-info { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
-.album-type-label { font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;}
 
 #albumDetailTitle { 
   font-size: clamp(28px, 6vw + 1rem, 40px);
@@ -270,24 +269,6 @@ input, select, textarea {
   text-shadow: 0 2px 10px rgba(0,0,0,0.3);
   text-align: center;
 }
-#albumDetailInfo { color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 500; text-align: center;}
-
-.wysiwyg-input {
-    background: transparent; border: none; color: inherit; font-family: inherit;
-    outline: none; width: 100%; transition: background 0.2s;
-}
-.wysiwyg-input:hover, .wysiwyg-input:focus {
-    background: rgba(255,255,255,0.1); border-radius: 4px;
-}
-.wysiwyg-select {
-    background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white; font-weight: 700; outline: none; cursor: pointer;
-    padding: 6px 12px; border-radius: 6px; font-family: "Montserrat", sans-serif; transition: all 0.2s;
-}
-.wysiwyg-select:hover { background: rgba(0, 0, 0, 0.7); border-color: rgba(255, 255, 255, 0.5); }
-
-#wysiwygReleaseForm .album-header, #editReleaseForm .album-header { flex-direction: column; align-items: center; text-align: center; }
-#wysiwygReleaseForm .album-header-content, #editReleaseForm .album-header-content { flex-direction: column; align-items: center; text-align: center; }
 
 .horizontal-scroll-list {
   display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; margin: 0 -16px;
@@ -309,14 +290,12 @@ input, select, textarea {
 .scroll-item span { font-size: 13px; color: var(--text-secondary); font-weight: 500;}
 
 .tracklist-container { margin-top: 16px; }
-
 .track-row {
     display: flex; flex-direction: row; align-items: center; gap: 16px;
     padding: 8px 16px; border-radius: 4px; border-bottom: none;
     cursor: pointer; transition: background-color 0.2s ease;
 }
 .track-row:hover { background-color: rgba(255,255,255,0.1); }
-
 .track-number {
     display: flex; justify-content: center; align-items: center;
     width: 32px; font-size: 16px; color: var(--text-secondary);
@@ -327,18 +306,10 @@ input, select, textarea {
     content: "\f04b"; font-family: "Font Awesome 6 Free"; font-weight: 900;
     color: var(--text-primary); position: absolute; font-size: 14px;
 }
-
 .track-info { flex-grow: 1; min-width: 0; }
 .track-title { font-weight: 500; font-size: 16px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 4px;}
 .track-artist-feat { font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .track-duration { color: var(--text-secondary); font-size: 14px; text-align: right; font-variant-numeric: tabular-nums; flex-shrink: 0; margin-left: auto; }
-
-.track-row.unavailable { opacity: 0.5; cursor: not-allowed; }
-.track-row.unavailable:hover .track-number { color: var(--text-secondary); }
-.track-row.unavailable:hover .track-number::after { content: none; }
-
-.track-row.available .track-title { color: var(--text-primary); }
-.track-row.available:hover .track-title { color: var(--text-primary); }
 
 .track-row.playing .track-title,
 .song-row.playing .song-row-title,
@@ -366,7 +337,6 @@ input, select, textarea {
 .no-results { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
 .no-results i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
 .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); font-size: 16px; }
-.empty-state-small { padding: 16px; color: var(--text-secondary); font-size: 14px; text-align: center; }
 
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0; 
@@ -385,41 +355,16 @@ input, select, textarea {
 .bottom-nav-item span { display: block; font-size: 10px; margin-top: 6px; font-weight: 500;}
 .bottom-nav-item i { display: block; margin: 0 auto; }
 
+/* === STUDIO & FORMS === */
 .studio-login-wrapper { background-color: var(--background-secondary); padding: 24px; border-radius: 8px; margin-bottom: 24px; }
-.studio-login-wrapper label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em;}
+.studio-login-wrapper label, .studio-form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em;}
 .studio-login-wrapper select, .studio-form-group input, .studio-form-group select {
   width: 100%; background-color: rgba(255,255,255,0.1); border: 1px solid transparent;
   color: var(--text-primary); padding: 14px; border-radius: 4px; font-size: 14px;
   font-family: "Montserrat", sans-serif; transition: all 0.2s;
 }
 .studio-form-group input:focus, .studio-form-group select:focus { background-color: rgba(255,255,255,0.15); outline: none; border-color: #555;}
-
 .studio-form-group select option, .studio-login-wrapper select option, .wysiwyg-select option { background-color: var(--background-secondary); color: var(--text-primary); }
-.studio-form-group select optgroup { background-color: var(--background-secondary); color: var(--spotify-green); font-weight: bold; }
-
-#loginButton, #registerButton { width: 100%; margin-top: 16px;}
-#loggedInInfo p { font-size: 14px; color: var(--text-secondary); margin: 0; }
-#loggedInInfo p strong { color: var(--text-primary); }
-#loggedInInfo { display: flex; justify-content: space-between; align-items: center; }
-#logoutButton { margin-left: 10px; border-color: var(--text-secondary); color: var(--text-primary);}
-
-.studio-form { background-color: var(--background-secondary); padding: 24px; border-radius: 8px; }
-.studio-form-content { display: none; animation: fadeIn 0.3s ease; }
-.studio-form-content.active { display: block; }
-.studio-form h3 { color: var(--text-primary); margin-bottom: 24px; font-size: 24px;}
-.form-divider { border: none; border-top: 1px solid var(--background-tertiary); margin: 24px 0; }
-.studio-form-group { margin-bottom: 16px; }
-.studio-form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; }
-
-.file-upload-input {
-    background-color: transparent !important; padding: 0 !important; border: none !important;
-    color: var(--text-secondary) !important; font-size: 13px !important; cursor: pointer;
-}
-.file-upload-input::file-selector-button {
-    background-color: var(--background-tertiary); color: var(--text-primary); border: none;
-    padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: 600; margin-right: 12px; transition: background 0.2s;
-}
-.file-upload-input::file-selector-button:hover { background-color: #333; }
 
 .submit-btn {
   background-color: var(--spotify-green); color: black; border: none; padding: 16px 32px;
@@ -427,8 +372,6 @@ input, select, textarea {
   margin-top: 16px; transition: transform 0.1s ease, background-color 0.1s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
 .submit-btn:hover:not(:disabled) { transform: scale(1.04); background-color: var(--spotify-green-hover); }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .small-btn {
   background: transparent; border: 1px solid var(--text-secondary); color: var(--text-primary);
   padding: 8px 16px; border-radius: 500px; font-weight: 700; cursor: pointer;
@@ -436,21 +379,7 @@ input, select, textarea {
 }
 .small-btn:hover { border-color: #fff; transform: scale(1.05); }
 
-.track-list-item-display { 
-  display: flex; align-items: center; gap: 16px;
-  background-color: transparent; padding: 8px 16px; border-radius: 4px; border-bottom: none;
-  transition: background-color 0.2s ease;
-}
-.track-list-item-display:hover { background-color: rgba(255,255,255,0.1); }
-.track-list-item-display .drag-handle { cursor: grab; color: var(--text-secondary); }
-.track-list-item-display .track-number-display { display: flex; justify-content: center; align-items: center; width: 32px; font-size: 16px; color: var(--text-secondary); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.track-list-item-display .track-info-display { flex-grow: 1; min-width: 0; }
-.track-list-item-display .track-title-display { font-weight: 500; font-size: 16px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 4px; }
-.track-list-item-display .track-actions { display: flex; gap: 12px; }
-.track-list-item-display .edit-track-btn, .track-list-item-display .remove-track-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-secondary); transition: color 0.2s; padding: 0;}
-.track-list-item-display .edit-track-btn:hover { color: #fff; }
-.track-list-item-display .remove-track-btn:hover { color: var(--trend-down-red); }
-
+/* === MODAIS === */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
@@ -459,62 +388,86 @@ input, select, textarea {
   background: var(--background-secondary); padding: 32px; border-radius: 8px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto;
 }
-.modal-content h3 { color: var(--text-primary); margin-bottom: 24px; font-size: 24px; }
 .modal-actions { display: flex; gap: 16px; margin-top: 32px; }
-.modal-actions .submit-btn { margin: 0; flex: 1;}
-.modal-actions .cancel-btn {
+.modal-actions .submit-btn, .modal-actions .cancel-btn { flex: 1; margin: 0;}
+.cancel-btn {
   background: transparent; color: var(--text-primary); border: 1px solid var(--text-secondary);
-  padding: 14px 20px; border-radius: 500px; font-weight: 700; cursor: pointer; margin: 0; flex: 1; transition: transform 0.1s, border-color 0.1s;
+  padding: 14px 20px; border-radius: 500px; font-weight: 700; cursor: pointer; transition: transform 0.1s, border-color 0.1s;
 }
-.modal-actions .cancel-btn:hover { border-color: #fff; transform: scale(1.04);}
 
-#miniPlayer {
-    position: fixed; bottom: calc(70px + env(safe-area-inset-bottom)); left: 8px; right: 8px;
-    background: var(--background-tertiary); border-radius: 6px; padding: 8px;
-    display: flex; align-items: center; z-index: 199; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.3s;
+/* ==========================================================================
+   NOVO DESIGN: PÁGINA DE LANÇAMENTO E PRE-SAVE
+   ========================================================================== */
+.album-type-label { font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;}
+
+/* Informação do Artista (Avatar + Nome) */
+.release-artist-row { 
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; justify-content: center; 
 }
-#miniPlayer.hidden { display: none !important; }
-.mini-player-info { display: flex; align-items: center; gap: 12px; flex-grow: 1; min-width: 0; }
-.mini-player-cover { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
-.mini-player-text { min-width: 0; flex-grow: 1; }
-.mini-player-title { display: block; font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-.mini-player-artist { display: block; font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-player-controls { display: flex; align-items: center; gap: 16px; padding: 0 8px; }
-.mini-player-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 4px; }
-.mini-player-progress-bg { position: absolute; bottom: 0; left: 8px; right: 8px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
-.mini-player-progress-fill { height: 100%; width: 0%; background: var(--text-primary); transition: width 0.1s linear; }
-
-#musicPlayer {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(180deg, #333333 0%, var(--background-primary) 60%);
-  z-index: 1001; display: flex; flex-direction: column; transition: transform 0.4s cubic-bezier(0.3, 0, 0, 1);
+.release-artist-avatar { 
+    width: 24px; height: 24px; border-radius: 50%; object-fit: cover; 
 }
-#musicPlayer.hidden { transform: translateY(100%); display: flex !important; }
-body.player-open { overflow: hidden; }
+.release-artist-name { 
+    font-weight: 700; font-size: 14px; color: var(--text-primary); 
+}
+.release-meta-info { 
+    color: var(--text-secondary); font-size: 14px; font-weight: 500; text-align: center; 
+}
 
-.player-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; color: var(--text-secondary); }
-.player-header button { background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; }
-.player-header span { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-primary);}
-.player-body { display: flex; flex-direction: column; justify-content: center; flex-grow: 1; padding: 0 32px 64px; max-width: 500px; margin: 0 auto; width: 100%; }
-#playerCoverArt { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); margin: 0 auto 32px; }
-.player-song-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.player-song-text { overflow: hidden; }
-#playerSongTitle { font-size: 24px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;}
-#playerArtistName { font-size: 16px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.player-add-btn { background: none; border: none; color: var(--text-primary); font-size: 24px; cursor: pointer;}
-.player-seeker input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; cursor: pointer; }
-.player-seeker input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--text-primary); border-radius: 50%; cursor: pointer; }
-.player-seeker .player-time { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); margin-top: 8px; font-variant-numeric: tabular-nums; }
-.player-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
-.player-btn { background: none; border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; transition: color 0.2s;}
-.player-btn.main-play { font-size: 28px; width: 64px; height: 64px; border-radius: 50%; background-color: var(--text-primary); color: #000; transition: transform 0.1s; }
-.player-btn.main-play:hover { transform: scale(1.05); }
-.player-btn#playerShuffleBtn.active, .player-btn#playerRepeatBtn.active { color: var(--spotify-green); position: relative;}
-.player-btn#playerShuffleBtn.active::after, .player-btn#playerRepeatBtn.active::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--spotify-green); }
+/* Caixa de Contagem (Pre-save) */
+.countdown-box {
+    background-color: #5c1a14; 
+    border-radius: 8px; padding: 12px; display: flex; align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 24px; width: 100%; max-width: 420px;
+    margin-left: auto; margin-right: auto;
+}
+.countdown-box img { 
+    width: 56px; height: 56px; border-radius: 4px; object-fit: cover; margin-right: 16px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); 
+}
+.countdown-time-wrapper { 
+    display: flex; flex: 1; justify-content: space-between; align-items: flex-end; text-align: center; 
+}
+.countdown-segment { 
+    display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.15); flex: 1; padding: 0 4px; 
+}
+.countdown-segment:last-child { border-right: none; }
+.countdown-value { font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+.countdown-label { font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px;}
 
-/* --- APLICATIVO E ZOOM DE CELULAR (MODIFICAÇÃO) --- */
+/* Botões de Ação na Página do Álbum */
+.release-actions-row { 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-top: 24px; width: 100%; max-width: 420px; margin-left: auto; margin-right: auto;
+}
+.release-actions-left { 
+    display: flex; align-items: center; gap: 24px; color: var(--text-secondary); font-size: 28px; 
+}
+.release-actions-left i { cursor: pointer; transition: color 0.2s; }
+.release-actions-left i:hover { color: var(--text-primary); }
+
+.release-actions-right { display: flex; align-items: center; gap: 16px; }
+
+.btn-pre-save { 
+    background-color: var(--spotify-green); color: #000; font-weight: 700; font-size: 14px; 
+    padding: 10px 20px; border-radius: 500px; border: none; cursor: pointer; 
+    display: flex; align-items: center; gap: 6px; transition: transform 0.1s, background-color 0.1s; 
+}
+.btn-pre-save:hover { transform: scale(1.05); background-color: var(--spotify-green-hover); }
+
+/* Ícone Canvas (miniatura à esquerda) */
+.canvas-btn {
+    width: 32px; height: 32px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); 
+    overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.canvas-btn img { width: 100%; height: 100%; object-fit: cover; }
+.shuffle-icon { font-size: 24px; cursor: pointer; color: var(--text-secondary); transition: color 0.2s;}
+.shuffle-icon:hover { color: #fff; }
+
+.mt-8 { margin-top: 32px; }
+
+/* === RESPONSIVIDADE E DESKTOP === */
 @media (max-width: 767px) {
-    /* Força 16px nos campos para evitar o zoom automático do teclado no celular */
     input, select, textarea, .wysiwyg-input, .wysiwyg-select {
         font-size: 16px !important;
     }
@@ -541,49 +494,22 @@ body.player-open { overflow: hidden; }
 
   .back-btn { left: 284px; top: 24px; background: rgba(0,0,0,0.5);}
   
+  /* Ajustes para a Página do Álbum Nova no Desktop */
   .album-header { flex-direction: row; align-items: flex-end; text-align: left; padding: 100px 32px 32px; }
   .album-header-content { flex-direction: row; align-items: flex-end; gap: 24px; text-align: left;}
   #albumDetailCover { width: 232px; height: 232px; margin: 0;}
+  .album-text-info { align-items: flex-start; }
   #albumDetailTitle { font-size: 80px; text-align: left; margin-bottom: 8px;}
-  #albumDetailInfo { text-align: left; }
-  #albumNormalInfoContainer .main-play-btn { margin: 16px 0 0 !important; }
-
-  #wysiwygReleaseForm .album-header, #editReleaseForm .album-header { flex-direction: row; align-items: flex-end; text-align: left; }
-  #wysiwygReleaseForm .album-header-content, #editReleaseForm .album-header-content { flex-direction: row; align-items: flex-end; text-align: left; }
-
+  .release-meta-info { text-align: left; }
+  .release-artist-row { justify-content: flex-start; }
+  .release-actions-row { margin-left: 0; margin-right: 0; justify-content: flex-start; gap: 32px; max-width: 100%; }
+  .countdown-box { margin-left: 0; }
+  
   #musicPlayer { background: linear-gradient(180deg, #282828 0%, var(--background-primary) 60%); }
   #miniPlayer { left: 270px; right: 16px; bottom: 16px; }
 }
 
-/* --- MELHORIAS MOBILE UX --- */
-
-/* 1. Aumentar área de toque para editar as faixas (B-side -> Title) e evitar corte na tela */
-.track-list-item-display {
-    flex-wrap: wrap; 
-}
-.track-list-item-display .track-info-display {
-    flex-basis: 50%; 
-}
-.track-list-item-display .track-actions {
-    margin-left: auto;
-    padding: 8px 0;
-}
-.track-list-item-display .edit-track-btn, 
-.track-list-item-display .remove-track-btn {
-    padding: 12px !important; 
-    font-size: 18px !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border-radius: 6px;
-    margin-left: 8px;
-}
-
-/* 2. Deixar inputs e selects maiores para os dedos no mobile */
-.studio-form-group select, 
-.studio-form-group input {
-    padding: 16px !important; 
-}
-
-/* 3. Transformar o Modal de Ações em um Bottom Sheet no Mobile */
+/* === MOBILE UX MODAIS === */
 .action-modal-content {
     padding: 24px 16px 40px !important;
     max-height: 90vh !important;
@@ -594,18 +520,7 @@ body.player-open { overflow: hidden; }
     max-width: 100% !important;
     animation: slideUp 0.3s ease-out forwards;
 }
-
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-}
-
-/* Restaura o modal para telas maiores (PC) */
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @media (min-width: 768px) {
-    .action-modal-content {
-        position: relative;
-        border-radius: 8px !important;
-        max-width: 480px !important;
-        animation: none;
-    }
+    .action-modal-content { position: relative; border-radius: 8px !important; max-width: 480px !important; animation: none; }
 }
