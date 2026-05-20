@@ -524,8 +524,9 @@ input, select, textarea {
 @media (min-width: 768px) {
     .action-modal-content { position: relative; border-radius: 8px !important; max-width: 480px !important; animation: none; }
 }
+
 /* =========================================================
-   ESTILOS DO NOVO PLAYER CLONE
+   NOVO DESIGN DO PLAYER (ESTILO PREMIUM / SPOTIFY)
    ========================================================= */
 
 #musicPlayer {
@@ -534,77 +535,162 @@ input, select, textarea {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Efeito de clique nos botões */
-#musicPlayer button {
-    -webkit-tap-highlight-color: transparent;
-}
-#musicPlayer button:active {
-    opacity: 0.6;
-}
-
-.btn-scale:active {
-    transform: scale(0.95);
+/* Fundo dinâmico simulando a luz suave da capa */
+.player-gradient-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 100%;
+    background: linear-gradient(to bottom, rgba(50, 60, 70, 0.8) 0%, #121212 70%);
+    opacity: 0.8;
+    z-index: 0;
+    pointer-events: none;
 }
 
-/* Deixa verde os ícones ativos (Shuffle / Repeat) acionados pelo JS */
+/* Container principal com bordas mais suaves */
+.player-main-card {
+    background-color: #121212;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
+/* Barra de Progresso Customizada e Sensível ao Toque */
+.player-progress-container {
+    position: relative;
+    width: 100%;
+    height: 16px; /* Aumenta a área do toque/hover para facilitar */
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.player-progress-track {
+    width: 100%;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.player-progress-fill {
+    height: 100%;
+    background-color: #fff; 
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+}
+
+/* A bolinha fica invisível até interagir */
+.player-progress-thumb {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    background-color: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    transition: opacity 0.2s ease, transform 0.1s ease;
+    pointer-events: none;
+}
+
+/* Interação com a barra: fica verde (Zap48 / Spotify Green) e aparece a bolinha */
+.player-progress-container:hover .player-progress-fill,
+.player-progress-container:active .player-progress-fill,
+#playerSeekBar:active ~ .player-progress-track .player-progress-fill {
+    background-color: var(--spotify-green) !important;
+}
+
+.player-progress-container:hover .player-progress-thumb,
+.player-progress-container:active .player-progress-thumb,
+#playerSeekBar:active ~ .player-progress-thumb {
+    opacity: 1;
+}
+
+.player-progress-container:active .player-progress-thumb,
+#playerSeekBar:active ~ .player-progress-thumb {
+    transform: translate(-50%, -50%) scale(1.3);
+}
+
+/* Esconde o range slider nativo invisível que comanda a barra por baixo */
+#playerSeekBar {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+    margin: 0;
+}
+
+/* Tempos da Música (0:00) */
+.player-time-display {
+    font-size: 11px;
+    color: #a7a7a7;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+}
+
+/* Botões do Controle */
+.player-control-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s, color 0.2s;
+}
+.player-control-btn:hover {
+    opacity: 1;
+}
+.player-control-btn:active {
+    transform: scale(0.9);
+    opacity: 0.5;
+}
+/* Estilo quando Repeat ou Shuffle estão ativos */
+.player-control-btn.active, 
 #playerShuffleBtn.active, 
 #playerRepeatBtn.active {
-    color: #1db954 !important;
+    color: var(--spotify-green) !important;
+    opacity: 1;
+}
+.player-control-btn.active::after,
+#playerShuffleBtn.active::after, 
+#playerRepeatBtn.active::after {
+    content: "•";
+    position: absolute;
+    bottom: -10px;
+    color: var(--spotify-green);
+    font-size: 20px;
 }
 
-/* Faz com que a barra atualize mesmo arrastando (interação Mobile e Desktop) */
-#playerSeekBar:active ~ #progress-fill,
-#playerSeekBar:active ~ #progress-thumb {
-    background-color: #1db954 !important;
+/* Botão Play/Pause Branco Gigante */
+.player-play-btn {
+    width: 64px;
+    height: 64px;
+    background-color: #fff;
+    color: #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.2s ease;
 }
-/* =========================================================
-   ESTILOS DO NOVO PLAYER CLONE (ADAPTADO E ANIMADO)
-   ========================================================= */
-
-#musicPlayer {
-    font-family: 'Inter', 'Montserrat', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Efeito de clique nos botões */
-#musicPlayer button {
-    -webkit-tap-highlight-color: transparent;
-}
-#musicPlayer button:active {
-    opacity: 0.6;
-}
-
-.btn-scale:active {
+.player-play-btn:active {
     transform: scale(0.95);
-}
-
-/* Deixa verde os ícones ativos (Shuffle / Repeat) acionados pelo JS */
-#playerShuffleBtn.active, 
-#playerRepeatBtn.active {
-    color: #1db954 !important;
-}
-
-/* Faz com que a barra atualize mesmo arrastando (interação Mobile e Desktop) */
-#playerSeekBar:active ~ #progress-fill,
-#playerSeekBar:active ~ #progress-thumb {
-    background-color: #1db954 !important;
+    background-color: #e6e6e6;
 }
 
 /* Animações nativas para maximizar e minimizar o player */
-.player-slide-up {
-    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-.player-slide-down {
-    animation: slideDown 0.3s cubic-bezier(0.8, 0.2, 1, 0.2) forwards;
-}
+.player-slide-up { animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.player-slide-down { animation: slideDown 0.3s cubic-bezier(0.8, 0.2, 1, 0.2) forwards; }
 
 @keyframes slideUp {
     from { transform: translateY(100%); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
-
 @keyframes slideDown {
     from { transform: translateY(0); opacity: 1; }
     to { transform: translateY(100%); opacity: 0; }
