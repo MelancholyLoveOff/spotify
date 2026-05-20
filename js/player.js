@@ -65,7 +65,7 @@ function closePlayer() {
         setTimeout(() => {
             musicPlayerView.classList.add('hidden');
             musicPlayerView.classList.remove('player-slide-down');
-        }, 300); // 300ms de animação do css
+        }, 300);
     }
     document.body.classList.remove('player-open'); 
     if (currentSong) { miniPlayer?.classList.remove('hidden'); } 
@@ -114,6 +114,13 @@ function loadSong(song) {
     const durationSeconds = song.durationSeconds || 180;
     if (playerSeekBar) { playerSeekBar.value = 0; playerSeekBar.max = durationSeconds; } if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (playerTotalTime) playerTotalTime.textContent = `-${formatTime(durationSeconds)}`; if (miniPlayerProgress) { miniPlayerProgress.style.width = '0%'; miniPlayerProgress.dataset.max = durationSeconds; }
     
+    // --- CORREÇÃO DO BUG VISUAL: ZERANDO O PREENCHIMENTO E A BOLINHA NO NOVO PLAYER ---
+    const progressFill = document.getElementById('progress-fill');
+    const progressThumb = document.getElementById('progress-thumb');
+    if (progressFill) progressFill.style.width = '0%';
+    if (progressThumb) progressThumb.style.left = '0%';
+    // -----------------------------------------------------------------------------------
+
     if (isPlaying) { 
         if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'; 
         if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
@@ -164,7 +171,19 @@ function togglePlay(e) { if (e) e.stopPropagation(); if (isPlaying) pauseAudio()
 
 function playNext() {
     if (!currentQueue || currentQueue.length === 0 || !currentSong) return;
-    if (repeatMode === 'one') { if (playerSeekBar) playerSeekBar.value = 0; if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; playAudio(); return; }
+    if (repeatMode === 'one') { 
+        if (playerSeekBar) playerSeekBar.value = 0; 
+        if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
+        if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
+        
+        // ZERAR PROGRESSO VISUAL
+        const progressFill = document.getElementById('progress-fill');
+        const progressThumb = document.getElementById('progress-thumb');
+        if (progressFill) progressFill.style.width = '0%';
+        if (progressThumb) progressThumb.style.left = '0%';
+
+        playAudio(); return; 
+    }
     if (isShuffle) { let randomIndex = currentQueueIndex; if (currentQueue.length > 1) { do { randomIndex = Math.floor(Math.random() * currentQueue.length); } while (randomIndex === currentQueueIndex); } currentQueueIndex = randomIndex; } else { currentQueueIndex++; }
     if (currentQueueIndex >= currentQueue.length) { if (repeatMode === 'all') { currentQueueIndex = 0; } else { currentQueueIndex = currentQueue.length - 1; const lastSong = currentQueue[currentQueueIndex]; if(lastSong) loadSong(lastSong); pauseAudio(); if(playerSeekBar) playerSeekBar.value = playerSeekBar.max; if(playerCurrentTime) playerCurrentTime.textContent = formatTime(playerSeekBar.max || 0); if(miniPlayerProgress) miniPlayerProgress.style.width = '100%'; return; } }
     const nextSong = currentQueue[currentQueueIndex]; if (nextSong) { loadSong(nextSong); if (isPlaying) playAudio(); else pauseAudio(); } else { pauseAudio(); }
@@ -178,6 +197,12 @@ function playPrevious() {
         if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
         
+        // ZERAR PROGRESSO VISUAL SE VOLTAR PRO INÍCIO DA MESMA MÚSICA
+        const progressFill = document.getElementById('progress-fill');
+        const progressThumb = document.getElementById('progress-thumb');
+        if (progressFill) progressFill.style.width = '0%';
+        if (progressThumb) progressThumb.style.left = '0%';
+        
         if(isVideoMode && ytPlayerVideoReady && currentSong.yt_id) ytPlayerVideo.seekTo(0, true);
         else if(!isVideoMode && ytPlayerAudioReady && currentSong.yt_audio_id) ytPlayerAudio.seekTo(0, true);
         else if(!isVideoMode && currentSong.audio_url) document.getElementById('audioElement').currentTime = 0;
@@ -189,7 +214,19 @@ function playPrevious() {
     if (isShuffle) { let randomIndex = currentQueueIndex; if (currentQueue.length > 1) { do { randomIndex = Math.floor(Math.random() * currentQueue.length); } while (randomIndex === currentQueueIndex); } currentQueueIndex = randomIndex; } else { currentQueueIndex--; }
     if (currentQueueIndex < 0) {
         if (repeatMode === 'all') { currentQueueIndex = currentQueue.length - 1; } 
-        else { currentQueueIndex = 0; if (playerSeekBar) playerSeekBar.value = 0; if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; const firstSong = currentQueue[currentQueueIndex]; if (firstSong) { loadSong(firstSong); if(isPlaying) playAudio(); else pauseAudio(); } return; }
+        else { 
+            currentQueueIndex = 0; 
+            if (playerSeekBar) playerSeekBar.value = 0; 
+            if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
+            if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
+            
+            // ZERAR PROGRESSO VISUAL
+            const progressFill = document.getElementById('progress-fill');
+            const progressThumb = document.getElementById('progress-thumb');
+            if (progressFill) progressFill.style.width = '0%';
+            if (progressThumb) progressThumb.style.left = '0%';
+
+            const firstSong = currentQueue[currentQueueIndex]; if (firstSong) { loadSong(firstSong); if(isPlaying) playAudio(); else pauseAudio(); } return; }
     }
     const prevSong = currentQueue[currentQueueIndex]; if (prevSong) { loadSong(prevSong); if (isPlaying) playAudio(); else pauseAudio(); } else { pauseAudio(); }
 }
