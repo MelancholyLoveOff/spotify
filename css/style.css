@@ -931,3 +931,309 @@ input, select, textarea {
 .spotify-menu-btn.text-red i {
     color: var(--trend-down-red);
 }
+/* ==========================================================================
+   REVOLUÇÃO DE DESIGN: SEÇÃO "NOVO LANÇAMENTO" (ESTILO SPOTIFY FOR ARTISTS)
+   ========================================================================== */
+
+/* Ajuste de profundidade do container principal do formulário */
+#wysiwygReleaseForm {
+    background-color: #121212;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #282828;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    margin-bottom: 32px;
+}
+
+/* Redesenho completo do Header de Lançamento (Área da Capa e Título) */
+#wysiwygReleaseForm .album-header {
+    position: relative;
+    padding: 60px 32px 40px !important;
+    background-color: #1c1c1c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+}
+
+@media (min-width: 768px) {
+    #wysiwygReleaseForm .album-header {
+        flex-direction: row !important;
+        align-items: flex-end !important;
+        text-align: left !important;
+    }
+    #wysiwygReleaseForm .album-header-content {
+        flex-direction: row !important;
+        align-items: flex-end !important;
+        text-align: left !important;
+        gap: 32px !important;
+    }
+    #wysiwygReleaseForm .album-text-info {
+        align-items: flex-start !important;
+        text-align: left !important;
+    }
+}
+
+/* Área de Upload da Capa Premium */
+#wysiwygReleaseForm [onclick*="wysiwygCoverFile"] {
+    width: 220px !important;
+    height: 220px !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#wysiwygReleaseForm [onclick*="wysiwygCoverFile"]:hover {
+    transform: scale(1.02);
+}
+
+/* Camada de Hover para Alterar Capa - Transição Suave */
+#wysiwygReleaseForm [onclick*="wysiwygCoverFile"] div {
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity 0.2s ease-in-out !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#wysiwygReleaseForm [onclick*="wysiwygCoverFile"] div i {
+    color: #fff;
+    font-size: 28px !important;
+    margin-bottom: 6px !important;
+}
+
+#wysiwygReleaseForm [onclick*="wysiwygCoverFile"] div span {
+    color: #fff;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700 !important;
+}
+
+/* Customização Premium de Inputs e Selects do Cabeçalho (Remove os pontilhados e traços feios) */
+#wysiwygReleaseForm .wysiwyg-select,
+#wysiwygReleaseForm .wysiwyg-input {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    font-family: "Inter", "Montserrat", sans-serif;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+    transition: all 0.2s ease !important;
+    text-align: left !important;
+}
+
+#wysiwygReleaseForm .wysiwyg-select:hover,
+#wysiwygReleaseForm .wysiwyg-input:hover,
+#wysiwygReleaseForm .wysiwyg-select:focus,
+#wysiwygReleaseForm .wysiwyg-input:focus {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Campo de Título do Lançamento Gigante (Estilo Nome do Álbum do Spotify) */
+#wysiwygTitle {
+    font-size: clamp(24px, 4vw + 1rem, 42px) !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.03em !important;
+    width: 100% !important;
+    max-width: 550px;
+    padding: 12px 20px !important;
+    margin-bottom: 16px !important;
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+#wysiwygTitle::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Seletor do Tipo de Lançamento (Single / Álbum) */
+#wysiwygReleaseType {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase;
+    padding: 6px 12px !important;
+    background-color: var(--spotify-green) !important;
+    color: #000 !important;
+    border: none !important;
+    margin-bottom: 12px !important;
+    border-radius: 4px !important;
+}
+
+#wysiwygReleaseType option {
+    background-color: #242424;
+    color: #fff;
+}
+
+/* Alinhamento da Linha de Metadados (Artista • Data) */
+#wysiwygReleaseForm .album-text-info div:nth-of-type(1) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    #wysiwygReleaseForm .album-text-info div:nth-of-type(1) {
+        justify-content: flex-start !important;
+    }
+}
+
+/* Seletor de Data Customizado */
+#wysiwygReleaseDate {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #b3b3b3 !important;
+    cursor: pointer;
+}
+
+/* Linha de Opções Deluxe / Base */
+#deluxeOptionsWrapper {
+    margin-top: 20px !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#deluxeOptionsWrapper .wysiwyg-select {
+    font-size: 13px !important;
+}
+
+/* Corpo inferior (Área das Músicas / Tracklist Editor) */
+#wysiwygReleaseForm .page-detail-body {
+    background-color: #121212 !important;
+    padding: 32px 24px !important;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Barra de Ferramentas (Lançar Projeto | + Existente | + Nova Faixa) */
+#wysiwygReleaseForm .page-detail-body > div:first-child {
+    background-color: #181818;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid #282828;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Redesenho Completo da Tracklist Editável (Músicas Adicionadas) */
+#wysiwygTracklistEditor .track-list-item-display {
+    background: #181818 !important;
+    border: 1px solid #242424 !important;
+    padding: 12px 16px !important;
+    margin-bottom: 8px !important;
+    border-radius: 6px !important;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease !important;
+}
+
+#wysiwygTracklistEditor .track-list-item-display:hover {
+    background: #282828 !important;
+    border-color: #3e3e3e !important;
+    transform: translateX(4px);
+}
+
+/* Ícone de Arrastar (Grip Vertical) */
+#wysiwygTracklistEditor .drag-handle {
+    color: #535353 !important;
+    font-size: 14px;
+    padding: 8px;
+    margin-right: 4px !important;
+    transition: color 0.2s;
+}
+
+#wysiwygTracklistEditor .track-list-item-display:hover .drag-handle {
+    color: #b3b3b3 !important;
+    cursor: grab;
+}
+
+#wysiwygTracklistEditor .track-list-item-display:active .drag-handle {
+    cursor: grabbing;
+}
+
+/* Numeração das faixas */
+#wysiwygTracklistEditor .track-number-display {
+    font-family: "Inter", sans-serif;
+    font-size: 14px !important;
+    font-weight: 600;
+    color: #b3b3b3 !important;
+    width: 28px !important;
+    margin-right: 12px !important;
+}
+
+/* Estilização dos Títulos e Ícones de Mídia Internos */
+#wysiwygTracklistEditor .track-title {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#wysiwygTracklistEditor .track-artist-feat {
+    font-size: 13px !important;
+    color: #b3b3b3 !important;
+    margin-top: 2px;
+}
+
+/* Duração Alinhada */
+#wysiwygTracklistEditor .track-duration {
+    font-family: "Inter", sans-serif;
+    font-size: 14px !important;
+    color: #b3b3b3 !important;
+    font-variant-numeric: tabular-nums;
+    margin-right: 24px !important;
+}
+
+/* Botões Inline de Ação (Editar / Remover Faixa da lista) */
+#wysiwygTracklistEditor .track-actions {
+    display: flex;
+    gap: 6px;
+}
+
+#wysiwygTracklistEditor .edit-track-btn,
+#wysiwygTracklistEditor .remove-track-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #b3b3b3 !important;
+    width: 36px;
+    height: 36px;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0 !important;
+    font-size: 13px !important;
+    transition: all 0.2s ease !important;
+}
+
+#wysiwygTracklistEditor .edit-track-btn:hover {
+    background: #fff !important;
+    color: #000 !important;
+    border-color: #fff !important;
+    transform: scale(1.05);
+}
+
+#wysiwygTracklistEditor .remove-track-btn:hover {
+    background: var(--trend-down-red) !important;
+    color: #fff !important;
+    border-color: var(--trend-down-red) !important;
+    transform: scale(1.05);
+}
