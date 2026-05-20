@@ -557,3 +557,55 @@ input, select, textarea {
 #playerSeekBar:active ~ #progress-thumb {
     background-color: #1db954 !important;
 }
+/* =========================================================
+   ESTILOS DO NOVO PLAYER CLONE (ADAPTADO E ANIMADO)
+   ========================================================= */
+
+#musicPlayer {
+    font-family: 'Inter', 'Montserrat', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Efeito de clique nos botões */
+#musicPlayer button {
+    -webkit-tap-highlight-color: transparent;
+}
+#musicPlayer button:active {
+    opacity: 0.6;
+}
+
+.btn-scale:active {
+    transform: scale(0.95);
+}
+
+/* Deixa verde os ícones ativos (Shuffle / Repeat) acionados pelo JS */
+#playerShuffleBtn.active, 
+#playerRepeatBtn.active {
+    color: #1db954 !important;
+}
+
+/* Faz com que a barra atualize mesmo arrastando (interação Mobile e Desktop) */
+#playerSeekBar:active ~ #progress-fill,
+#playerSeekBar:active ~ #progress-thumb {
+    background-color: #1db954 !important;
+}
+
+/* Animações nativas para maximizar e minimizar o player */
+.player-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.player-slide-down {
+    animation: slideDown 0.3s cubic-bezier(0.8, 0.2, 1, 0.2) forwards;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(100%); opacity: 0; }
+}
