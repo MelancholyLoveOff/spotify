@@ -524,3 +524,36 @@ input, select, textarea {
 @media (min-width: 768px) {
     .action-modal-content { position: relative; border-radius: 8px !important; max-width: 480px !important; animation: none; }
 }
+/* =========================================================
+   ESTILOS DO NOVO PLAYER CLONE
+   ========================================================= */
+
+#musicPlayer {
+    font-family: 'Inter', 'Montserrat', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Efeito de clique nos botões */
+#musicPlayer button {
+    -webkit-tap-highlight-color: transparent;
+}
+#musicPlayer button:active {
+    opacity: 0.6;
+}
+
+.btn-scale:active {
+    transform: scale(0.95);
+}
+
+/* Deixa verde os ícones ativos (Shuffle / Repeat) acionados pelo JS */
+#playerShuffleBtn.active, 
+#playerRepeatBtn.active {
+    color: #1db954 !important;
+}
+
+/* Faz com que a barra atualize mesmo arrastando (interação Mobile e Desktop) */
+#playerSeekBar:active ~ #progress-fill,
+#playerSeekBar:active ~ #progress-thumb {
+    background-color: #1db954 !important;
+}
