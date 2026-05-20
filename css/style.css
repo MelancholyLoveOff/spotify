@@ -878,3 +878,56 @@ input, select, textarea {
 
 }
 }
+/* =========================================================
+   NOVO ESTILO PARA MENUS DO ESTÚDIO (TIPO SPOTIFY)
+   ========================================================= */
+.spotify-menu-style {
+    padding: 24px !important;
+    background-color: #282828 !important; /* Fundo mais claro para destacar do overlay */
+    border: none !important;
+}
+
+.spotify-menu-style h3 {
+    font-weight: 800;
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.spotify-menu-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.spotify-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.spotify-menu-btn i {
+    width: 32px;
+    font-size: 20px;
+    color: #b3b3b3;
+    transition: color 0.2s;
+}
+
+.spotify-menu-btn:hover i {
+    color: #fff;
+}
+
+.spotify-menu-btn.text-red {
+    color: var(--trend-down-red);
+}
+
+.spotify-menu-btn.text-red i {
+    color: var(--trend-down-red);
+}
