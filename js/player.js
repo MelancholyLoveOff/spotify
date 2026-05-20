@@ -1,20 +1,15 @@
-// js/player.js
-
 let ytPlayerVideoReady = false;
 let ytPlayerVideo;
 let ytPlayerAudioReady = false;
 let ytPlayerAudio;
 let isVideoMode = false;
 
-// 1. Injetar a API dinamicamente para evitar a Race Condition
 const tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
 const firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-// 2. Definir a função globalmente no window
 window.onYouTubeIframeAPIReady = function() {
-    // Evita o erro de CORS se o origin for "null" (quando abre o arquivo HTML com dois cliques)
     const safeOrigin = window.location.origin !== "null" ? window.location.origin : "*";
 
     ytPlayerVideo = new YT.Player('ytplayer_video', {
@@ -101,8 +96,15 @@ function loadSong(song) {
     if (toggleBtn) { toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>'; toggleBtn.style.background = 'rgba(255,255,255,0.1)'; toggleBtn.style.color = 'white'; toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)'; }
 
     const durationSeconds = song.durationSeconds || 180;
-    if (playerSeekBar) { playerSeekBar.value = 0; playerSeekBar.max = durationSeconds; } if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (playerTotalTime) playerTotalTime.textContent = formatTime(durationSeconds); if (miniPlayerProgress) { miniPlayerProgress.style.width = '0%'; miniPlayerProgress.dataset.max = durationSeconds; }
-    if (isPlaying) { if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; } else { if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }
+    if (playerSeekBar) { playerSeekBar.value = 0; playerSeekBar.max = durationSeconds; } if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (playerTotalTime) playerTotalTime.textContent = `-${formatTime(durationSeconds)}`; if (miniPlayerProgress) { miniPlayerProgress.style.width = '0%'; miniPlayerProgress.dataset.max = durationSeconds; }
+    
+    if (isPlaying) { 
+        if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'; 
+        if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
+    } else { 
+        if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<svg class="ml-1" xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"></polygon></svg>'; 
+        if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
+    }
 }
 
 function playAudio() { 
@@ -127,7 +129,7 @@ function playAudio() {
         }
     }
 
-    if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
+    if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
 }
 
@@ -138,7 +140,7 @@ function pauseAudio() {
     if (ytPlayerVideoReady) ytPlayerVideo.pauseVideo();
     if (ytPlayerAudioReady) ytPlayerAudio.pauseVideo();
 
-    if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<i class="fas fa-play" style="margin-left:2px;"></i>'; 
+    if (playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<svg class="ml-1" xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"></polygon></svg>'; 
     if (miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; 
 }
 
@@ -178,18 +180,32 @@ function playPrevious() {
 
 function toggleShuffle() { isShuffle = !isShuffle; playerShuffleBtn?.classList.toggle('active', isShuffle); }
 function toggleRepeat() {
-    if (repeatMode === 'none') { repeatMode = 'all'; playerRepeatBtn?.classList.add('active'); playerRepeatBtn.innerHTML = '<i class="fas fa-repeat"></i>'; } 
-    else if (repeatMode === 'all') { repeatMode = 'one'; playerRepeatBtn?.classList.add('active'); playerRepeatBtn.innerHTML = '<i class="fas fa-repeat-1"></i>'; } 
-    else { repeatMode = 'none'; playerRepeatBtn?.classList.remove('active'); playerRepeatBtn.innerHTML = '<i class="fas fa-repeat"></i>'; }
+    if (repeatMode === 'none') { repeatMode = 'all'; playerRepeatBtn?.classList.add('active'); } 
+    else if (repeatMode === 'all') { repeatMode = 'one'; playerRepeatBtn?.classList.add('active'); } 
+    else { repeatMode = 'none'; playerRepeatBtn?.classList.remove('active'); }
 }
 
 function updateProgressUI(currentTime, duration) {
     if (duration > 0 && playerSeekBar) {
         playerSeekBar.max = duration;
         playerSeekBar.value = currentTime;
+        
         if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentTime);
-        if (playerTotalTime) playerTotalTime.textContent = formatTime(duration);
+        
+        if (playerTotalTime) {
+            const remaining = duration - currentTime;
+            playerTotalTime.textContent = `-${formatTime(remaining)}`;
+        }
+        
         if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentTime / duration) * 100}%`;
+
+        // Lógica visual do NOVO PLAYER
+        const progressFill = document.getElementById('progress-fill');
+        const progressThumb = document.getElementById('progress-thumb');
+        const percentage = (currentTime / duration) * 100;
+        
+        if (progressFill) progressFill.style.width = `${percentage}%`;
+        if (progressThumb) progressThumb.style.left = `${percentage}%`;
     }
 }
 
@@ -217,7 +233,17 @@ function startSimulationTimer() {
                 if (currentValue < maxValue) {
                     currentValue += 1; playerSeekBar.value = currentValue;
                     if (playerCurrentTime) playerCurrentTime.textContent = formatTime(currentValue);
+                    if (playerTotalTime) {
+                        const remaining = maxValue - currentValue;
+                        playerTotalTime.textContent = `-${formatTime(remaining)}`;
+                    }
                     if (miniPlayerProgress) miniPlayerProgress.style.width = `${(currentValue / maxValue) * 100}%`;
+                    
+                    const progressFill = document.getElementById('progress-fill');
+                    const progressThumb = document.getElementById('progress-thumb');
+                    const percentage = (currentValue / maxValue) * 100;
+                    if (progressFill) progressFill.style.width = `${percentage}%`;
+                    if (progressThumb) progressThumb.style.left = `${percentage}%`;
                 } else {
                     if (repeatMode === 'one') { playerSeekBar.value = 0; if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; playAudio(); } else { playNext(); }
                 }
@@ -242,7 +268,17 @@ function initializePlayerListeners() {
     
     playerSeekBar?.addEventListener('input', () => { 
         if (playerCurrentTime && playerSeekBar) playerCurrentTime.textContent = formatTime(playerSeekBar.value); 
+        if (playerTotalTime && playerSeekBar) {
+            const remaining = playerSeekBar.max - playerSeekBar.value;
+            playerTotalTime.textContent = `-${formatTime(remaining)}`;
+        }
         if (miniPlayerProgress) miniPlayerProgress.style.width = `${(playerSeekBar.value / playerSeekBar.max) * 100}%`; 
+        
+        const progressFill = document.getElementById('progress-fill');
+        const progressThumb = document.getElementById('progress-thumb');
+        const percentage = (playerSeekBar.value / playerSeekBar.max) * 100;
+        if (progressFill) progressFill.style.width = `${percentage}%`;
+        if (progressThumb) progressThumb.style.left = `${percentage}%`;
     });
     playerSeekBar?.addEventListener('change', () => { 
         const newTime = playerSeekBar.value;
