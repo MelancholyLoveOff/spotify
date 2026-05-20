@@ -441,6 +441,9 @@ function addExistingTrackToAlbum(songId) {
 }
 
 function initAlbumForm() {
+     const colorPicker = document.getElementById('wysiwygCountdownColor'); 
+     if (colorPicker) colorPicker.value = '#5c1a14';
+
      if (wysiwygTracklistEditor) wysiwygTracklistEditor.innerHTML = '<p style="color: var(--text-subdued); text-align: center; font-size: 14px; margin-top: 24px;">Nenhuma faixa adicionada.</p>';
      const releaseNature = document.getElementById('wysiwygReleaseNature'); if (releaseNature) { releaseNature.value = 'original'; releaseNature.dispatchEvent(new Event('change')); }
      if (wysiwygTitle) wysiwygTitle.value = ''; if (wysiwygCoverUrl) wysiwygCoverUrl.value = 'https://i.imgur.com/AD3MbBi.png'; if (wysiwygCoverImg) wysiwygCoverImg.src = 'https://i.imgur.com/AD3MbBi.png'; if (wysiwygBg) wysiwygBg.style.backgroundImage = `url('https://i.imgur.com/AD3MbBi.png')`;
@@ -452,6 +455,8 @@ async function handleWysiwygSubmit(event) {
      submitWysiwygRelease.disabled = true; submitWysiwygRelease.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
      try {
          const artistId = wysiwygArtistSelect?.value, title = document.getElementById('wysiwygTitle')?.value, coverUrl = document.getElementById('wysiwygCoverUrl')?.value, releaseDateTimeLocal = document.getElementById('wysiwygReleaseDate')?.value, releaseTypeSelected = document.getElementById('wysiwygReleaseType')?.value; 
+         const countdownColor = document.getElementById('wysiwygCountdownColor')?.value || '#5c1a14'; // <-- COR CAPTURADA AQUI
+         
          if (!artistId || !title || !coverUrl || !releaseDateTimeLocal) throw new Error("Preencha todos os campos do cabeçalho.");
          const releaseDateISO = releaseDateTimeLocal.split('T')[0]; if (isNaN(new Date(releaseDateISO).getTime())) throw new Error("Data inválida.");
          const trackItems = wysiwygTracklistEditor?.querySelectorAll('.track-list-item-display'); if (!trackItems || trackItems.length === 0) throw new Error("Adicione pelo menos uma faixa para lançar o projeto.");
@@ -481,7 +486,10 @@ async function handleWysiwygSubmit(event) {
          if (!isAlbum) { if (totalDurationSeconds > 1800) throw new Error("Singles e EPs não podem ultrapassar 30 min. Altere o tipo para 'Álbuns'."); if (trackItems.length > 6) throw new Error("Singles e EPs não podem ter mais que 6 faixas. Altere o tipo para 'Álbuns'."); }
          
          const targetTableName = isAlbum ? 'Álbuns' : 'Singles e EPs'; const nameFieldName = isAlbum ? 'Nome do Álbum' : 'Nome do Single/EP'; const coverFieldName = isAlbum ? 'Capa do Álbum' : 'Capa'; const linkFieldName = isAlbum ? 'Álbuns' : 'Singles e EPs'; const isDeluxe = document.getElementById('wysiwygReleaseNature')?.value === 'deluxe';
-         const releaseRecordFields = { [nameFieldName]: title, "Artista": [artistId], [coverFieldName]: [{ "url": coverUrl }], "Data de Lançamento": releaseDateISO }; if (isDeluxe) releaseRecordFields["É deluxe?"] = true;
+         
+         // ADICIONADO "Cor da Contagem" AO OBJETO ABAIXO
+         const releaseRecordFields = { [nameFieldName]: title, "Artista": [artistId], [coverFieldName]: [{ "url": coverUrl }], "Data de Lançamento": releaseDateISO, "Cor da Contagem": countdownColor }; 
+         if (isDeluxe) releaseRecordFields["É deluxe?"] = true;
          
          const releaseResponse = await createAirtableRecord(targetTableName, releaseRecordFields); if (!releaseResponse || !releaseResponse.id) throw new Error("Falha ao criar o registro principal.");
          const newReleaseId = releaseResponse.id;
