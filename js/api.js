@@ -88,7 +88,8 @@ async function loadAllData() {
                 return {
                     id: row.id, title: row.title || 'Título Desconhecido', artist: row.artist_id ? artistsMapById.get(row.artist_id) : "Artista Desconhecido", artistId: row.artist_id,
                     imageUrl: row.image_url || 'https://i.imgur.com/AD3MbBi.png', releaseDate: row.release_date, isDeluxe: row.is_deluxe || false, tracks: tracks, trackIds: tracks.map(t => t.id),
-                    totalDurationSeconds: totalDuration, weeklyStreams: row.weekly_streams || 0, totalStreams: totalAlbumStreams, type: isAlbum ? 'album' : 'single', tableName: isAlbum ? 'albums' : 'singles'
+                    totalDurationSeconds: totalDuration, weeklyStreams: row.weekly_streams || 0, totalStreams: totalAlbumStreams, type: isAlbum ? 'album' : 'single', tableName: isAlbum ? 'albums' : 'singles',
+                    countdownColor: row.countdown_color || '#5c1a14' 
                 };
             });
         };
@@ -125,7 +126,7 @@ const mapFieldsToSupabase = (tableName, fields) => {
     if(fields['YouTube ID'] !== undefined) payload.yt_id = fields['YouTube ID'];
     if(fields['YouTube Audio ID'] !== undefined) payload.yt_audio_id = fields['YouTube Audio ID'];
     if(fields['Audio URL'] !== undefined) payload.audio_url = fields['Audio URL'];
-    
+    if(fields['Cor da Contagem'] !== undefined) payload.countdown_color = fields['Cor da Contagem'];
     return payload;
 };
 
