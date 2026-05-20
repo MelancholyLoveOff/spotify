@@ -24,7 +24,7 @@
         <button class="bottom-nav-item" data-tab="studioSection"><i class="fas fa-microphone-alt"></i><span>Estúdio</span></button>
     </nav>
     
-    <div id="miniPlayer" class="hidden">
+<div id="miniPlayer" class="hidden">
         <div class="mini-player-info">
             <img id="miniPlayerCover" src="https://i.imgur.com/AD3MbBi.png" class="mini-player-cover">
             <div class="mini-player-text">
@@ -32,8 +32,13 @@
                 <span id="miniPlayerArtist" class="mini-player-artist">Artista</span>
             </div>
         </div>
-        <div class="mini-player-controls"><button id="miniPlayerPlayPauseBtn" class="mini-player-btn"><i class="fas fa-play"></i></button></div>
-        <div class="mini-player-progress-bg"><div id="miniPlayerProgress" class="mini-player-progress-fill"></div></div>
+        <div class="mini-player-controls">
+            <button class="mini-player-btn fav-btn" style="color: #b3b3b3; font-size: 18px;"><i class="far fa-heart"></i></button>
+            <button id="miniPlayerPlayPauseBtn" class="mini-player-btn"><i class="fas fa-play"></i></button>
+        </div>
+        <div class="mini-player-progress-bg">
+            <div id="miniPlayerProgress" class="mini-player-progress-fill"></div>
+        </div>
     </div>
 
     <div id="mainView" class="page-view">
