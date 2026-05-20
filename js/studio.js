@@ -455,7 +455,7 @@ async function handleWysiwygSubmit(event) {
      submitWysiwygRelease.disabled = true; submitWysiwygRelease.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
      try {
          const artistId = wysiwygArtistSelect?.value, title = document.getElementById('wysiwygTitle')?.value, coverUrl = document.getElementById('wysiwygCoverUrl')?.value, releaseDateTimeLocal = document.getElementById('wysiwygReleaseDate')?.value, releaseTypeSelected = document.getElementById('wysiwygReleaseType')?.value; 
-         const countdownColor = document.getElementById('wysiwygCountdownColor')?.value || '#5c1a14'; // <-- COR CAPTURADA AQUI
+         const countdownColor = document.getElementById('wysiwygCountdownColor')?.value || '#5c1a14';
          
          if (!artistId || !title || !coverUrl || !releaseDateTimeLocal) throw new Error("Preencha todos os campos do cabeçalho.");
          const releaseDateISO = releaseDateTimeLocal.split('T')[0]; if (isNaN(new Date(releaseDateISO).getTime())) throw new Error("Data inválida.");
@@ -487,7 +487,6 @@ async function handleWysiwygSubmit(event) {
          
          const targetTableName = isAlbum ? 'Álbuns' : 'Singles e EPs'; const nameFieldName = isAlbum ? 'Nome do Álbum' : 'Nome do Single/EP'; const coverFieldName = isAlbum ? 'Capa do Álbum' : 'Capa'; const linkFieldName = isAlbum ? 'Álbuns' : 'Singles e EPs'; const isDeluxe = document.getElementById('wysiwygReleaseNature')?.value === 'deluxe';
          
-         // ADICIONADO "Cor da Contagem" AO OBJETO ABAIXO
          const releaseRecordFields = { [nameFieldName]: title, "Artista": [artistId], [coverFieldName]: [{ "url": coverUrl }], "Data de Lançamento": releaseDateISO, "Cor da Contagem": countdownColor }; 
          if (isDeluxe) releaseRecordFields["É deluxe?"] = true;
          
@@ -531,6 +530,11 @@ function openEditForm(releaseId, releaseType) {
     editReleaseId.value = release.id; editReleaseType.value = release.type; editReleaseTableName.value = release.tableName; editArtistNameDisplay.textContent = release.artist; editReleaseTitle.value = release.title; editReleaseCoverUrl.value = release.imageUrl; document.getElementById('editWysiwygCoverImg').src = release.imageUrl; document.getElementById('editWysiwygBg').style.backgroundImage = `url('${release.imageUrl}')`; 
     const artistObj = db.artists.find(a => a.id === release.artistId); if(artistObj) { document.getElementById('editWysiwygArtistImg').src = artistObj.img; }
     if (release.releaseDate) { try { const releaseDateObj = new Date(release.releaseDate); releaseDateObj.setMinutes(releaseDateObj.getMinutes() - releaseDateObj.getTimezoneOffset()); editReleaseDate.value = releaseDateObj.toISOString().slice(0, 16); } catch (e) { editReleaseDate.value = ''; } } else { editReleaseDate.value = ''; }
+    
+    // CORREÇÃO: Carrega a cor salva do banco na tela de edição
+    const editColorPicker = document.getElementById('editCountdownColor');
+    if (editColorPicker) editColorPicker.value = release.countdownColor || '#5c1a14';
+
     if (editAlbumTracklistEditor && editTracklistActions) { populateTracklistEditor(editAlbumTracklistEditor, release.tracks); if (typeof Sortable !== 'undefined') { if (editAlbumTracklistSortable) editAlbumTracklistSortable.destroy(); editAlbumTracklistSortable = Sortable.create(editAlbumTracklistEditor, { animation: 150, handle: '.drag-handle', onEnd: () => updateTrackNumbers(editAlbumTracklistEditor) }); } }
     editReleaseListContainer?.classList.add('hidden'); editReleaseForm.classList.remove('hidden');
 }
@@ -552,7 +556,12 @@ async function handleUpdateRelease(event) {
         const coverFieldName = isAlbumTable ? 'Capa do Álbum' : 'Capa';
         const linkField = isAlbumTable ? 'Álbuns' : 'Singles e EPs';
 
-        const fieldsToUpdate = { [titleFieldName]: updatedTitle, [coverFieldName]: [{ "url": updatedCoverUrl }], "Data de Lançamento": updatedReleaseDateISO };
+        // CORREÇÃO: Captura a cor ao salvar
+        const updatedCountdownColor = document.getElementById('editCountdownColor')?.value || '#5c1a14';
+
+        // CORREÇÃO: Adicionado a cor no payload
+        const fieldsToUpdate = { [titleFieldName]: updatedTitle, [coverFieldName]: [{ "url": updatedCoverUrl }], "Data de Lançamento": updatedReleaseDateISO, "Cor da Contagem": updatedCountdownColor };
+        
         const updateResult = await updateAirtableRecord(tableName, recordId, fieldsToUpdate);
         if (!updateResult || !updateResult.id) throw new Error("Falha ao atualizar o registro principal.");
 
