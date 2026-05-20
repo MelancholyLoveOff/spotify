@@ -356,236 +356,94 @@ input, select, textarea {
 .bottom-nav-item i { display: block; margin: 0 auto; }
 
 /* =========================================================
-   REFORMULAÇÃO: STUDIO, FORMULÁRIOS E AÇÕES (ESTILO PREMIUM)
+   FORMULÁRIOS, BOTÕES E MODAIS (ESTILO ORIGINAL RESTAURADO)
    ========================================================= */
-
-/* Container base de formulários */
-.studio-login-wrapper, .studio-form-content { 
-    background-color: #181818; /* Cinza escuro profundo */
-    border: 1px solid #282828;
-    padding: 32px; 
-    border-radius: 12px; 
-    margin-bottom: 24px; 
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+.studio-login-wrapper { background-color: var(--background-secondary); padding: 24px; border-radius: 8px; margin-bottom: 24px; }
+.studio-login-wrapper label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em;}
+.studio-login-wrapper select, .studio-form-group input, .studio-form-group select {
+  width: 100%; background-color: rgba(255,255,255,0.1); border: 1px solid transparent;
+  color: var(--text-primary); padding: 14px; border-radius: 4px; font-size: 14px;
+  font-family: "Montserrat", sans-serif; transition: all 0.2s;
 }
+.studio-form-group input:focus, .studio-form-group select:focus { background-color: rgba(255,255,255,0.15); outline: none; border-color: #555;}
 
-/* Labels - Padrão Spotify (Pequeno, Cinza, Uppercase, Espaçado) */
-.studio-login-wrapper label, .studio-form-group label { 
-    display: block; 
-    font-size: 11px; 
-    font-weight: 800; 
-    color: var(--text-secondary); 
-    margin-bottom: 8px; 
-    text-transform: uppercase; 
-    letter-spacing: 0.15em;
+.studio-form-group select option, .studio-login-wrapper select option, .wysiwyg-select option { background-color: var(--background-secondary); color: var(--text-primary); }
+.studio-form-group select optgroup { background-color: var(--background-secondary); color: var(--spotify-green); font-weight: bold; }
+
+.studio-form { background-color: var(--background-secondary); padding: 24px; border-radius: 8px; }
+.studio-form-content { display: none; animation: fadeIn 0.3s ease; }
+.studio-form-content.active { display: block; }
+.studio-form h3 { color: var(--text-primary); margin-bottom: 24px; font-size: 24px;}
+.form-divider { border: none; border-top: 1px solid var(--background-tertiary); margin: 24px 0; }
+.studio-form-group { margin-bottom: 16px; }
+.studio-form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; }
+
+.file-upload-input {
+    background-color: transparent !important; padding: 0 !important; border: none !important;
+    color: var(--text-secondary) !important; font-size: 13px !important; cursor: pointer;
 }
-
-/* Inputs e Selects Base */
-.studio-form-group input, 
-.studio-form-group select, 
-.studio-login-wrapper input, 
-.studio-login-wrapper select {
-    width: 100%; 
-    background-color: #242424; 
-    border: 1px solid #333;
-    color: var(--text-primary); 
-    padding: 14px 16px; 
-    border-radius: 4px; 
-    font-size: 14px;
-    font-family: "Inter", "Montserrat", sans-serif; 
-    transition: all 0.2s ease;
+.file-upload-input::file-selector-button {
+    background-color: var(--background-tertiary); color: var(--text-primary); border: none;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: 600; margin-right: 12px; transition: background 0.2s;
 }
+.file-upload-input::file-selector-button:hover { background-color: #333; }
 
-/* Reset nativo do Select para adicionar nossa própria setinha minimalista */
-.studio-form-group select, 
-.studio-login-wrapper select {
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    background-size: 16px;
-    padding-right: 40px; /* Espaço para a seta não encostar no texto */
-    cursor: pointer;
-}
-
-.studio-form-group select option, 
-.studio-login-wrapper select option { 
-    background-color: #242424; 
-    color: var(--text-primary); 
-}
-
-/* Hover e Focus dos Inputs */
-.studio-form-group input:hover, 
-.studio-form-group select:hover,
-.studio-login-wrapper input:hover { 
-    background-color: #2a2a2a; 
-    border-color: #555;
-}
-
-.studio-form-group input:focus, 
-.studio-form-group select:focus,
-.studio-login-wrapper input:focus { 
-    background-color: #333; 
-    border-color: #fff; /* Foco branco forte, típico de UIs premium */
-    outline: none; 
-}
-
-/* Botão de Submit Padrão (Verde Spotify) */
 .submit-btn {
-    background-color: var(--spotify-green); 
-    color: #000; 
-    border: none; 
-    padding: 14px 32px;
-    border-radius: 500px; 
-    font-size: 14px; 
-    font-weight: 800; 
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    margin-top: 16px; 
-    transition: transform 0.1s ease, filter 0.1s ease; 
-    display: inline-flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 8px;
+  background-color: var(--spotify-green); color: black; border: none; padding: 16px 32px;
+  border-radius: 500px; font-size: 16px; font-weight: 700; cursor: pointer;
+  margin-top: 16px; transition: transform 0.1s ease, background-color 0.1s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
+.submit-btn:hover:not(:disabled) { transform: scale(1.04); background-color: var(--spotify-green-hover); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.submit-btn:hover:not(:disabled) { 
-    transform: scale(1.04); 
-    filter: brightness(1.1); 
-}
-
-.submit-btn:active:not(:disabled) { 
-    transform: scale(0.98); 
-}
-
-.submit-btn:disabled {
-    background-color: #555;
-    color: #999;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Botões Pequenos e Secundários (Outline Border) */
 .small-btn {
-    background: transparent; 
-    border: 1px solid #727272; 
-    color: var(--text-primary);
-    padding: 8px 16px; 
-    border-radius: 500px; 
-    font-weight: 700; 
-    cursor: pointer;
-    font-size: 12px; 
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    display: inline-flex; 
-    align-items: center; 
-    gap: 8px; 
-    transition: transform 0.1s, border-color 0.1s, color 0.1s;
+  background: transparent; border: 1px solid var(--text-secondary); color: var(--text-primary);
+  padding: 8px 16px; border-radius: 500px; font-weight: 700; cursor: pointer;
+  font-size: 13px; display: inline-flex; align-items: center; gap: 8px; transition: transform 0.1s, border-color 0.1s;
 }
+.small-btn:hover { border-color: #fff; transform: scale(1.05); }
 
-.small-btn:hover { 
-    border-color: #fff; 
-    transform: scale(1.05); 
-}
-
-/* Cards de Listagem (Ações e Estúdio) - Sobrescrevendo o JS inline */
-.edit-release-item {
-    background: #181818 !important;
-    border: 1px solid #282828 !important;
-    border-radius: 8px !important;
-    padding: 16px !important;
-    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
-}
-
-.edit-release-item:hover {
-    background: #282828 !important;
-    border-color: #444 !important;
-}
-
-/* Ícone de opções (três pontinhos) dentro das listas */
-.release-options-btn {
-    color: #b3b3b3 !important;
-    transition: color 0.2s, transform 0.2s;
-}
-.release-options-btn:hover {
-    color: #fff !important;
-    transform: scale(1.1);
-}
-
-/* =========================================================
-   MODAIS MODERNAS
-   ========================================================= */
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0, 0, 0, 0.85); /* Escurece um pouco mais para focar no conteúdo */
-    backdrop-filter: blur(8px); 
-    -webkit-backdrop-filter: blur(8px);
-    display: flex; align-items: center; justify-content: center; 
-    z-index: 9999; padding: 16px;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
 }
-
 .modal-content {
-    background: #181818; /* Cor de fundo modal exata */
-    border: 1px solid #282828;
-    padding: 32px; 
-    border-radius: 12px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8); 
-    max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto;
+  background: var(--background-secondary); padding: 32px; border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto;
 }
-
-.modal-content h3 {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-bottom: 24px;
-    color: #fff;
-}
-
+.modal-content h3 { color: var(--text-primary); margin-bottom: 24px; font-size: 24px; }
 .modal-actions { display: flex; gap: 16px; margin-top: 32px; }
-.modal-actions .submit-btn, .modal-actions .cancel-btn { flex: 1; margin: 0; }
-
-.cancel-btn {
-    background: transparent; 
-    color: var(--text-primary); 
-    border: 1px solid #727272;
-    padding: 14px 20px; 
-    border-radius: 500px; 
-    font-weight: 800; 
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer; 
-    transition: transform 0.1s, border-color 0.1s;
+.modal-actions .submit-btn { margin: 0; flex: 1;}
+.modal-actions .cancel-btn {
+  background: transparent; color: var(--text-primary); border: 1px solid var(--text-secondary);
+  padding: 14px 20px; border-radius: 500px; font-weight: 700; cursor: pointer; margin: 0; flex: 1; transition: transform 0.1s, border-color 0.1s;
 }
-.cancel-btn:hover {
-    border-color: #fff;
-    transform: scale(1.04);
-}
+.modal-actions .cancel-btn:hover { border-color: #fff; transform: scale(1.04);}
 
-/* Tratamento Mobile das Modais */
+/* --- MELHORIAS MOBILE UX --- */
+.track-list-item-display { flex-wrap: wrap; }
+.track-list-item-display .track-info-display { flex-basis: 50%; }
+.track-list-item-display .track-actions { margin-left: auto; padding: 8px 0; }
+.track-list-item-display .edit-track-btn, 
+.track-list-item-display .remove-track-btn {
+    padding: 12px !important; font-size: 18px !important; background: rgba(255, 255, 255, 0.08) !important; border-radius: 6px; margin-left: 8px;
+}
+.studio-form-group select, .studio-form-group input { padding: 16px !important; }
+
+/* Transformar o Modal de Ações em um Bottom Sheet no Mobile */
 .action-modal-content {
-    padding: 32px 24px 40px !important;
-    border-radius: 24px 24px 0 0 !important;
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    max-width: 100% !important;
-    border: none !important;
-    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    padding: 24px 16px 40px !important; max-height: 90vh !important; border-radius: 20px 20px 0 0 !important;
+    position: absolute; bottom: 0; width: 100%; max-width: 100% !important; animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 
 @media (min-width: 768px) {
-    .action-modal-content { 
-        position: relative; 
-        border-radius: 12px !important; 
-        max-width: 480px !important; 
-        border: 1px solid #282828 !important;
-        animation: none; 
-    }
-}
-/* ==========================================================================
+    .action-modal-content { position: relative; border-radius: 8px !important; max-width: 480px !important; animation: none; }
+}/* ==========================================================================
    NOVO DESIGN: PÁGINA DE LANÇAMENTO E PRE-SAVE
    ========================================================================== */
 .album-type-label { font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;}
