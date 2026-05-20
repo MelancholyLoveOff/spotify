@@ -350,15 +350,15 @@
         </main>
     </div>
 
-    <div id="musicPlayer" class="page-view hidden bg-black flex justify-center items-center z-[999]">
-        <div class="w-full max-w-[420px] h-full sm:h-[850px] flex flex-col relative sm:rounded-[32px] sm:border-[8px] sm:border-black overflow-hidden shadow-2xl bg-[#121212] mx-auto mt-0 sm:mt-4">
+    <div id="musicPlayer" class="page-view hidden fixed inset-0 z-[1000] bg-[#121212] sm:bg-black/90 sm:backdrop-blur-sm flex justify-center items-center">
+        <div class="w-full h-full sm:w-[420px] sm:h-[850px] flex flex-col relative sm:rounded-[32px] sm:border-[8px] sm:border-[#222] overflow-hidden sm:shadow-2xl bg-[#121212] mx-auto">
             
-            <div class="absolute top-0 left-0 w-full h-[60%] bg-gradient-to-b from-[#637488] via-[#2c343d] to-[#121212] z-0 pointer-events-none"></div>
+            <div class="absolute top-0 left-0 w-full h-[60%] bg-gradient-to-b from-[#637488] via-[#2c343d] to-[#121212] z-0 pointer-events-none opacity-80 sm:opacity-100"></div>
 
-            <div class="relative z-10 flex flex-col h-full px-6 py-8">
+            <div class="relative z-10 flex flex-col h-full px-6 py-6 sm:py-8">
                 
-                <header class="flex justify-between items-center mb-6 mt-2">
-                    <button class="text-white p-1 player-close-btn">
+                <header class="flex justify-between items-center mb-6 mt-2 flex-shrink-0">
+                    <button class="text-white p-1 player-close-btn relative z-50" onclick="closePlayer()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -373,22 +373,22 @@
                     </button>
                 </header>
 
-                <div style="text-align: center; margin-bottom: 12px; min-height: 32px; z-index: 20;">
+                <div class="flex-shrink-0" style="text-align: center; margin-bottom: 12px; min-height: 32px; z-index: 20;">
                     <button id="toggleVideoBtn" style="display: none; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 16px; border-radius: 16px; font-size: 12px; cursor: pointer; align-items: center; justify-content: center; gap: 6px; font-weight: bold; transition: all 0.2s;">
                         <i class="fas fa-video"></i> <span>Mudar para Vídeo</span>
                     </button>
                 </div>
 
-                <div class="w-full aspect-square mb-10 flex-shrink-0 relative">
-                    <div class="w-full h-full rounded-[8px] shadow-[0_15px_40px_rgba(0,0,0,0.5)] bg-black relative overflow-hidden flex items-center justify-center">
+                <div class="flex-1 min-h-0 w-full flex items-center justify-center mb-6 px-2 sm:px-0">
+                    <div class="w-full aspect-square max-h-full max-w-[350px] rounded-[8px] shadow-[0_15px_40px_rgba(0,0,0,0.5)] bg-black relative overflow-hidden flex items-center justify-center">
                         <div id="ytplayer_video" class="absolute top-0 left-0 w-full h-full z-[1] pointer-events-none"></div>
                         <img id="playerCoverArt" src="https://i.imgur.com/AD3MbBi.png" class="absolute top-0 left-0 w-full h-full object-cover z-[2] transition-opacity duration-300">
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
                     <div class="flex flex-col pr-4 min-w-0">
-                        <h1 id="playerSongTitle" class="text-white text-[22px] font-bold tracking-tight mb-0.5 truncate">Nome da Música</h1>
+                        <h1 id="playerSongTitle" class="text-white text-[22px] sm:text-[24px] font-bold tracking-tight mb-0.5 truncate">Nome da Música</h1>
                         <h2 id="playerArtistName" class="text-[#b3b3b3] text-[16px] truncate">Artista</h2>
                     </div>
                     <button id="playerShareBtn" class="text-[#b3b3b3] hover:text-white transition-colors flex-shrink-0">
@@ -400,7 +400,7 @@
                     </button>
                 </div>
 
-                <div class="mb-5 flex flex-col">
+                <div class="mb-4 flex flex-col flex-shrink-0">
                     <div class="relative w-full h-4 flex items-center group cursor-pointer">
                         <div class="absolute w-full h-[4px] bg-[#4d4d4d] rounded-full overflow-hidden">
                             <div id="progress-fill" class="h-full bg-white group-hover:bg-[#1db954] group-active:bg-[#1db954] transition-colors duration-300 ease-out rounded-full w-0"></div>
@@ -414,7 +414,7 @@
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mb-8">
+                <div class="flex justify-between items-center mb-6 flex-shrink-0 px-2">
                     <button id="playerShuffleBtn" class="text-white hover:text-[#1db954] transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
                     </button>
@@ -436,7 +436,7 @@
                     </button>
                 </div>
 
-                <div class="flex justify-between items-center mt-auto pb-2">
+                <div class="flex justify-between items-center pb-2 flex-shrink-0 mt-auto">
                     <button class="text-[#b3b3b3] hover:text-white transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                     </button>
