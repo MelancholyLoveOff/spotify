@@ -239,10 +239,11 @@ const openAlbumDetail = (albumId) => {
     const artistObj = db.artists.find(a => a.id === album.artistId);
     const artistNameStr = artistObj ? artistObj.name : album.artist;
     document.getElementById('albumArtistName').textContent = artistNameStr;
-    const countdownContainer = document.getElementById('albumCountdownContainer');
-if (countdownContainer) {
-    countdownContainer.style.backgroundColor = album.countdownColor || '#5c1a14';
-}
+    
+    // CORRIGIDO: Removida a declaração duplicada da const countdownContainer
+    if (countdownContainer) {
+        countdownContainer.style.backgroundColor = album.countdownColor || '#5c1a14';
+    }
     
     const avatarEl = document.getElementById('albumArtistAvatar');
     if(avatarEl) avatarEl.src = artistObj ? artistObj.img : 'https://i.imgur.com/AD3MbBi.png';
