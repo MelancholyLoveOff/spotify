@@ -327,10 +327,10 @@ const openAlbumDetail = (albumId) => {
                 promoteBtnHtml = `<button class="btn btn-sm promote-track-btn" data-track-id="${track.id}" data-album-id="${album.id}" style="font-size: 10px; padding: 4px 8px; margin-left: 10px; border-radius: 4px; background-color: var(--spotify-green); color: black; pointer-events: auto; border: none; font-weight: bold; cursor: pointer;">Promover a Single</button>`;
             }
 
-            if (isAvailable) { 
+           if (isAvailable) { 
                 return `<div class="track-row available" data-song-id="${track.id}"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title">${track.title}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration">${track.duration || '0:00'}</span></div>`; 
             } else { 
-                return `<div class="track-row unavailable" style="opacity: 0.5;"><span class="track-number">${trackNumDisplay}</span><div class="track-info" style="display:flex; align-items:center;"><span class="track-title">${track.title}${promoteBtnHtml}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration"><i class="fas fa-lock"></i></span></div>`; 
+                return `<div class="track-row unavailable" style="opacity: 0.5;"><span class="track-number">${trackNumDisplay}</span><div class="track-info"><span class="track-title" style="display: flex; align-items: center; overflow: visible;">${track.title}${promoteBtnHtml}</span><span class="track-artist-feat">${artistName}</span></div><span class="track-duration"><i class="fas fa-lock"></i></span></div>`; 
             }
         }).join('') || '<p class="empty-state-small">Tracklist ainda não revelada.</p>';
 
