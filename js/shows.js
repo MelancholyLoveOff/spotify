@@ -254,4 +254,226 @@ function injectShowsModals() {
                 </div>
             </div>
         </div>
-        <div class="page-detail-body" style="background: var(--background-secondary); border-radius: 0 0 8px 8px; padding: 24px
+        <div class="page-detail-body" style="background: var(--background-secondary); border-radius: 0 0 8px 8px; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                <button type="button" class="submit-btn" id="submitTourBtn" style="margin: 0;"><i class="fas fa-ticket-alt"></i> Anunciar Turnê</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="small-btn" id="openTourExistingTrackBtn">+ Catálogo</button>
+                    <button type="button" class="small-btn" id="openTourAddTrackBtn" style="border-color:var(--spotify-green); color:var(--spotify-green);">+ Faixa Exclusiva (Live)</button>
+                </div>
+            </div>
+            <div class="track-header" style="display: flex; color: var(--text-secondary); font-size: 12px; font-weight: 400; padding: 0 16px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px;">
+                <div style="width: 24px; text-align: center; margin-right: 24px;">#</div><div style="flex-grow: 1;">SETLIST</div><div style="margin-right: 56px;"><i class="far fa-clock"></i></div>
+            </div>
+            <div id="tourTracklistEditor" class="tracklist-container" data-tracks="[]" style="min-height: 100px; margin-top: 0;">
+                <p style="color: var(--text-subdued); text-align: center; font-size: 14px; margin-top: 24px;">Nenhuma música na setlist.</p>
+            </div>
+        </div>
+    </form>`;
+    
+    // Injeta o formulário na área certa (Studio)
+    const wrapper = document.getElementById('studioLaunchWrapper');
+    if (wrapper) wrapper.insertAdjacentHTML('beforeend', tourFormHtml);
+    
+    setupShowsLogic();
+}
+
+function setupShowsLogic() {
+    document.getElementById('cancelStageBtn').onclick = () => document.getElementById('postStageModal').classList.add('hidden');
+
+    // Ao clicar nos menus para Criar
+    document.querySelectorAll('.studio-menu-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const form = e.currentTarget.dataset.form;
+            if (form === 'stage') {
+                document.getElementById('studioMenuModal').classList.add('hidden');
+                document.getElementById('stageArtistSelect').innerHTML = '<option value="" disabled selected>Selecione o Artista...</option>' + 
+                    currentPlayer.artists.map(id => {
+                        const a = db.artists.find(art => art.id === id);
+                        return a ? `<option value="${a.id}">${a.name}</option>` : '';
+                    }).join('');
+                document.getElementById('postStageModal').classList.remove('hidden');
+            }
+            if (form === 'tour') {
+                document.getElementById('studioMenuModal').classList.add('hidden');
+                document.querySelectorAll('.studio-form-content').forEach(f => f.classList.remove('active'));
+                
+                // Reseta e abre o form da Turnê WYSIWYG
+                document.getElementById('wysiwygTourForm').classList.add('active');
+                document.getElementById('currentStudioMenuLabel').textContent = 'Criar Nova Turnê';
+                
+                document.getElementById('editingTourId').value = '';
+                document.getElementById('tourTitle').value = '';
+                document.getElementById('tourCoverImg').src = 'https://i.imgur.com/AD3MbBi.png';
+                document.getElementById('tourWysiwygBg').style.backgroundImage = `url('https://i.imgur.com/AD3MbBi.png')`;
+                document.getElementById('tourCoverUrl').value = 'https://i.imgur.com/AD3MbBi.png';
+                document.getElementById('submitTourBtn').innerHTML = '<i class="fas fa-ticket-alt"></i> Anunciar Turnê';
+                
+                const editor = document.getElementById('tourTracklistEditor');
+                editor.dataset.tracks = '[]';
+                if (typeof populateTracklistEditor === 'function') populateTracklistEditor(editor, []);
+
+                document.getElementById('tourArtistSelect').innerHTML = '<option value="" disabled selected>Selecione o Artista Principal...</option>' + 
+                    currentPlayer.artists.map(id => {
+                        const a = db.artists.find(art => art.id === id);
+                        return a ? `<option value="${a.id}">${a.name}</option>` : '';
+                    }).join('');
+            }
+        });
+    });
+
+    // Lógica da Capa da Tour
+    document.getElementById('tourCoverFile').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const b64 = event.target.result;
+                document.getElementById('tourCoverImg').src = b64;
+                document.getElementById('tourWysiwygBg').style.backgroundImage = `url(${b64})`;
+                document.getElementById('tourCoverUrl').value = b64;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Filtros de seleção do Stage
+    document.getElementById('stageArtistSelect').addEventListener('change', (e) => {
+        const songs = db.songs.filter(s => s.artistIds && s.artistIds.includes(e.target.value));
+        document.getElementById('stageSongSelect').innerHTML = songs.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+    });
+
+    // ==========================================
+    // LÓGICA DE TRACKLIST (Reaproveitando Modais Originais!)
+    // ==========================================
+    
+    document.getElementById('openTourExistingTrackBtn').addEventListener('click', () => {
+        // Redireciona a adição de música para o form da Turnê!
+        activeTracklistEditor = document.getElementById('tourTracklistEditor');
+        existingTrackModalContext = 'album'; // Usamos 'album' para usar o fluxo de setlist completo
+        document.getElementById('existingTrackSearch').value = '';
+        document.getElementById('existingTrackResults').innerHTML = '';
+        document.getElementById('existingTrackModal').classList.remove('hidden');
+    });
+
+    document.getElementById('openTourAddTrackBtn').addEventListener('click', () => {
+        // Redireciona a criação de música nova para o form da Turnê!
+        activeTracklistEditor = document.getElementById('tourTracklistEditor');
+        document.getElementById('editingTrackItemId').value = '';
+        document.getElementById('albumTrackModalTitle').textContent = 'Nova Faixa / Versão Live Exclusiva';
+        document.getElementById('albumTrackNameInput').value = '';
+        document.getElementById('albumTrackAudioInput').value = '';
+        document.getElementById('albumTrackYoutubeInput').value = '';
+        document.getElementById('albumTrackModal').classList.remove('hidden');
+    });
+
+    // ==========================================
+    // SUBMIT DOS FORMS
+    // ==========================================
+
+    document.getElementById('submitStageBtn').onclick = async () => {
+        const ytInput = document.getElementById('stageYtInput').value;
+        const ytId = extractYouTubeID(ytInput); 
+        if (!ytId) return showToast("Link do YouTube inválido", "error");
+
+        const stage = {
+            artist_id: document.getElementById('stageArtistSelect').value,
+            song_id: document.getElementById('stageSongSelect').value,
+            title: document.getElementById('stageTitleInput').value,
+            yt_id: ytId
+        };
+
+        if (!stage.artist_id || !stage.song_id || !stage.title) return showToast("Preencha tudo", "error");
+        
+        document.getElementById('submitStageBtn').disabled = true;
+        await supabaseClient.from('stages').insert([stage]);
+        showToast("Stage postado com sucesso!", "success");
+        document.getElementById('postStageModal').classList.add('hidden');
+        document.getElementById('submitStageBtn').disabled = false;
+        
+        loadShowsAndStages();
+    };
+
+    // O GIGANTE: Salvar Turnê
+    document.getElementById('submitTourBtn').onclick = async () => {
+        const title = document.getElementById('tourTitle').value;
+        const artistId = document.getElementById('tourArtistSelect').value;
+        const coverUrl = document.getElementById('tourCoverUrl').value;
+        const rawTracks = document.getElementById('tourTracklistEditor').dataset.tracks;
+        const tracks = JSON.parse(rawTracks || '[]');
+
+        if (!title || !artistId || tracks.length === 0) return showToast("Preencha Nome, Capa, Artista e Músicas!", "error");
+        
+        document.getElementById('submitTourBtn').disabled = true;
+        document.getElementById('submitTourBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando Turnê...';
+        
+        try {
+            const finalSongIds = [];
+            const newSongsToInsert = [];
+            
+            // Separa as músicas do catálogo das exclusivas
+            for (const t of tracks) {
+                if (t.id && String(t.id).startsWith('temp_')) {
+                    // É UMA FAIXA EXCLUSIVA CRIADA AGORA!
+                    const newSongObj = {
+                        title: t.title,
+                        artist_ids: [artistId], // Pertence ao artista da tour
+                        duration: t.duration || '3:00',
+                        cover: coverUrl,
+                        track_type: 'Live / Exclusive',
+                        streams: 0,
+                        total_streams: 0,
+                        audio_url: t.audio_url || null,
+                        yt_id: t.yt_id || null
+                    };
+                    newSongsToInsert.push(newSongObj);
+                } else {
+                    finalSongIds.push(t.id);
+                }
+            }
+            
+            // 1. Gravar as músicas exclusivas no banco real de Músicas
+            if (newSongsToInsert.length > 0) {
+                const { data, error } = await supabaseClient.from('songs').insert(newSongsToInsert).select();
+                if (error) throw error;
+                if (data) {
+                    data.forEach(insertedSong => finalSongIds.push(insertedSong.id));
+                }
+            }
+            
+            // 2. Gravar/Atualizar a Turnê
+            const tourObj = {
+                artist_id: artistId,
+                title: title,
+                image_url: coverUrl,
+                song_ids: finalSongIds
+            };
+            
+            const editId = document.getElementById('editingTourId').value;
+            if (editId) {
+                await supabaseClient.from('tours').update(tourObj).eq('id', editId);
+                showToast("Turnê atualizada com sucesso!", "success");
+            } else {
+                await supabaseClient.from('tours').insert([tourObj]);
+                showToast("Turnê anunciada com sucesso!", "success");
+            }
+            
+            // Fecha e reseta
+            document.getElementById('wysiwygTourForm').classList.remove('active');
+            
+            await loadShowsAndStages();
+            if (activeArtist) renderArtistExtras(activeArtist.id);
+            if (typeof refreshAllData === 'function') refreshAllData();
+            
+        } catch(err) {
+            showToast("Erro ao salvar turnê: " + err.message, "error");
+        } finally {
+            document.getElementById('submitTourBtn').disabled = false;
+            document.getElementById('submitTourBtn').innerHTML = '<i class="fas fa-ticket-alt"></i> Anunciar Turnê';
+        }
+    };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => { injectShowsModals(); loadShowsAndStages(); }, 1500);
+});
