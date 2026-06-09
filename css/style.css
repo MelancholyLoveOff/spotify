@@ -485,7 +485,7 @@ input, select, textarea {
 
 /* Botões de Ação na Página do Álbum */
 .release-actions-row { 
-    display: flex; justify-content: space-between; align-items: center; 
+    display: flex; justify-content: center; align-items: center; 
     margin-top: 24px; width: 100%; max-width: 420px; margin-left: auto; margin-right: auto;
 }
 .release-actions-left { 
@@ -550,7 +550,7 @@ input, select, textarea {
   #albumDetailTitle { font-size: 80px; text-align: left; margin-bottom: 8px;}
   .release-meta-info { text-align: left; }
   .release-artist-row { justify-content: flex-start; }
-  .release-actions-row { margin-left: 0; margin-right: 0; justify-content: flex-start; gap: 32px; max-width: 100%; }
+  .release-actions-row { margin-left: 0; margin-right: 0; justify-content: center; gap: 32px; max-width: 100%; }
   .countdown-box { margin-left: 0; }
   
   #musicPlayer { background: linear-gradient(180deg, #282828 0%, var(--background-primary) 60%); }
