@@ -68,25 +68,42 @@ window.renderArtistExtras = function(artistId) {
 }
 
 // Funções de Player para Extras
+// Funções de Player para Extras
 window.playStageVideo = function(ytId, title) {
     const tempSong = {
         id: 'stage_' + ytId,
         title: "Stage: " + title,
         artistIds: [activeArtist ? activeArtist.id : null],
-        durationSeconds: 200,
+        durationSeconds: 200, // Tempo genérico, o YT assume o controle real
         yt_id: ytId,
-        cover: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`
+        cover: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
+        isStage: true // Marcação especial para o sistema saber que é um stage
     };
+    
     currentQueue = [tempSong];
     currentQueueIndex = 0;
     
+    // 1. Força o Player para o modo de Vídeo
     isVideoMode = true; 
-    const toggleBtn = document.getElementById('toggleVideoBtn');
-    if(toggleBtn && !toggleBtn.classList.contains('active')) toggleBtn.classList.add('active'); 
     
+    // 2. Esconde o botão de alternar (Garante que seja APENAS versão YT)
+    const toggleBtn = document.getElementById('toggleVideoBtn');
+    if (toggleBtn) {
+        toggleBtn.style.display = 'none'; 
+    }
+    
+    // 3. Tira a opacidade da capa do álbum para o vídeo brilhar
+    const coverArt = document.getElementById('playerCoverArt');
+    if (coverArt) {
+        coverArt.style.opacity = '0';
+    }
+
     loadSong(tempSong);
     maximizePlayer();
     playAudio();
+    
+    // Mostra um aviso imersivo para o jogador
+    showToast("📺 Exibindo Performance Oficial", "success");
 }
 
 window.playTour = function(tourId) {
