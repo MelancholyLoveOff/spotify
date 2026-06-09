@@ -1,3 +1,5 @@
+// js/player.js
+
 let ytPlayerVideoReady = false;
 let ytPlayerVideo;
 let ytPlayerAudioReady = false;
@@ -85,42 +87,70 @@ function loadSong(song) {
     document.querySelectorAll('.song-row.playing, .track-row.playing, .chart-item.playing').forEach(el => el.classList.remove('playing')); document.querySelectorAll(`[data-song-id="${song.id}"]`).forEach(el => el.classList.add('playing'));
     const artistNameStr = formatArtistString(song.artistIds, song.collabType);
     if (playerSongTitle) playerSongTitle.textContent = song.title; if (playerArtistName) playerArtistName.textContent = artistNameStr; if (miniPlayerTitle) miniPlayerTitle.textContent = song.title; if (miniPlayerArtist) miniPlayerArtist.textContent = artistNameStr;
-    const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
-    if (parentRelease) { if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; } else { if (playerCoverArt) playerCoverArt.src = 'https://i.imgur.com/AD3MbBi.png'; if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; if (miniPlayerCover) miniPlayerCover.src = 'https://i.imgur.com/AD3MbBi.png'; }
     
+    // --- LÓGICA DE DEFINIÇÃO DE CAPA E TÍTULO SUPERIOR ---
+    const parentRelease = [...db.albums, ...db.singles].find(r => r.id === song.albumId);
+    
+    if (song.isStage) {
+        if (playerCoverArt) playerCoverArt.src = song.cover || 'https://i.imgur.com/AD3MbBi.png'; 
+        if (playerAlbumTitle) playerAlbumTitle.textContent = 'Performance Ao Vivo'; 
+        if (miniPlayerCover) miniPlayerCover.src = song.cover || 'https://i.imgur.com/AD3MbBi.png'; 
+    } else {
+        if (parentRelease) { 
+            if (playerCoverArt) playerCoverArt.src = parentRelease.imageUrl; 
+            if (playerAlbumTitle) playerAlbumTitle.textContent = parentRelease.title; 
+            if (miniPlayerCover) miniPlayerCover.src = parentRelease.imageUrl; 
+        } else { 
+            if (playerCoverArt) playerCoverArt.src = song.cover || 'https://i.imgur.com/AD3MbBi.png'; 
+            if (playerAlbumTitle) playerAlbumTitle.textContent = 'Single Avulso'; 
+            if (miniPlayerCover) miniPlayerCover.src = song.cover || 'https://i.imgur.com/AD3MbBi.png'; 
+        }
+    }
+    
+    // --- LÓGICA DE ÁUDIO (NÃO CARREGA ÁUDIO SE FOR STAGE) ---
     const audioEl = document.getElementById('audioElement');
-    if (song.audio_url) { audioEl.src = song.audio_url; audioEl.load(); } else { audioEl.removeAttribute('src'); audioEl.load(); }
+    if (song.audio_url && !song.isStage) { audioEl.src = song.audio_url; audioEl.load(); } else { audioEl.removeAttribute('src'); audioEl.load(); }
 
-    if (song.yt_audio_id) {
+    if (song.yt_audio_id && !song.isStage) {
         if (ytPlayerAudioReady) { ytPlayerAudio.cueVideoById(song.yt_audio_id); ytPlayerAudio.pauseVideo(); }
     } else {
         if (ytPlayerAudioReady) ytPlayerAudio.stopVideo();
     }
 
+    // --- LÓGICA DE VÍDEO E BOTÃO ---
     const toggleBtn = document.getElementById('toggleVideoBtn');
     if (song.yt_id) {
-        if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+        if (toggleBtn) {
+            // Se for stage, esconde (trava em modo vídeo). Se for música com MV normal, mostra botão!
+            toggleBtn.style.display = song.isStage ? 'none' : 'inline-flex';
+        }
         if (ytPlayerVideoReady) { ytPlayerVideo.cueVideoById(song.yt_id); ytPlayerVideo.pauseVideo(); }
     } else {
         if (toggleBtn) toggleBtn.style.display = 'none';
         if (ytPlayerVideoReady) ytPlayerVideo.stopVideo(); 
     }
 
-    isVideoMode = false;
+    // --- FORÇAR MODO DE TELA (AUDIO VS VIDEO) ---
     const coverArt = document.getElementById('playerCoverArt');
-    if (coverArt) { coverArt.style.opacity = '1'; coverArt.style.pointerEvents = 'auto'; }
-    if (toggleBtn) { toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>'; toggleBtn.style.background = 'rgba(255,255,255,0.1)'; toggleBtn.style.color = 'white'; toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)'; }
+    if (song.isStage) {
+        isVideoMode = true; // Trava no vídeo
+        if (coverArt) { coverArt.style.opacity = '0'; coverArt.style.pointerEvents = 'none'; }
+    } else {
+        isVideoMode = false; // Música normal sempre começa em áudio
+        if (coverArt) { coverArt.style.opacity = '1'; coverArt.style.pointerEvents = 'auto'; }
+        if (toggleBtn) { toggleBtn.innerHTML = '<i class="fas fa-video"></i> <span>Mudar para Vídeo</span>'; toggleBtn.style.background = 'rgba(255,255,255,0.1)'; toggleBtn.style.color = 'white'; toggleBtn.style.borderColor = 'rgba(255,255,255,0.2)'; }
+    }
 
+    // --- TEMPO DA MÚSICA E PROGRESSO VISUAL ---
     const durationSeconds = song.durationSeconds || 180;
     if (playerSeekBar) { playerSeekBar.value = 0; playerSeekBar.max = durationSeconds; } if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); if (playerTotalTime) playerTotalTime.textContent = `-${formatTime(durationSeconds)}`; if (miniPlayerProgress) { miniPlayerProgress.style.width = '0%'; miniPlayerProgress.dataset.max = durationSeconds; }
     
-    // --- CORREÇÃO DO BUG VISUAL: ZERANDO O PREENCHIMENTO E A BOLINHA NO NOVO PLAYER ---
     const progressFill = document.getElementById('progress-fill');
     const progressThumb = document.getElementById('progress-thumb');
     if (progressFill) progressFill.style.width = '0%';
     if (progressThumb) progressThumb.style.left = '0%';
-    // -----------------------------------------------------------------------------------
 
+    // --- BOTÃO DE PLAY/PAUSE ---
     if (isPlaying) { 
         if(playerPlayPauseBtn) playerPlayPauseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'; 
         if(miniPlayerPlayPauseBtn) miniPlayerPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; 
@@ -176,7 +206,6 @@ function playNext() {
         if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
         
-        // ZERAR PROGRESSO VISUAL
         const progressFill = document.getElementById('progress-fill');
         const progressThumb = document.getElementById('progress-thumb');
         if (progressFill) progressFill.style.width = '0%';
@@ -197,7 +226,6 @@ function playPrevious() {
         if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
         if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
         
-        // ZERAR PROGRESSO VISUAL SE VOLTAR PRO INÍCIO DA MESMA MÚSICA
         const progressFill = document.getElementById('progress-fill');
         const progressThumb = document.getElementById('progress-thumb');
         if (progressFill) progressFill.style.width = '0%';
@@ -220,7 +248,6 @@ function playPrevious() {
             if (playerCurrentTime) playerCurrentTime.textContent = formatTime(0); 
             if (miniPlayerProgress) miniPlayerProgress.style.width = '0%'; 
             
-            // ZERAR PROGRESSO VISUAL
             const progressFill = document.getElementById('progress-fill');
             const progressThumb = document.getElementById('progress-thumb');
             if (progressFill) progressFill.style.width = '0%';
