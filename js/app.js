@@ -350,6 +350,7 @@ async function main() {
     if (!initializeData(data)) return;
 
     // --- INÍCIO: CONFIGURAÇÃO DO REALTIME SUPABASE ---
+    /* DESATIVADO PARA POUPAR A QUOTA DE DADOS DO SUPABASE
     if (supabaseClient) {
         // Escuta mudanças na tabela de Músicas e Apenas atualiza a tela
         supabaseClient
@@ -378,7 +379,7 @@ async function main() {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'singles' }, () => {
               refreshAllData();
           }).subscribe();
-    }
+    }*/
     // --- FIM: CONFIGURAÇÃO DO REALTIME SUPABASE ---
     
     const savedPlayerId = localStorage.getItem('spotifyRpg_loggedInPlayerId');
