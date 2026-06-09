@@ -155,19 +155,40 @@ window.playStageVideo = function(ytId, title) {
         cover: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
         isStage: true
     };
+    
     currentQueue = [tempSong];
     currentQueueIndex = 0;
     
-    isVideoMode = true; 
-    const toggleBtn = document.getElementById('toggleVideoBtn');
-    if (toggleBtn) toggleBtn.style.display = 'none'; 
+    // 1. PRIMEIRO carregamos a música (Isso faz o player.js carregar os iframes e resetar os botões)
+    loadSong(tempSong);
     
+    // 2. AGORA forçamos as regras do Stage por cima do que o player.js tentou fazer
+    isVideoMode = true; 
+    
+    // Esconde o botão de mudar para áudio, bloqueando o usuário no vídeo
+    const toggleBtn = document.getElementById('toggleVideoBtn');
+    if (toggleBtn) {
+        toggleBtn.style.display = 'none'; 
+    }
+    
+    // Tira a capa da frente do iframe
     const coverArt = document.getElementById('playerCoverArt');
     if (coverArt) coverArt.style.opacity = '0';
 
-    loadSong(tempSong);
     maximizePlayer();
+    
+    // 3. Garante que qualquer áudio de fundo (que o loadSong tenha preparado) seja completamente mutado/pausado
+    if (window.ytPlayerAudio && typeof window.ytPlayerAudio.pauseVideo === 'function') {
+        window.ytPlayerAudio.pauseVideo();
+    }
+    const audioEl = document.getElementById('audioElement');
+    if (audioEl) {
+        audioEl.pause();
+    }
+
+    // 4. Inicia a reprodução (agora focada 100% no iframe de vídeo)
     playAudio();
+    
     showToast("📺 Exibindo Performance Oficial", "success");
 }
 
