@@ -196,10 +196,18 @@ const openArtistDetail = (artistName) => {
 
     const albumsContainer = document.getElementById('albumsList'); const sortedAlbums = (artist.albums || []).sort(customSort);
     albumsContainer.innerHTML = sortedAlbums.map(album => `<div class="scroll-item" data-album-id="${album.id}"><img src="${album.imageUrl}" alt="${album.title}"><p>${album.title}</p><span>${new Date(album.releaseDate).getFullYear()}</span></div>`).join('') || '<p class="empty-state-small">Nenhum álbum encontrado.</p>';
+    
     const singlesContainer = document.getElementById('singlesList'); const sortedSingles = (artist.singles || []).sort(customSort);
     singlesContainer.innerHTML = sortedSingles.map(single => `<div class="scroll-item" data-album-id="${single.id}"><img src="${single.imageUrl}" alt="${single.title}"><p>${single.title}</p><span>${new Date(single.releaseDate).getFullYear()}</span></div>`).join('') || '<p class="empty-state-small">Nenhum single ou EP encontrado.</p>';
+    
     const recommended = [...db.artists].filter(a => a.id !== artist.id).sort(() => 0.5 - Math.random()).slice(0, 5);
-    renderArtistsGrid('recommendedGrid', recommended); switchView('artistDetail');
+    renderArtistsGrid('recommendedGrid', recommended); 
+
+    // Renderiza Extras (Stages e Turnês) se existir a função
+    if (typeof renderArtistExtras === 'function') renderArtistExtras(artist.id);
+
+    // Finalmente, troca a visualização
+    switchView('artistDetail');
 };
 
 /* =========================================================================
@@ -240,7 +248,6 @@ const openAlbumDetail = (albumId) => {
     const artistNameStr = artistObj ? artistObj.name : album.artist;
     document.getElementById('albumArtistName').textContent = artistNameStr;
     
-    // CORRIGIDO: Removida a declaração duplicada da const countdownContainer
     if (countdownContainer) {
         countdownContainer.style.backgroundColor = album.countdownColor || '#5c1a14';
     }
