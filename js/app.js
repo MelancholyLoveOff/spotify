@@ -207,8 +207,7 @@ function initializeBodyClickListener() {
                 }
             } catch(e) { console.error("Erro ao salvar histórico:", e); }
 
-            // 2. Recarrega a tela. Como a foto acabou de ser tirada, as posições 
-            // vão ser exatamente iguais, fazendo as setinhas virarem '-'
+            // 2. Recarrega a tela.
             refreshAllData().finally(() => { 
                 if(icon) icon.classList.remove('fa-spin'); 
                 refreshButton.disabled = false; 
@@ -298,6 +297,23 @@ async function refreshAllData() {
     const data = await loadAllData();
     if (data && data.allArtists) { 
         if (initializeData(data)) { 
+            
+            // --- CÓDIGO NOVO: CONSERTA NOME DE SINGLES AUTOMATICAMENTE ---
+            if (db.singles && db.songs) {
+                db.singles.forEach(single => {
+                    // Ignora o nome errado do banco e força o nome oficial da música
+                    if (single.title.toLowerCase().includes('avulso') || single.title.toLowerCase() === 'single') {
+                        if (single.tracks && single.tracks.length > 0) {
+                            const firstTrack = db.songs.find(s => s.id === single.tracks[0].id);
+                            if (firstTrack) {
+                                single.title = firstTrack.title; 
+                            }
+                        }
+                    }
+                });
+            }
+            // --- FIM DO CÓDIGO NOVO ---
+
             try { renderRPGChart(); } catch(e){}
             try { renderArtistsGrid('homeGrid', [...(db.artists || [])].sort(() => 0.5 - Math.random()).slice(0, 10)); } catch(e){}
             try { renderChart('music'); } catch(e){}
@@ -352,33 +368,10 @@ async function main() {
     // --- INÍCIO: CONFIGURAÇÃO DO REALTIME SUPABASE ---
     /* DESATIVADO PARA POUPAR A QUOTA DE DADOS DO SUPABASE
     if (supabaseClient) {
-        // Escuta mudanças na tabela de Músicas e Apenas atualiza a tela
-        supabaseClient
-          .channel('realtime-musicas')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, () => {
-              refreshAllData(); 
-          }).subscribe();
-
-        // Escuta mudanças na tabela de Artistas
-        supabaseClient
-          .channel('realtime-artistas')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'artists' }, () => {
-              refreshAllData();
-          }).subscribe();
-
-        // Escuta mudanças na tabela de Álbuns
-        supabaseClient
-          .channel('realtime-albuns')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'albums' }, () => {
-              refreshAllData();
-          }).subscribe();
-          
-        // Escuta mudanças na tabela de Singles
-        supabaseClient
-          .channel('realtime-singles')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'singles' }, () => {
-              refreshAllData();
-          }).subscribe();
+        supabaseClient.channel('realtime-musicas').on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, () => { refreshAllData(); }).subscribe();
+        supabaseClient.channel('realtime-artistas').on('postgres_changes', { event: '*', schema: 'public', table: 'artists' }, () => { refreshAllData(); }).subscribe();
+        supabaseClient.channel('realtime-albuns').on('postgres_changes', { event: '*', schema: 'public', table: 'albums' }, () => { refreshAllData(); }).subscribe();
+        supabaseClient.channel('realtime-singles').on('postgres_changes', { event: '*', schema: 'public', table: 'singles' }, () => { refreshAllData(); }).subscribe();
     }*/
     // --- FIM: CONFIGURAÇÃO DO REALTIME SUPABASE ---
     
