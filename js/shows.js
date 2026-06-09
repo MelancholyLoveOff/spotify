@@ -24,9 +24,9 @@ window.renderArtistExtras = function(artistId) {
     const artistStages = db.stages.filter(s => s.artist_id === artistId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const artistTours = db.tours.filter(t => t.artist_id === artistId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Verifica se o usuário atual é o dono do artista para mostrar os botões de editar/excluir
     const isOwner = currentPlayer && (currentPlayer.artists.includes(artistId) || currentPlayer.id === artistId);
 
+    // Renderiza Stages
     if (artistStages.length > 0) {
         document.getElementById('stagesHeaderContainer').classList.remove('hidden');
         stagesContainer.classList.remove('hidden');
@@ -59,6 +59,7 @@ window.renderArtistExtras = function(artistId) {
         stagesContainer.classList.add('hidden');
     }
 
+    // Renderiza Turnês
     if (artistTours.length > 0) {
         document.getElementById('toursHeaderContainer').classList.remove('hidden');
         toursContainer.classList.remove('hidden');
@@ -126,20 +127,32 @@ window.editTour = function(id) {
     const tour = db.tours.find(t => t.id === id);
     if (!tour) return;
 
-    document.getElementById('editingTourId').value = tour.id;
+    // Navega para o Estúdio e mostra o Form de Tour
+    if (typeof switchView === 'function') switchView('studioView');
+    document.querySelectorAll('.nav-tab, .bottom-nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelector('.bottom-nav-item[data-tab="studioSection"]')?.classList.add('active');
     
+    document.querySelectorAll('.studio-form-content').forEach(f => f.classList.remove('active'));
+    document.getElementById('wysiwygTourForm').classList.add('active');
+    document.getElementById('currentStudioMenuLabel').textContent = 'Editar Turnê';
+
+    document.getElementById('editingTourId').value = tour.id;
+    document.getElementById('tourTitle').value = tour.title;
+    document.getElementById('tourCoverImg').src = tour.image_url;
+    document.getElementById('tourWysiwygBg').style.backgroundImage = `url(${tour.image_url})`;
+    document.getElementById('tourCoverUrl').value = tour.image_url;
+
     document.getElementById('tourArtistSelect').innerHTML = `<option value="${tour.artist_id}">${db.artists.find(a=>a.id===tour.artist_id)?.name || 'Artista'}</option>`;
-    document.getElementById('tourArtistSelect').value = tour.artist_id;
-    document.getElementById('tourTitleInput').value = tour.title;
-    document.getElementById('tourImageInput').value = tour.image_url;
+    
+    // Puxa as músicas e carrega no editor!
+    const tourSongs = tour.song_ids.map(sid => db.songs.find(s => s.id === sid)).filter(Boolean);
+    const editor = document.getElementById('tourTracklistEditor');
+    editor.dataset.tracks = JSON.stringify(tourSongs);
+    
+    if (typeof populateTracklistEditor === 'function') populateTracklistEditor(editor, tourSongs);
 
-    tempTourSetlist = tour.song_ids.map(sid => db.songs.find(s => s.id === sid)).filter(Boolean);
-    window.updateTourUI();
-
-    document.getElementById('submitTourBtn').textContent = 'Salvar Alterações';
-    document.getElementById('createTourModal').classList.remove('hidden');
+    document.getElementById('submitTourBtn').innerHTML = '<i class="fas fa-save"></i> Salvar Turnê';
 }
-
 
 // ==========================================
 // FUNÇÕES DE PLAYER
@@ -159,36 +172,22 @@ window.playStageVideo = function(ytId, title) {
     currentQueue = [tempSong];
     currentQueueIndex = 0;
     
-    // 1. PRIMEIRO carregamos a música (Isso faz o player.js carregar os iframes e resetar os botões)
     loadSong(tempSong);
     
-    // 2. AGORA forçamos as regras do Stage por cima do que o player.js tentou fazer
     isVideoMode = true; 
-    
-    // Esconde o botão de mudar para áudio, bloqueando o usuário no vídeo
     const toggleBtn = document.getElementById('toggleVideoBtn');
-    if (toggleBtn) {
-        toggleBtn.style.display = 'none'; 
-    }
+    if (toggleBtn) toggleBtn.style.display = 'none'; 
     
-    // Tira a capa da frente do iframe
     const coverArt = document.getElementById('playerCoverArt');
     if (coverArt) coverArt.style.opacity = '0';
 
     maximizePlayer();
     
-    // 3. Garante que qualquer áudio de fundo (que o loadSong tenha preparado) seja completamente mutado/pausado
-    if (window.ytPlayerAudio && typeof window.ytPlayerAudio.pauseVideo === 'function') {
-        window.ytPlayerAudio.pauseVideo();
-    }
+    if (window.ytPlayerAudio && typeof window.ytPlayerAudio.pauseVideo === 'function') window.ytPlayerAudio.pauseVideo();
     const audioEl = document.getElementById('audioElement');
-    if (audioEl) {
-        audioEl.pause();
-    }
+    if (audioEl) audioEl.pause();
 
-    // 4. Inicia a reprodução (agora focada 100% no iframe de vídeo)
     playAudio();
-    
     showToast("📺 Exibindo Performance Oficial", "success");
 }
 
@@ -207,11 +206,12 @@ window.playTour = function(tourId) {
 }
 
 // ==========================================
-// INTERFACE DE MODAIS E INJEÇÃO
+// INJEÇÃO DA INTERFACE WYSIWYG
 // ==========================================
 
 function injectShowsModals() {
-    const html = `
+    // MODAL DE STAGE (Continua como Modal Simples)
+    const stageModalHtml = `
     <div id="postStageModal" class="modal-overlay hidden">
         <div class="modal-content action-modal-content">
             <h3 style="text-align:center;">Postar Stage</h3>
@@ -224,157 +224,34 @@ function injectShowsModals() {
                 <button id="submitStageBtn" class="submit-btn" style="flex:1;">Postar</button>
             </div>
         </div>
-    </div>
-    <div id="createTourModal" class="modal-overlay hidden">
-        <div class="modal-content action-modal-content">
-            <h3 style="text-align:center;">Criar / Editar Turnê</h3>
-            <input type="hidden" id="editingTourId" value="">
-            <div class="studio-form-group"><label>Artista</label><select id="tourArtistSelect" class="wysiwyg-select"></select></div>
-            <div class="studio-form-group"><label>Nome da Turnê</label><input type="text" id="tourTitleInput" class="wysiwyg-input"></div>
-            <div class="studio-form-group"><label>Pôster (URL)</label><input type="url" id="tourImageInput" class="wysiwyg-input"></div>
-            <div class="studio-form-group">
-                <label style="display:flex; justify-content:space-between;">Setlist <button id="addTourSongBtn" class="small-btn">+ Música</button></label>
-                <div id="tourSetlistContainer" style="background: rgba(255,255,255,0.05); padding:8px; border-radius:4px; min-height:60px;"></div>
-            </div>
-            <div class="modal-actions">
-                <button id="cancelTourBtn" class="cancel-btn" style="flex:1;">Cancelar</button>
-                <button id="submitTourBtn" class="submit-btn" style="flex:1;">Anunciar</button>
-            </div>
-        </div>
     </div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
-    setupShowsLogic();
-}
+    document.body.insertAdjacentHTML('beforeend', stageModalHtml);
 
-let tempTourSetlist = [];
-
-window.updateTourUI = function() {
-    document.getElementById('tourSetlistContainer').innerHTML = tempTourSetlist.map((s, i) => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;">
-            <span>${i+1}. ${s.title}</span> <i class="fas fa-times" style="color:red; cursor:pointer;" onclick="removeTourSong('${s.id}')"></i>
-        </div>
-    `).join('') || '<p style="font-size:12px; color:gray; text-align:center;">Vazio</p>';
-};
-
-function setupShowsLogic() {
-    document.getElementById('cancelStageBtn').onclick = () => document.getElementById('postStageModal').classList.add('hidden');
-    document.getElementById('cancelTourBtn').onclick = () => { 
-        document.getElementById('createTourModal').classList.add('hidden'); 
-        tempTourSetlist = []; 
-        document.getElementById('editingTourId').value = ""; 
-    };
-
-    document.querySelectorAll('.studio-menu-opt').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const form = e.currentTarget.dataset.form;
-            if (form === 'stage' || form === 'tour') {
-                document.getElementById('studioMenuModal').classList.add('hidden');
-                const selectId = form === 'stage' ? 'stageArtistSelect' : 'tourArtistSelect';
-                document.getElementById(selectId).innerHTML = '<option value="" disabled selected>Selecione o Artista...</option>' + 
-                    currentPlayer.artists.map(id => {
-                        const a = db.artists.find(art => art.id === id);
-                        return a ? `<option value="${a.id}">${a.name}</option>` : '';
-                    }).join('');
+    // NOVO FORMULÁRIO DE TURNÊ (Estilo WYSIWYG de Álbum)
+    const tourFormHtml = `
+    <form id="wysiwygTourForm" class="studio-form-content hidden" style="padding: 0; background: transparent;">
+        <input type="hidden" id="editingTourId" value="">
+        <div class="album-header" style="padding: 40px 24px 24px; border-radius: 8px 8px 0 0;">
+            <div id="tourWysiwygBg" class="header-bg" style="background-image: url('https://i.imgur.com/AD3MbBi.png'); filter: blur(30px) brightness(0.4); transform: scale(1.2);"></div>
+            <div class="header-overlay" style="background: linear-gradient(to top, var(--background-secondary) 0%, rgba(0,0,0,0.4) 100%);"></div>
+            <div class="album-header-content" style="width: 100%; flex-wrap: wrap;">
+                <div style="position: relative; width: 200px; height: 200px; flex-shrink: 0; cursor: pointer; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5); margin: 0 auto;" onclick="document.getElementById('tourCoverFile').click()">
+                    <img id="tourCoverImg" src="https://i.imgur.com/AD3MbBi.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; border-radius: 4px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+                        <i class="fas fa-camera" style="font-size: 32px; margin-bottom: 8px;"></i><span style="font-size: 12px; font-weight: 600;">Pôster da Turnê</span>
+                    </div>
+                </div>
+                <input type="file" id="tourCoverFile" accept="image/*" hidden="">
+                <input type="hidden" id="tourCoverUrl" value="https://i.imgur.com/AD3MbBi.png">
                 
-                if (form === 'stage') document.getElementById('postStageModal').classList.remove('hidden');
-                if (form === 'tour') { 
-                    tempTourSetlist = []; 
-                    document.getElementById('editingTourId').value = ""; 
-                    document.getElementById('submitTourBtn').textContent = 'Anunciar';
-                    window.updateTourUI(); 
-                    document.getElementById('createTourModal').classList.remove('hidden'); 
-                }
-            }
-        });
-    });
-
-    document.getElementById('stageArtistSelect').addEventListener('change', (e) => {
-        const songs = db.songs.filter(s => s.artistIds && s.artistIds.includes(e.target.value));
-        document.getElementById('stageSongSelect').innerHTML = songs.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-    });
-
-    document.getElementById('addTourSongBtn').onclick = () => {
-        const artistId = document.getElementById('tourArtistSelect').value;
-        if (!artistId) return showToast("Selecione o artista primeiro.", "error");
-        const songs = db.songs.filter(s => s.artistIds && s.artistIds.includes(artistId));
-        existingTrackModalContext = 'tour';
-        existingTrackResults.innerHTML = songs.map(song => `
-            <div class="tour-add-item" onclick="addSongToTempTour('${song.id}')" style="display:flex; gap:10px; padding:5px; cursor:pointer; background:rgba(255,255,255,0.05); margin-bottom:5px;">
-                <img src="${song.cover || ''}" style="width:30px; height:30px; object-fit:cover;">
-                <span>${song.title}</span>
+                <div class="album-text-info" style="flex-grow: 1; min-width: 250px;">
+                    <p class="album-type-label" style="text-align:center;">TURNÊ OFICIAL / SHOW</p>
+                    <input type="text" id="tourTitle" class="wysiwyg-input" placeholder="Nome da Turnê / Show" required style="font-size: clamp(28px, 6vw + 1rem, 40px); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 8px; line-height: 1.2; text-shadow: 0 2px 10px rgba(0,0,0,0.3); border-bottom: 1px dashed rgba(255,255,255,0.3); text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                        <img id="tourArtistImg" src="https://i.imgur.com/AD3MbBi.png" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                        <select id="tourArtistSelect" class="wysiwyg-select" required style="border-bottom: 1px dashed rgba(255,255,255,0.3);"></select>
+                    </div>
+                </div>
             </div>
-        `).join('');
-        existingTrackModal.classList.remove('hidden');
-    };
-
-    window.addSongToTempTour = (id) => {
-        const song = db.songs.find(s => s.id === id);
-        if (song && !tempTourSetlist.find(s => s.id === id)) {
-            tempTourSetlist.push(song);
-            window.updateTourUI();
-            showToast("Adicionada!", "success");
-        }
-    };
-
-    window.removeTourSong = (id) => {
-        tempTourSetlist = tempTourSetlist.filter(s => s.id !== id);
-        window.updateTourUI();
-    };
-
-    // SUBMIT STAGE
-    document.getElementById('submitStageBtn').onclick = async () => {
-        const ytInput = document.getElementById('stageYtInput').value;
-        const ytId = extractYouTubeID(ytInput); 
-        if (!ytId) return showToast("Link do YouTube inválido", "error");
-
-        const stage = {
-            artist_id: document.getElementById('stageArtistSelect').value,
-            song_id: document.getElementById('stageSongSelect').value,
-            title: document.getElementById('stageTitleInput').value,
-            yt_id: ytId
-        };
-
-        if (!stage.artist_id || !stage.song_id || !stage.title) return showToast("Preencha tudo", "error");
-        
-        document.getElementById('submitStageBtn').disabled = true;
-        await supabaseClient.from('stages').insert([stage]);
-        showToast("Stage postado com sucesso!", "success");
-        document.getElementById('postStageModal').classList.add('hidden');
-        document.getElementById('submitStageBtn').disabled = false;
-        
-        loadShowsAndStages();
-    };
-
-    // SUBMIT TOUR (CRIAR E EDITAR)
-    document.getElementById('submitTourBtn').onclick = async () => {
-        const tour = {
-            artist_id: document.getElementById('tourArtistSelect').value,
-            title: document.getElementById('tourTitleInput').value,
-            image_url: document.getElementById('tourImageInput').value,
-            song_ids: tempTourSetlist.map(s => s.id)
-        };
-
-        if (!tour.artist_id || !tour.title || !tour.image_url || tour.song_ids.length === 0) return showToast("Preencha tudo", "error");
-        
-        document.getElementById('submitTourBtn').disabled = true;
-        const editId = document.getElementById('editingTourId').value;
-
-        if (editId) {
-            await supabaseClient.from('tours').update(tour).eq('id', editId);
-            showToast("Turnê atualizada com sucesso!", "success");
-        } else {
-            await supabaseClient.from('tours').insert([tour]);
-            showToast("Turnê anunciada com sucesso!", "success");
-        }
-
-        document.getElementById('createTourModal').classList.add('hidden');
-        document.getElementById('submitTourBtn').disabled = false;
-        document.getElementById('editingTourId').value = "";
-        
-        loadShowsAndStages().then(() => { if (activeArtist) renderArtistExtras(activeArtist.id); });
-    };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => { injectShowsModals(); loadShowsAndStages(); }, 1500);
-});
+        </div>
+        <div class="page-detail-body" style="background: var(--background-secondary); border-radius: 0 0 8px 8px; padding: 24px
