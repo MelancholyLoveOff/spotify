@@ -721,6 +721,8 @@ function initializeStudio() {
     // Novo preview para capa de Single promovido
     setupImageUploadWithPreview('promoteSingleCoverFile', 'promoteSingleCoverUrl');
 
+    setupImageUploadWithPreview('tourCoverFile', 'tourCoverUrl', 'tourCoverImg', 'tourWysiwygBg');
+
     wysiwygArtistSelect?.addEventListener('change', (e) => { const artist = db.artists.find(a => a.id === e.target.value); if(artist && wysiwygArtistImg) wysiwygArtistImg.src = artist.img; });
 
     const releaseNatureSelect = document.getElementById('wysiwygReleaseNature'), originalAlbumSelectInline = document.getElementById('wysiwygOriginalAlbumSelect'), btnImportDeluxe = document.getElementById('btnImportDeluxe');
