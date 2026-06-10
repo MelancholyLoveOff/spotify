@@ -16,7 +16,6 @@ window.openPromoteModal = function(trackId, albumId) {
     document.getElementById('promoteSingleModal').classList.remove('hidden');
 }
 
-
 function setupImageUploadWithPreview(fileInputId, urlInputId, imgElementId, bgElementId, onCompleteCb) {
     const fileInput = document.getElementById(fileInputId); const urlInput = document.getElementById(urlInputId);
     const imgElement = document.getElementById(imgElementId); const bgElement = document.getElementById(bgElementId);
@@ -780,6 +779,10 @@ function initializeStudio() {
             else if (formTarget === 'stage') {
                 document.getElementById('postStageModal').classList.remove('hidden');
                 return; // Stage é um modal à parte, não esconde o estúdio principal
+            }
+            // Mapeamento para a aba de Turnê
+            else if (formTarget === 'tour') {
+                targetElementId = 'wysiwygTourForm';
             }
 
             const targetElement = document.getElementById(targetElementId); 
