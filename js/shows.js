@@ -74,12 +74,13 @@ window.renderArtistExtras = function(artistId) {
                 </div>
             ` : '';
 
+            // Alterado de playTour para openTourView
             return `
-            <div class="scroll-item" onclick="playTour('${tour.id}')" style="text-align: center; cursor: pointer; position: relative;">
+            <div class="scroll-item" onclick="openTourView('${tour.id}')" style="text-align: center; cursor: pointer; position: relative;">
                 ${adminBtns}
                 <img src="${tour.image_url}" alt="${tour.title}" style="width: 150px; height: 150px; border-radius: 8px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
                 <p style="margin-top: 8px; font-weight: bold;">${tour.title}</p>
-                <span style="font-size: 12px; color: var(--spotify-green);"><i class="fas fa-play"></i> Tocar Setlist</span>
+                <span style="font-size: 12px; color: var(--text-secondary);"><i class="fas fa-list"></i> Ver Setlist</span>
             </div>
             `;
         }).join('');
@@ -134,14 +135,14 @@ window.editTour = function(id) {
     document.querySelectorAll('.studio-form-content').forEach(f => {
         f.classList.remove('active');
         f.classList.add('hidden');
-        f.style.display = 'none'; // FORÇADO
+        f.style.display = 'none';
     });
     
     const tourForm = document.getElementById('wysiwygTourForm');
     if (tourForm) {
         tourForm.classList.remove('hidden');
         tourForm.classList.add('active');
-        tourForm.style.display = 'block'; // FORÇADO
+        tourForm.style.display = 'block';
     }
     
     document.getElementById('currentStudioMenuLabel').textContent = 'Editar Turnê';
@@ -184,15 +185,95 @@ window.playStageVideo = function(ytId, title) {
     showToast("📺 Exibindo Performance Oficial", "success");
 }
 
-window.playTour = function(tourId) {
+// NOVA FUNÇÃO: Abre a tela de Detalhes da Turnê antes de tocar
+window.openTourView = function(tourId) {
     const tour = db.tours.find(t => t.id === tourId);
     if (!tour || !tour.song_ids) return showToast("Setlist vazia!", "error");
-    const tourSongs = tour.song_ids.map(id => db.songs.find(s => s.id === id)).filter(Boolean);
+
+    // Prepara as músicas com a estética "Live"
+    const tourSongs = tour.song_ids.map((id, index) => {
+        const originalSong = db.songs.find(s => s.id === id);
+        if (!originalSong) return null;
+        return {
+            ...originalSong,
+            cover: tour.image_url, 
+            title: `${originalSong.title} (Live)`,
+            trackNumber: index + 1
+        };
+    }).filter(Boolean);
+
     if (tourSongs.length === 0) return showToast("Músicas não encontradas.", "error");
 
-    currentQueue = tourSongs; currentQueueIndex = 0;
-    showToast(`🎸 Turnê iniciada: ${tour.title}!`, "success");
-    loadSong(currentQueue[0]); maximizePlayer(); playAudio();
+    // Transição de Telas - Tenta usar a view de álbuns padrão
+    if (typeof switchView === 'function') {
+        switchView('albumDetailView'); // Ajuste esse nome se a sua view chamar diferente (ex: 'albumView')
+    }
+
+    // Injeta os dados da Turnê no HTML da View de Álbuns
+    const coverEl = document.getElementById('albumDetailCover') || document.getElementById('albumCover');
+    if (coverEl) coverEl.src = tour.image_url;
+
+    const titleEl = document.getElementById('albumDetailTitle') || document.getElementById('albumTitle');
+    if (titleEl) titleEl.textContent = tour.title;
+
+    const artistEl = document.getElementById('albumDetailArtist') || document.getElementById('albumArtist');
+    if (artistEl) artistEl.textContent = "Turnê Oficial • Setlist";
+
+    // Opcional: Atualiza info de data/quantidade
+    const infoEl = document.getElementById('albumDetailInfo') || document.getElementById('albumInfo');
+    if (infoEl) infoEl.textContent = `${tourSongs.length} músicas • Ao Vivo`;
+
+    // Renderiza a Tracklist
+    const tracklistContainer = document.getElementById('albumDetailTracklist') || document.getElementById('albumTracklist');
+    if (tracklistContainer) {
+        tracklistContainer.innerHTML = tourSongs.map((song, index) => `
+            <div class="track-item" ondblclick="playSpecificTourSong('${tour.id}', '${song.id}')" style="display: flex; align-items: center; gap: 16px; padding: 12px; cursor: pointer; border-radius: 4px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                <span style="color: var(--text-secondary); width: 24px; text-align: right; font-size: 14px;">${index + 1}</span>
+                <div style="flex-grow: 1;">
+                    <span style="display: block; color: var(--text-primary); font-weight: 500; font-size: 14px;">${song.title}</span>
+                    <span style="display: block; color: var(--text-secondary); font-size: 12px;">Performance Ao Vivo</span>
+                </div>
+                <span style="color: var(--text-secondary); font-size: 14px;">${song.duration || '--:--'}</span>
+            </div>
+        `).join('');
+    }
+
+    // Configura o Botão "Play All" gigante
+    const playAllBtn = document.getElementById('albumDetailPlayBtn') || document.getElementById('playAlbumBtn');
+    if (playAllBtn) {
+        // Clone limpa os EventListeners antigos (evita conflito com álbuns)
+        const newPlayBtn = playAllBtn.cloneNode(true);
+        playAllBtn.parentNode.replaceChild(newPlayBtn, playAllBtn);
+        
+        newPlayBtn.onclick = () => {
+            currentQueue = tourSongs;
+            currentQueueIndex = 0;
+            showToast(`🎸 Turnê iniciada: ${tour.title}!`, "success");
+            loadSong(currentQueue[0]); 
+            maximizePlayer(); 
+            playAudio();
+        };
+    }
+}
+
+// NOVA FUNÇÃO: Play ao dar Double Click em uma música na Setlist
+window.playSpecificTourSong = function(tourId, songId) {
+    const tour = db.tours.find(t => t.id === tourId);
+    if (!tour) return;
+
+    const tourSongs = tour.song_ids.map(id => {
+        const originalSong = db.songs.find(s => s.id === id);
+        return originalSong ? { ...originalSong, cover: tour.image_url, title: `${originalSong.title} (Live)` } : null;
+    }).filter(Boolean);
+
+    currentQueue = tourSongs;
+    currentQueueIndex = tourSongs.findIndex(s => s.id === songId);
+    if (currentQueueIndex === -1) currentQueueIndex = 0;
+    
+    showToast(`🎸 Tocando da Turnê: ${tour.title}`, "success");
+    loadSong(currentQueue[currentQueueIndex]);
+    maximizePlayer();
+    playAudio();
 }
 
 let tempTourSetlist = [];
@@ -233,19 +314,17 @@ function setupShowsLogic() {
             if (form === 'tour') {
                 document.getElementById('studioMenuModal').classList.add('hidden');
                 
-                // 1. OBRIGA OS OUTROS FORMS A SUMIREM DA TELA
                 document.querySelectorAll('.studio-form-content').forEach(f => {
                     f.classList.remove('active');
                     f.classList.add('hidden');
-                    f.style.display = 'none'; // FORÇA VIA INLINE CSS
+                    f.style.display = 'none'; 
                 });
                 
-                // 2. FORÇA O DA TURNÊ A APARECER
                 const tourForm = document.getElementById('wysiwygTourForm');
                 if (tourForm) {
                     tourForm.classList.remove('hidden');
                     tourForm.classList.add('active');
-                    tourForm.style.display = 'block'; // FORÇA VIA INLINE CSS
+                    tourForm.style.display = 'block'; 
                 } else {
                     console.error("ATENÇÃO: O formulário com id 'wysiwygTourForm' NÃO foi encontrado no seu HTML!");
                     return;
@@ -314,14 +393,9 @@ function setupShowsLogic() {
         });
     }
     
-    // ==========================================
-    // AQUI ESTÁ A CORREÇÃO DE INTEGRAÇÃO COM O STUDIO.JS
-    // ==========================================
+    // INTEGRAÇÃO COM STUDIO.JS CORRIGIDA
     document.getElementById('openTourExistingTrackBtn')?.addEventListener('click', () => {
-        // 1. Informa ao sistema que o editor atual é o da Turnê
         activeTracklistEditor = document.getElementById('tourTracklistEditor');
-        
-        // 2. Chama a função completa do studio.js que fará o resto do trabalho pesado!
         openExistingTrackModal('album'); 
     });
 
