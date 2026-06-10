@@ -74,7 +74,6 @@ window.renderArtistExtras = function(artistId) {
                 </div>
             ` : '';
 
-            // Alterado de playTour para openTourView
             return `
             <div class="scroll-item" onclick="openTourView('${tour.id}')" style="text-align: center; cursor: pointer; position: relative;">
                 ${adminBtns}
@@ -190,13 +189,17 @@ window.openTourView = function(tourId) {
     const tour = db.tours.find(t => t.id === tourId);
     if (!tour || !tour.song_ids) return showToast("Setlist vazia!", "error");
 
-    // Prepara as músicas com a estética "Live"
+    // Prepara as músicas sendo muito agressivo para o player aceitar a capa da turnê
     const tourSongs = tour.song_ids.map((id, index) => {
         const originalSong = db.songs.find(s => s.id === id);
         if (!originalSong) return null;
         return {
             ...originalSong,
             cover: tour.image_url, 
+            imageUrl: tour.image_url, 
+            image_url: tour.image_url,
+            albumIds: [], // Desvincula para o player não puxar a capa antiga
+            singleIds: [], 
             title: `${originalSong.title} (Live)`,
             trackNumber: index + 1
         };
@@ -204,12 +207,12 @@ window.openTourView = function(tourId) {
 
     if (tourSongs.length === 0) return showToast("Músicas não encontradas.", "error");
 
-    // 1. Transição de Telas - ID exato do seu HTML
+    // Transição de Telas
     if (typeof switchView === 'function') {
         switchView('albumDetail'); 
     }
 
-    // 2. Injeta os dados da Turnê no HTML
+    // Injeta os dados da Turnê no HTML
     const coverEl = document.getElementById('albumDetailCover');
     if (coverEl) coverEl.src = tour.image_url;
 
@@ -222,12 +225,15 @@ window.openTourView = function(tourId) {
     const infoEl = document.getElementById('albumDetailInfo');
     if (infoEl) infoEl.textContent = `${tourSongs.length} músicas • Ao Vivo`;
 
-    // 3. Renderiza a Tracklist
+    // Renderiza a Tracklist
     const tracklistContainer = document.getElementById('albumTracklist');
     if (tracklistContainer) {
         tracklistContainer.innerHTML = tourSongs.map((song, index) => `
             <div class="track-item" ondblclick="playSpecificTourSong('${tour.id}', '${song.id}')" style="display: flex; align-items: center; gap: 16px; padding: 12px; cursor: pointer; border-radius: 4px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
                 <span style="color: var(--text-secondary); width: 24px; text-align: right; font-size: 14px;">${index + 1}</span>
+                
+                <img src="${song.cover}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                
                 <div style="flex-grow: 1;">
                     <span style="display: block; color: var(--text-primary); font-weight: 500; font-size: 14px;">${song.title}</span>
                     <span style="display: block; color: var(--text-secondary); font-size: 12px;">Performance Ao Vivo</span>
@@ -237,7 +243,7 @@ window.openTourView = function(tourId) {
         `).join('');
     }
 
-    // 4. Configura o Botão "Play" Principal
+    // Configura o Botão "Play" Principal
     const playAllBtn = document.getElementById('albumPlayBtn');
     if (playAllBtn) {
         // Clone limpa os EventListeners antigos (evita conflito com álbuns normais)
@@ -260,9 +266,18 @@ window.playSpecificTourSong = function(tourId, songId) {
     const tour = db.tours.find(t => t.id === tourId);
     if (!tour) return;
 
+    // Fazemos o mesmo bloqueio agressivo aqui
     const tourSongs = tour.song_ids.map(id => {
         const originalSong = db.songs.find(s => s.id === id);
-        return originalSong ? { ...originalSong, cover: tour.image_url, title: `${originalSong.title} (Live)` } : null;
+        return originalSong ? { 
+            ...originalSong, 
+            cover: tour.image_url, 
+            imageUrl: tour.image_url,
+            image_url: tour.image_url,
+            albumIds: [], 
+            singleIds: [],
+            title: `${originalSong.title} (Live)` 
+        } : null;
     }).filter(Boolean);
 
     currentQueue = tourSongs;
@@ -392,7 +407,7 @@ function setupShowsLogic() {
         });
     }
     
-    // INTEGRAÇÃO COM STUDIO.JS CORRIGIDA
+    // INTEGRAÇÃO COM STUDIO.JS
     document.getElementById('openTourExistingTrackBtn')?.addEventListener('click', () => {
         activeTracklistEditor = document.getElementById('tourTracklistEditor');
         openExistingTrackModal('album'); 
