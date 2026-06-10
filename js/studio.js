@@ -243,19 +243,29 @@ function populateTracklistEditor(editorElement, tracks) {
         const ytIcon = fullSong.yt_id ? '<i class="fab fa-youtube" style="color: #ff0000; margin-left: 8px;" title="Com MV"></i>' : '';
         const auIcon = (fullSong.yt_audio_id || fullSong.audio_url) ? '<i class="fas fa-music" style="color: var(--spotify-green); margin-left: 8px;" title="Com Áudio"></i>' : '';
 
-        newItem.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
-            <span class="track-number track-number-display">${fullSong.trackNumber || '?'}</span>
-            <div class="track-info" style="flex-grow:1;">
-                <span class="track-title" style="color: ${(fullSong.id)?'var(--spotify-green)':'var(--text-primary)'};">${titleDisplay} ${ytIcon} ${auIcon}</span>
-                <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${fullSong.trackType}</span></span>
-            </div>
-            <span class="track-duration" style="margin-right: 16px;">${fullSong.duration}</span>
-            <div class="track-actions" style="display:flex; gap:12px;">
-                <button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button>
-                <button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button>
-            </div>
-        `;
+        // CORREÇÃO: Estrutura diferente se for Tour ou Álbum
+        if (editorElement.id === 'tourTracklistEditor') {
+             newItem.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; align-items:center;">
+                    <span class="track-title">${titleDisplay}</span> 
+                    <i class="fas fa-times remove-track-btn" style="color:var(--trend-down-red); cursor:pointer;"></i>
+                </div>
+            `;
+        } else {
+            newItem.innerHTML = `
+                <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
+                <span class="track-number track-number-display">${fullSong.trackNumber || '?'}</span>
+                <div class="track-info" style="flex-grow:1;">
+                    <span class="track-title" style="color: ${(fullSong.id)?'var(--spotify-green)':'var(--text-primary)'};">${titleDisplay} ${ytIcon} ${auIcon}</span>
+                    <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${fullSong.trackType}</span></span>
+                </div>
+                <span class="track-duration" style="margin-right: 16px;">${fullSong.duration}</span>
+                <div class="track-actions" style="display:flex; gap:12px;">
+                    <button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button>
+                    <button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+        }
         editorElement.appendChild(newItem);
     });
     updateTrackNumbers(editorElement); 
@@ -338,6 +348,7 @@ function saveAlbumTrack() {
     let mainArtistName = "Desconhecido";
     if (activeTracklistEditor === wysiwygTracklistEditor) { const sel = document.getElementById('wysiwygArtistSelect'); if(sel && sel.selectedIndex >= 0 && sel.value !== "") mainArtistName = sel.options[sel.selectedIndex].text; } 
     else if (activeTracklistEditor === editAlbumTracklistEditor) { const disp = document.getElementById('editArtistNameDisplay'); if(disp) mainArtistName = disp.textContent; }
+    else if (activeTracklistEditor.id === 'tourTracklistEditor') { const sel = document.getElementById('tourArtistSelect'); if(sel && sel.selectedIndex >= 0 && sel.value !== "") mainArtistName = sel.options[sel.selectedIndex].text; }
 
     let artistText = mainArtistName;
     if (featsData.length > 0) { if (featsData[0].type === "Dueto/Grupo") artistText = `${mainArtistName} & ${featsData.map(f=>f.name).join(', ')}`; else artistText = `${mainArtistName} (feat. ${featsData.map(f=>f.name).join(', ')})`; }
@@ -346,20 +357,45 @@ function saveAlbumTrack() {
         targetElement.dataset.trackName = name; targetElement.dataset.durationStr = durationStr; targetElement.dataset.feats = featsJSON; targetElement.dataset.trackType = type;
         targetElement.dataset.ytId = ytId || ''; targetElement.dataset.ytAudioId = ytAudioId || ''; targetElement.dataset.audioUrl = audioUrl || ''; 
         
-        targetElement.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
-            <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:${existingSongId ? 'var(--spotify-green)' : 'var(--text-primary)'};">${existingSongId ? '<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>' : ''}${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
-            <span class="track-duration" style="margin-right: 16px;">${durationStr}</span>
-            <div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+        if (activeTracklistEditor.id === 'tourTracklistEditor') {
+             targetElement.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; align-items:center; width: 100%;">
+                    <span class="track-title">${name} ${ytIcon} ${auIcon}</span> 
+                    <div style="display:flex; gap:12px;">
+                        <i class="fas fa-pencil-alt edit-track-btn" style="cursor:pointer;"></i>
+                        <i class="fas fa-times remove-track-btn" style="color:var(--trend-down-red); cursor:pointer;"></i>
+                    </div>
+                </div>
+            `;
+        } else {
+            targetElement.innerHTML = `
+                <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
+                <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:${existingSongId ? 'var(--spotify-green)' : 'var(--text-primary)'};">${existingSongId ? '<i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>' : ''}${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
+                <span class="track-duration" style="margin-right: 16px;">${durationStr}</span>
+                <div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+        }
     } else {
-        const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px; border: 1px solid transparent;';
+        const newItem = document.createElement('div'); newItem.className = 'track-list-item-display track-row'; newItem.style.cssText = 'background: transparent; margin-bottom: 8px; border-radius: 4px; border: 1px solid transparent; width: 100%;';
         newItem.dataset.itemId = itemId; newItem.dataset.trackName = name; newItem.dataset.durationStr = durationStr; newItem.dataset.trackType = type; newItem.dataset.feats = featsJSON;
         newItem.dataset.ytId = ytId || ''; newItem.dataset.ytAudioId = ytAudioId || ''; newItem.dataset.audioUrl = audioUrl || ''; 
-        newItem.innerHTML = `
-            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
-            <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:var(--text-primary);">${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
-            <span class="track-duration" style="margin-right: 16px;">${durationStr}</span>
-            <div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+        
+        if (activeTracklistEditor.id === 'tourTracklistEditor') {
+             newItem.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; align-items:center; width: 100%;">
+                    <span class="track-title">${name} ${ytIcon} ${auIcon}</span> 
+                    <div style="display:flex; gap:12px;">
+                        <i class="fas fa-pencil-alt edit-track-btn" style="cursor:pointer;"></i>
+                        <i class="fas fa-times remove-track-btn" style="color:var(--trend-down-red); cursor:pointer;"></i>
+                    </div>
+                </div>
+            `;
+        } else {
+             newItem.innerHTML = `
+                <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i><span class="track-number track-number-display"></span>
+                <div class="track-info" style="flex-grow:1;"><span class="track-title" style="color:var(--text-primary);">${name} ${ytIcon} ${auIcon}</span><span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${type}</span></span></div>
+                <span class="track-duration" style="margin-right: 16px;">${durationStr}</span>
+                <div class="track-actions" style="display:flex; gap:12px;"><button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button><button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button></div>`;
+        }
         const emptyState = activeTracklistEditor.querySelector('p'); if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) emptyState.remove();
         activeTracklistEditor.appendChild(newItem);
     }
@@ -369,7 +405,10 @@ function saveAlbumTrack() {
 function openExistingTrackModal(context) { 
     if (!currentPlayer) { showToast("Faça login", 'error'); return; }
     let activeArtistId = null;
-    if(activeTracklistEditor === wysiwygTracklistEditor){ activeArtistId = wysiwygArtistSelect?.value; } else if (activeTracklistEditor === editAlbumTracklistEditor){ const artistDisplay = document.getElementById('editArtistNameDisplay'); activeArtistId = db.artists.find(a => a.name === artistDisplay?.textContent)?.id; }
+    if(activeTracklistEditor === wysiwygTracklistEditor){ activeArtistId = wysiwygArtistSelect?.value; } 
+    else if (activeTracklistEditor === editAlbumTracklistEditor){ const artistDisplay = document.getElementById('editArtistNameDisplay'); activeArtistId = db.artists.find(a => a.name === artistDisplay?.textContent)?.id; }
+    else if (activeTracklistEditor.id === 'tourTracklistEditor') { activeArtistId = document.getElementById('tourArtistSelect')?.value; }
+    
     if (!activeArtistId) { showToast("Selecione o Artista Principal na capa.", 'error'); return; }
     existingTrackModalContext = context; if(existingTrackSearch) existingTrackSearch.value = ''; populateExistingTrackSearch(); existingTrackModal?.classList.remove('hidden');
 }
@@ -377,7 +416,10 @@ function openExistingTrackModal(context) {
 function closeExistingTrackModal() { existingTrackModal?.classList.add('hidden'); if(existingTrackSearch) existingTrackSearch.value = ''; if(existingTrackResults) existingTrackResults.innerHTML = '<p class="empty-state-small">Busque por uma faixa.</p>'; }
 function populateExistingTrackSearch() {
     if (!existingTrackResults || !currentPlayer) return; let selectedArtistId = null;
-    if(activeTracklistEditor === wysiwygTracklistEditor){ selectedArtistId = wysiwygArtistSelect?.value; } else if (activeTracklistEditor === editAlbumTracklistEditor){ selectedArtistId = db.artists.find(a => a.name === document.getElementById('editArtistNameDisplay')?.textContent)?.id; }
+    if(activeTracklistEditor === wysiwygTracklistEditor){ selectedArtistId = wysiwygArtistSelect?.value; } 
+    else if (activeTracklistEditor === editAlbumTracklistEditor){ selectedArtistId = db.artists.find(a => a.name === document.getElementById('editArtistNameDisplay')?.textContent)?.id; }
+    else if (activeTracklistEditor.id === 'tourTracklistEditor') { selectedArtistId = document.getElementById('tourArtistSelect')?.value; }
+    
     if (!selectedArtistId) return; const query = existingTrackSearch?.value.toLowerCase().trim() || '';
     const filteredSongs = db.songs.filter(song => song.artistIds && song.artistIds.includes(selectedArtistId) && (query === '' || song.title.toLowerCase().includes(query))).sort((a, b) => (b.totalStreams || 0) - (a.totalStreams || 0));
     if (filteredSongs.length === 0) { existingTrackResults.innerHTML = '<p class="empty-state-small">Nenhuma faixa encontrada.</p>'; } else { existingTrackResults.innerHTML = filteredSongs.map(song => `<div class="existing-track-item" data-song-id="${song.id}" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; cursor:pointer;"><img src="${song.cover || getCoverUrl(song.albumId)}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"><div style="flex-grow:1;"><span style="display:block; font-size:14px; font-weight:600; color:#fff;">${song.title}</span><span style="display:block; font-size:12px; color:#aaa;">${song.artist}</span></div><i class="fas fa-plus" style="color:var(--text-secondary);"></i></div>`).join(''); }
@@ -392,7 +434,7 @@ function addExistingTrackToAlbum(songId) {
     
     const newItem = document.createElement('div'); 
     newItem.className = 'track-list-item-display track-row'; 
-    newItem.style.cssText = 'background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 4px;';
+    newItem.style.cssText = 'background: transparent; margin-bottom: 8px; border-radius: 4px; width: 100%;';
     
     // Injetando dados básicos
     newItem.dataset.itemId = `existing_${song.id}`; 
@@ -416,27 +458,47 @@ function addExistingTrackToAlbum(songId) {
         artistText = featsData[0].type === "Dueto/Grupo" ? `Dueto com ${featsData.map(f=>f.name).join(', ')}` : `feat. ${featsData.map(f=>f.name).join(', ')}`; 
     }
     
-    newItem.innerHTML = `
-        <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
-        <span class="track-number track-number-display"></span>
-        <div class="track-info" style="flex-grow:1;">
-            <span class="track-title" style="color:var(--spotify-green);">
-                <i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>${song.title} ${ytIcon} ${auIcon}
-            </span>
-            <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${song.trackType}</span></span>
-        </div>
-        <span class="track-duration" style="margin-right: 16px;">${song.duration}</span>
-        <div class="track-actions" style="display:flex; gap:12px;">
-            <button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button>
-            <button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button>
-        </div>
-    `;
+    // CORREÇÃO: Se for a aba da Turnê, o visual precisa ser diferente!
+    if (activeTracklistEditor.id === 'tourTracklistEditor') {
+         newItem.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; align-items:center; width: 100%;">
+                <span class="track-title" style="color:var(--spotify-green);"><i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>${song.title} ${ytIcon} ${auIcon}</span> 
+                <div style="display:flex; gap:12px;">
+                    <i class="fas fa-times remove-track-btn" style="color:var(--trend-down-red); cursor:pointer;"></i>
+                </div>
+            </div>
+        `;
+    } else {
+        newItem.innerHTML = `
+            <i class="fas fa-grip-vertical drag-handle" style="color:var(--text-secondary); cursor:grab; margin-right: 8px;"></i>
+            <span class="track-number track-number-display"></span>
+            <div class="track-info" style="flex-grow:1;">
+                <span class="track-title" style="color:var(--spotify-green);">
+                    <i class="fas fa-link" style="font-size: 10px; margin-right: 5px;"></i>${song.title} ${ytIcon} ${auIcon}
+                </span>
+                <span class="track-artist-feat">${artistText} • <span style="font-size:11px; opacity:0.7;">${song.trackType}</span></span>
+            </div>
+            <span class="track-duration" style="margin-right: 16px;">${song.duration}</span>
+            <div class="track-actions" style="display:flex; gap:12px;">
+                <button type="button" class="small-btn edit-track-btn" style="border:none; padding:4px;"><i class="fas fa-pencil-alt"></i></button>
+                <button type="button" class="small-btn remove-track-btn" style="border:none; padding:4px; color:var(--trend-down-red);"><i class="fas fa-times"></i></button>
+            </div>
+        `;
+    }
     
     const emptyState = activeTracklistEditor.querySelector('p'); 
     if (emptyState && emptyState.textContent.includes('Nenhuma faixa')) emptyState.remove(); 
     
     activeTracklistEditor.appendChild(newItem); 
     updateTrackNumbers(activeTracklistEditor); 
+
+    // CORREÇÃO: Salva as tracks no DOM (O shows.js puxa daqui para as turnês!)
+    if (activeTracklistEditor.id === 'tourTracklistEditor') {
+         const currentTracks = JSON.parse(activeTracklistEditor.dataset.tracks || '[]');
+         currentTracks.push(song);
+         activeTracklistEditor.dataset.tracks = JSON.stringify(currentTracks);
+    }
+    
     closeExistingTrackModal();
 }
 
@@ -696,13 +758,32 @@ function initializeStudio() {
     document.getElementById('openStudioMenuBtn')?.addEventListener('click', () => { document.getElementById('studioMenuModal').classList.remove('hidden'); });
     document.getElementById('closeStudioMenuBtn')?.addEventListener('click', () => { document.getElementById('studioMenuModal').classList.add('hidden'); });
 
+    // CORREÇÃO DA NAVEGAÇÃO
     document.querySelectorAll('.studio-menu-opt').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const formTarget = e.currentTarget.dataset.form; const labelText = e.currentTarget.textContent.trim();
             document.getElementById('currentStudioMenuLabel').textContent = labelText; document.getElementById('studioMenuModal').classList.add('hidden');
-            studioForms.forEach(f => f.classList.remove('active')); let targetElementId;
-            if (formTarget === 'release') { targetElementId = 'wysiwygReleaseForm'; initAlbumForm(); } else if (formTarget === 'edit') { targetElementId = 'editReleaseSection'; populateEditableReleases(); editReleaseListContainer?.classList.remove('hidden'); editReleaseForm?.classList.add('hidden'); } else if (formTarget === 'artist') { targetElementId = 'newArtistForm'; } else if (formTarget === 'editArtist') { targetElementId = 'editArtistForm'; if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change')); }
-            const targetElement = document.getElementById(targetElementId); if (targetElement) targetElement.classList.add('active'); 
+            
+            // Esconde todas as abas e tira a formatação embutida do "display: block"
+            document.querySelectorAll('.studio-form-content').forEach(f => {
+                f.classList.remove('active');
+                f.classList.add('hidden');
+                f.style.display = '';
+            }); 
+            
+            let targetElementId;
+            if (formTarget === 'release') { targetElementId = 'wysiwygReleaseForm'; initAlbumForm(); } 
+            else if (formTarget === 'edit') { targetElementId = 'editReleaseSection'; populateEditableReleases(); editReleaseListContainer?.classList.remove('hidden'); editReleaseForm?.classList.add('hidden'); } 
+            else if (formTarget === 'artist') { targetElementId = 'newArtistForm'; } 
+            else if (formTarget === 'editArtist') { targetElementId = 'editArtistForm'; if (editArtistSelect && editArtistSelect.value) editArtistSelect.dispatchEvent(new Event('change')); }
+            // IMPORTANTE: Adicionado mapeamento para o Stage se ele for considerado "aba"
+            else if (formTarget === 'stage') {
+                document.getElementById('postStageModal').classList.remove('hidden');
+                return; // Stage é um modal à parte, não esconde o estúdio principal
+            }
+
+            const targetElement = document.getElementById(targetElementId); 
+            if (targetElement) targetElement.classList.remove('hidden'), targetElement.classList.add('active'); 
         });
     });
 
@@ -710,8 +791,36 @@ function initializeStudio() {
     openWysiwygAddTrackBtn?.addEventListener('click', () => { activeTracklistEditor = wysiwygTracklistEditor; openAlbumTrackModal(); }); openWysiwygExistingTrackBtn?.addEventListener('click', () => { activeTracklistEditor = wysiwygTracklistEditor; openExistingTrackModal('album'); }); openEditAddTrackModalBtn?.addEventListener('click', () => { activeTracklistEditor = editAlbumTracklistEditor; openAlbumTrackModal(); }); openEditExistingTrackModalBtn?.addEventListener('click', () => { activeTracklistEditor = editAlbumTracklistEditor; openExistingTrackModal('album'); });
     addInlineFeatBtn?.addEventListener('click', toggleInlineFeatAdder); confirmInlineFeatBtn?.addEventListener('click', confirmInlineFeat); cancelInlineFeatBtn?.addEventListener('click', cancelInlineFeat);
 
+    // CORREÇÃO: Removemos a deleção pelo clique na track e vinculamos aos botões!
+    // A deleção foi passada para os onclicks das Tracks diretamente lá na criação
     wysiwygTracklistEditor?.addEventListener('click', (e) => { const editBtn = e.target.closest('.edit-track-btn'), rmBtn = e.target.closest('.remove-track-btn'), trkItem = e.target.closest('.track-list-item-display'); if (editBtn && trkItem) { activeTracklistEditor = wysiwygTracklistEditor; openAlbumTrackModal(trkItem); } else if (rmBtn && trkItem) { trkItem.remove(); updateTrackNumbers(wysiwygTracklistEditor); } });
     editAlbumTracklistEditor?.addEventListener('click', (e) => { const editBtn = e.target.closest('.edit-track-btn'), rmBtn = e.target.closest('.remove-track-btn'), trkItem = e.target.closest('.track-list-item-display'); if (editBtn && trkItem) { activeTracklistEditor = editAlbumTracklistEditor; openAlbumTrackModal(trkItem); } else if (rmBtn && trkItem) { trkItem.remove(); updateTrackNumbers(editAlbumTracklistEditor); } });
+    
+    // NOVO: Adicionado escutador para a exclusão dentro da Tour também!
+    const tourTracklistEditor = document.getElementById('tourTracklistEditor');
+    if (tourTracklistEditor) {
+        tourTracklistEditor.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-track-btn');
+            const rmBtn = e.target.closest('.remove-track-btn');
+            const trkItem = e.target.closest('.track-list-item-display'); 
+            
+            if (editBtn && trkItem) { 
+                activeTracklistEditor = tourTracklistEditor; 
+                openAlbumTrackModal(trkItem); 
+            } else if (rmBtn && trkItem) { 
+                trkItem.remove(); 
+                
+                // Atualiza o dataset para o shows.js salvar as deleções
+                const tracksArray = JSON.parse(tourTracklistEditor.dataset.tracks || '[]');
+                const itemDbId = trkItem.dataset.itemId;
+                const newTracksArray = tracksArray.filter(t => `existing_${t.id}` !== itemDbId && t.id !== itemDbId);
+                tourTracklistEditor.dataset.tracks = JSON.stringify(newTracksArray);
+                
+                updateTrackNumbers(tourTracklistEditor); 
+            } 
+        });
+    }
+
 
     let currentOptionsRelease = {};
     editReleaseList?.addEventListener('click', (e) => {
