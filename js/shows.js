@@ -428,7 +428,7 @@ function setupShowsLogic() {
             document.getElementById('postStageModal').classList.add('hidden');
             submitStageBtn.disabled = false;
             
-            loadShowsAndStages();
+           // loadShowsAndStages();
         };
     }
 
@@ -496,9 +496,9 @@ function setupShowsLogic() {
                 document.getElementById('wysiwygTourForm').classList.remove('active');
                 document.getElementById('wysiwygTourForm').style.display = 'none'; 
                 
-                await loadShowsAndStages();
-                if (activeArtist) renderArtistExtras(activeArtist.id);
-                if (typeof refreshAllData === 'function') refreshAllData();
+               // await loadShowsAndStages();
+                //if (activeArtist) renderArtistExtras(activeArtist.id);
+                //if (typeof refreshAllData === 'function') refreshAllData();
                 
             } catch(err) {
                 showToast("Erro ao salvar turnê: " + err.message, "error");
