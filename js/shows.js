@@ -57,7 +57,8 @@ window.renderArtistExtras = function(artistId) {
             </div>`;
         }).join('');
     } else {
-        document.getElementById('stagesHeaderContainer').classList.add('hidden');
+        const header = document.getElementById('stagesHeaderContainer');
+        if(header) header.classList.add('hidden');
         stagesContainer.classList.add('hidden');
     }
 
@@ -83,7 +84,8 @@ window.renderArtistExtras = function(artistId) {
             `;
         }).join('');
     } else {
-        document.getElementById('toursHeaderContainer').classList.add('hidden');
+        const header = document.getElementById('toursHeaderContainer');
+        if(header) header.classList.add('hidden');
         toursContainer.classList.add('hidden');
     }
 }
@@ -107,8 +109,10 @@ window.deleteTour = async function(id) {
 window.editStage = function(id) {
     const stage = db.stages.find(s => s.id === id);
     if (!stage) return;
+    
     const newTitle = prompt("Novo nome do Stage:", stage.title);
     if (!newTitle) return;
+    
     const newYt = prompt("Novo link do YouTube:", "https://youtube.com/watch?v=" + stage.yt_id);
     let ytId = stage.yt_id;
     if (newYt) ytId = extractYouTubeID(newYt) || stage.yt_id;
@@ -127,8 +131,17 @@ window.editTour = function(id) {
     document.querySelectorAll('.nav-tab, .bottom-nav-item').forEach(b => b.classList.remove('active'));
     document.querySelector('.bottom-nav-item[data-tab="studioSection"]')?.classList.add('active');
     
-    document.querySelectorAll('.studio-form-content').forEach(f => f.classList.remove('active'));
-    document.getElementById('wysiwygTourForm').classList.add('active');
+    document.querySelectorAll('.studio-form-content').forEach(f => {
+        f.classList.remove('active');
+        f.classList.add('hidden');
+    });
+    
+    const tourForm = document.getElementById('wysiwygTourForm');
+    if (tourForm) {
+        tourForm.classList.remove('hidden');
+        tourForm.classList.add('active');
+    }
+    
     document.getElementById('currentStudioMenuLabel').textContent = 'Editar Turnê';
 
     document.getElementById('editingTourId').value = tour.id;
@@ -182,7 +195,10 @@ window.playTour = function(tourId) {
 let tempTourSetlist = [];
 
 window.updateTourUI = function() {
-    document.getElementById('tourTracklistEditor').innerHTML = tempTourSetlist.map((s, i) => `
+    const container = document.getElementById('tourTracklistEditor');
+    if (!container) return;
+    
+    container.innerHTML = tempTourSetlist.map((s, i) => `
         <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; align-items:center;">
             <span>${i+1}. ${s.title}</span> <i class="fas fa-times" style="color:var(--trend-down-red); cursor:pointer;" onclick="removeTourSong('${s.id}')"></i>
         </div>
@@ -196,20 +212,36 @@ function setupShowsLogic() {
     document.querySelectorAll('.studio-menu-opt').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const form = e.currentTarget.dataset.form;
+            
             if (form === 'stage') {
                 document.getElementById('studioMenuModal').classList.add('hidden');
-                document.getElementById('stageArtistSelect').innerHTML = '<option value="" disabled selected>Selecione o Artista...</option>' + 
-                    currentPlayer.artists.map(id => {
-                        const a = db.artists.find(art => art.id === id);
-                        return a ? `<option value="${a.id}">${a.name}</option>` : '';
-                    }).join('');
+                const artistSelect = document.getElementById('stageArtistSelect');
+                if(artistSelect && currentPlayer) {
+                    artistSelect.innerHTML = '<option value="" disabled selected>Selecione o Artista...</option>' + 
+                        currentPlayer.artists.map(id => {
+                            const a = db.artists.find(art => art.id === id);
+                            return a ? `<option value="${a.id}">${a.name}</option>` : '';
+                        }).join('');
+                }
                 document.getElementById('postStageModal').classList.remove('hidden');
             }
+            
             if (form === 'tour') {
                 document.getElementById('studioMenuModal').classList.add('hidden');
-                document.querySelectorAll('.studio-form-content').forEach(f => f.classList.remove('active'));
                 
-                document.getElementById('wysiwygTourForm').classList.add('active');
+                // 1. OBRIGA OS OUTROS FORMS A SUMIREM
+                document.querySelectorAll('.studio-form-content').forEach(f => {
+                    f.classList.remove('active');
+                    f.classList.add('hidden');
+                });
+                
+                // 2. FORÇA O DA TURNÊ A APARECER
+                const tourForm = document.getElementById('wysiwygTourForm');
+                if (tourForm) {
+                    tourForm.classList.remove('hidden');
+                    tourForm.classList.add('active');
+                }
+                
                 document.getElementById('currentStudioMenuLabel').textContent = 'Criar Nova Turnê';
                 
                 document.getElementById('editingTourId').value = '';
@@ -217,17 +249,24 @@ function setupShowsLogic() {
                 document.getElementById('tourCoverImg').src = 'https://i.imgur.com/AD3MbBi.png';
                 document.getElementById('tourWysiwygBg').style.backgroundImage = `url('https://i.imgur.com/AD3MbBi.png')`;
                 document.getElementById('tourCoverUrl').value = 'https://i.imgur.com/AD3MbBi.png';
-                document.getElementById('submitTourBtn').innerHTML = '<i class="fas fa-ticket-alt"></i> Anunciar Turnê';
+                
+                const submitBtn = document.getElementById('submitTourBtn');
+                if(submitBtn) submitBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Anunciar Turnê';
                 
                 const editor = document.getElementById('tourTracklistEditor');
-                editor.dataset.tracks = '[]';
-                if (typeof populateTracklistEditor === 'function') populateTracklistEditor(editor, []);
+                if (editor) {
+                    editor.dataset.tracks = '[]';
+                    if (typeof populateTracklistEditor === 'function') populateTracklistEditor(editor, []);
+                }
 
-                document.getElementById('tourArtistSelect').innerHTML = '<option value="" disabled selected>Selecione o Artista Principal...</option>' + 
-                    currentPlayer.artists.map(id => {
-                        const a = db.artists.find(art => art.id === id);
-                        return a ? `<option value="${a.id}">${a.name}</option>` : '';
-                    }).join('');
+                const artistSelect = document.getElementById('tourArtistSelect');
+                if(artistSelect && currentPlayer) {
+                    artistSelect.innerHTML = '<option value="" disabled selected>Selecione o Artista Principal...</option>' + 
+                        currentPlayer.artists.map(id => {
+                            const a = db.artists.find(art => art.id === id);
+                            return a ? `<option value="${a.id}">${a.name}</option>` : '';
+                        }).join('');
+                }
             }
         });
     });
@@ -379,7 +418,6 @@ function setupShowsLogic() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Como os elementos já estão no HTML, não precisamos mais esperar o DOM injetar!
     setupShowsLogic(); 
     loadShowsAndStages();
 });
