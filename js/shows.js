@@ -314,15 +314,15 @@ function setupShowsLogic() {
         });
     }
     
+    // ==========================================
+    // AQUI ESTÁ A CORREÇÃO DE INTEGRAÇÃO COM O STUDIO.JS
+    // ==========================================
     document.getElementById('openTourExistingTrackBtn')?.addEventListener('click', () => {
+        // 1. Informa ao sistema que o editor atual é o da Turnê
         activeTracklistEditor = document.getElementById('tourTracklistEditor');
-        existingTrackModalContext = 'album'; 
-        document.getElementById('existingTrackSearch').value = '';
-        document.getElementById('existingTrackResults').innerHTML = '';
-        document.getElementById('existingTrackModal').classList.remove('hidden');
         
-        // CORREÇÃO: Dispara o evento de input para forçar o studio.js a renderizar as músicas do artista selecionado imediatamente
-        document.getElementById('existingTrackSearch')?.dispatchEvent(new Event('input'));
+        // 2. Chama a função completa do studio.js que fará o resto do trabalho pesado!
+        openExistingTrackModal('album'); 
     });
 
     document.getElementById('openTourAddTrackBtn')?.addEventListener('click', () => {
