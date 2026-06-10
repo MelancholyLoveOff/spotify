@@ -204,27 +204,26 @@ window.openTourView = function(tourId) {
 
     if (tourSongs.length === 0) return showToast("Músicas não encontradas.", "error");
 
-    // Transição de Telas - Tenta usar a view de álbuns padrão
+    // 1. Transição de Telas - ID exato do seu HTML
     if (typeof switchView === 'function') {
-        switchView('albumDetailView'); // Ajuste esse nome se a sua view chamar diferente (ex: 'albumView')
+        switchView('albumDetail'); 
     }
 
-    // Injeta os dados da Turnê no HTML da View de Álbuns
-    const coverEl = document.getElementById('albumDetailCover') || document.getElementById('albumCover');
+    // 2. Injeta os dados da Turnê no HTML
+    const coverEl = document.getElementById('albumDetailCover');
     if (coverEl) coverEl.src = tour.image_url;
 
-    const titleEl = document.getElementById('albumDetailTitle') || document.getElementById('albumTitle');
+    const titleEl = document.getElementById('albumDetailTitle');
     if (titleEl) titleEl.textContent = tour.title;
 
-    const artistEl = document.getElementById('albumDetailArtist') || document.getElementById('albumArtist');
+    const artistEl = document.getElementById('albumArtistName');
     if (artistEl) artistEl.textContent = "Turnê Oficial • Setlist";
 
-    // Opcional: Atualiza info de data/quantidade
-    const infoEl = document.getElementById('albumDetailInfo') || document.getElementById('albumInfo');
+    const infoEl = document.getElementById('albumDetailInfo');
     if (infoEl) infoEl.textContent = `${tourSongs.length} músicas • Ao Vivo`;
 
-    // Renderiza a Tracklist
-    const tracklistContainer = document.getElementById('albumDetailTracklist') || document.getElementById('albumTracklist');
+    // 3. Renderiza a Tracklist
+    const tracklistContainer = document.getElementById('albumTracklist');
     if (tracklistContainer) {
         tracklistContainer.innerHTML = tourSongs.map((song, index) => `
             <div class="track-item" ondblclick="playSpecificTourSong('${tour.id}', '${song.id}')" style="display: flex; align-items: center; gap: 16px; padding: 12px; cursor: pointer; border-radius: 4px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
@@ -238,10 +237,10 @@ window.openTourView = function(tourId) {
         `).join('');
     }
 
-    // Configura o Botão "Play All" gigante
-    const playAllBtn = document.getElementById('albumDetailPlayBtn') || document.getElementById('playAlbumBtn');
+    // 4. Configura o Botão "Play" Principal
+    const playAllBtn = document.getElementById('albumPlayBtn');
     if (playAllBtn) {
-        // Clone limpa os EventListeners antigos (evita conflito com álbuns)
+        // Clone limpa os EventListeners antigos (evita conflito com álbuns normais)
         const newPlayBtn = playAllBtn.cloneNode(true);
         playAllBtn.parentNode.replaceChild(newPlayBtn, playAllBtn);
         
