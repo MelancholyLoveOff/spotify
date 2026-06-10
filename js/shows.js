@@ -382,23 +382,6 @@ function setupShowsLogic() {
         });
     });
 
-    const tourCoverFile = document.getElementById('tourCoverFile');
-    if(tourCoverFile) {
-        tourCoverFile.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const b64 = event.target.result;
-                    document.getElementById('tourCoverImg').src = b64;
-                    document.getElementById('tourWysiwygBg').style.backgroundImage = `url(${b64})`;
-                    document.getElementById('tourCoverUrl').value = b64;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
     const stageArtistSelect = document.getElementById('stageArtistSelect');
     if(stageArtistSelect) {
         stageArtistSelect.addEventListener('change', (e) => {
