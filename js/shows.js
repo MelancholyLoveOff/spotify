@@ -134,12 +134,14 @@ window.editTour = function(id) {
     document.querySelectorAll('.studio-form-content').forEach(f => {
         f.classList.remove('active');
         f.classList.add('hidden');
+        f.style.display = 'none'; // FORÇADO
     });
     
     const tourForm = document.getElementById('wysiwygTourForm');
     if (tourForm) {
         tourForm.classList.remove('hidden');
         tourForm.classList.add('active');
+        tourForm.style.display = 'block'; // FORÇADO
     }
     
     document.getElementById('currentStudioMenuLabel').textContent = 'Editar Turnê';
@@ -158,7 +160,8 @@ window.editTour = function(id) {
     
     if (typeof populateTracklistEditor === 'function') populateTracklistEditor(editor, tourSongs);
 
-    document.getElementById('submitTourBtn').innerHTML = '<i class="fas fa-save"></i> Salvar Turnê';
+    const submitBtn = document.getElementById('submitTourBtn');
+    if(submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Turnê';
 }
 
 window.playStageVideo = function(ytId, title) {
@@ -209,6 +212,7 @@ function setupShowsLogic() {
     const btnCancelStage = document.getElementById('cancelStageBtn');
     if(btnCancelStage) btnCancelStage.onclick = () => document.getElementById('postStageModal').classList.add('hidden');
 
+    // A MÁGICA ESTÁ AQUI: Controle absoluto da exibição
     document.querySelectorAll('.studio-menu-opt').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const form = e.currentTarget.dataset.form;
@@ -229,10 +233,11 @@ function setupShowsLogic() {
             if (form === 'tour') {
                 document.getElementById('studioMenuModal').classList.add('hidden');
                 
-                // 1. OBRIGA OS OUTROS FORMS A SUMIREM
+                // 1. OBRIGA OS OUTROS FORMS A SUMIREM DA TELA
                 document.querySelectorAll('.studio-form-content').forEach(f => {
                     f.classList.remove('active');
                     f.classList.add('hidden');
+                    f.style.display = 'none'; // FORÇA VIA INLINE CSS
                 });
                 
                 // 2. FORÇA O DA TURNÊ A APARECER
@@ -240,15 +245,28 @@ function setupShowsLogic() {
                 if (tourForm) {
                     tourForm.classList.remove('hidden');
                     tourForm.classList.add('active');
+                    tourForm.style.display = 'block'; // FORÇA VIA INLINE CSS
+                } else {
+                    console.error("ATENÇÃO: O formulário com id 'wysiwygTourForm' NÃO foi encontrado no seu HTML!");
+                    return;
                 }
                 
-                document.getElementById('currentStudioMenuLabel').textContent = 'Criar Nova Turnê';
+                const labelMenu = document.getElementById('currentStudioMenuLabel');
+                if(labelMenu) labelMenu.textContent = 'Criar Nova Turnê';
+                
+                const titleInput = document.getElementById('tourTitle');
+                if(titleInput) titleInput.value = '';
                 
                 document.getElementById('editingTourId').value = '';
-                document.getElementById('tourTitle').value = '';
-                document.getElementById('tourCoverImg').src = 'https://i.imgur.com/AD3MbBi.png';
-                document.getElementById('tourWysiwygBg').style.backgroundImage = `url('https://i.imgur.com/AD3MbBi.png')`;
-                document.getElementById('tourCoverUrl').value = 'https://i.imgur.com/AD3MbBi.png';
+                
+                const coverImg = document.getElementById('tourCoverImg');
+                if(coverImg) coverImg.src = 'https://i.imgur.com/AD3MbBi.png';
+                
+                const bgImg = document.getElementById('tourWysiwygBg');
+                if(bgImg) bgImg.style.backgroundImage = `url('https://i.imgur.com/AD3MbBi.png')`;
+                
+                const coverUrlInput = document.getElementById('tourCoverUrl');
+                if(coverUrlInput) coverUrlInput.value = 'https://i.imgur.com/AD3MbBi.png';
                 
                 const submitBtn = document.getElementById('submitTourBtn');
                 if(submitBtn) submitBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Anunciar Turnê';
@@ -271,6 +289,7 @@ function setupShowsLogic() {
         });
     });
 
+    // ... [MANTENHA OS EVENTOS RESTANTES DE UPLOAD DE FOTO, FILTROS E SUBMIT QUE VOCÊ JÁ TINHA NESTA FUNÇÃO] ...
     const tourCoverFile = document.getElementById('tourCoverFile');
     if(tourCoverFile) {
         tourCoverFile.addEventListener('change', async (e) => {
@@ -402,6 +421,7 @@ function setupShowsLogic() {
                 }
                 
                 document.getElementById('wysiwygTourForm').classList.remove('active');
+                document.getElementById('wysiwygTourForm').style.display = 'none'; // Reseta o forçamento
                 
                 await loadShowsAndStages();
                 if (activeArtist) renderArtistExtras(activeArtist.id);
