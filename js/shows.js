@@ -212,7 +212,7 @@ function setupShowsLogic() {
     const btnCancelStage = document.getElementById('cancelStageBtn');
     if(btnCancelStage) btnCancelStage.onclick = () => document.getElementById('postStageModal').classList.add('hidden');
 
-    // A MÁGICA ESTÁ AQUI: Controle absoluto da exibição
+    // Controle de exibição do menu do estúdio
     document.querySelectorAll('.studio-menu-opt').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const form = e.currentTarget.dataset.form;
@@ -289,7 +289,6 @@ function setupShowsLogic() {
         });
     });
 
-    // ... [MANTENHA OS EVENTOS RESTANTES DE UPLOAD DE FOTO, FILTROS E SUBMIT QUE VOCÊ JÁ TINHA NESTA FUNÇÃO] ...
     const tourCoverFile = document.getElementById('tourCoverFile');
     if(tourCoverFile) {
         tourCoverFile.addEventListener('change', async (e) => {
@@ -321,6 +320,9 @@ function setupShowsLogic() {
         document.getElementById('existingTrackSearch').value = '';
         document.getElementById('existingTrackResults').innerHTML = '';
         document.getElementById('existingTrackModal').classList.remove('hidden');
+        
+        // CORREÇÃO: Dispara o evento de input para forçar o studio.js a renderizar as músicas do artista selecionado imediatamente
+        document.getElementById('existingTrackSearch')?.dispatchEvent(new Event('input'));
     });
 
     document.getElementById('openTourAddTrackBtn')?.addEventListener('click', () => {
@@ -414,14 +416,14 @@ function setupShowsLogic() {
                 const editId = document.getElementById('editingTourId').value;
                 if (editId) {
                     await supabaseClient.from('tours').update(tourObj).eq('id', editId);
-                    showToast("Turnê atualizada com sucesso!", "success");
+                    showToast("Turnê updated com sucesso!", "success");
                 } else {
                     await supabaseClient.from('tours').insert([tourObj]);
                     showToast("Turnê anunciada com sucesso!", "success");
                 }
                 
                 document.getElementById('wysiwygTourForm').classList.remove('active');
-                document.getElementById('wysiwygTourForm').style.display = 'none'; // Reseta o forçamento
+                document.getElementById('wysiwygTourForm').style.display = 'none'; 
                 
                 await loadShowsAndStages();
                 if (activeArtist) renderArtistExtras(activeArtist.id);
