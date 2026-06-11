@@ -221,6 +221,12 @@ window.openTourView = function(tourId) {
 
     const artistEl = document.getElementById('albumArtistName');
     if (artistEl) artistEl.textContent = "Turnê Oficial • Setlist";
+    const artistObj = db.artists.find(a => a.id === tour.artist_id);
+    const avatarEl = document.getElementById('albumArtistAvatar');
+    if (avatarEl) {
+        avatarEl.src = artistObj ? artistObj.img : 'https://i.imgur.com/AD3MbBi.png';
+    }
+    // --- CÓDIGO NOVO: FIM ---
 
     const infoEl = document.getElementById('albumDetailInfo');
     if (infoEl) infoEl.textContent = `${tourSongs.length} músicas • Ao Vivo`;
